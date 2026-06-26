@@ -95,3 +95,81 @@ Use this checklist before closing Sprint A.
 - [ ] All checklist items above are satisfied.
 - [ ] Sprint A is formally closed.
 - [ ] Sprint B has not started.
+
+## Sprint G - P0 Stabilization Scope
+
+Sprint G is a stabilization sprint. No new feature is introduced.
+
+### Included
+
+- Full review of CR-P0 and WF-P0 coverage.
+- Final contract/workflow traceability table.
+- P0 Exit checklist.
+- Minimal documentation alignment with implemented behavior.
+- Full test execution using mvn -q test.
+- Final decision: P0 DONE or P0 NOT DONE.
+
+### Excluded
+
+- Any new workflow.
+- Any new business feature.
+- REST, JPA, WebSocket, Security, frontend.
+- Real outbox, full read model, or full game logic.
+- Large refactor unrelated to P0 stabilization.
+
+## Final P0 Traceability (Contract + Workflow)
+
+| Test ID | Expected Behavior | Status |
+|---|---|---|
+| CR-P0-01 | Empty ActionResolution directives are rejected with RULESET_CONTRACT_VIOLATION | Covered |
+| CR-P0-02 | FINISH_MATCH requires MatchOutcome | Covered |
+| CR-P0-03 | CANCEL_MATCH requires CancellationReason | Covered |
+| CR-P0-04 | FINISH_MATCH and CANCEL_MATCH are mutually exclusive | Covered |
+| CR-P0-05 | Engine directives are structural and allowed | Covered |
+| CR-P0-06 | Incoherent directive combinations are rejected | Covered |
+| CR-P0-07 | RULESET rejection requires REJECT_ACTION to be valid | Covered |
+| WF-P0-01 | ACCEPT_ACTION + CONTINUE_TURN | Covered |
+| WF-P0-02 | ACCEPT_ACTION + END_TURN + START_NEXT_TURN | Covered |
+| WF-P0-03 | FINISH_MATCH with MatchOutcome terminalizes match | Covered |
+| WF-P0-04 | CANCEL_MATCH with CancellationReason terminalizes match | Covered |
+| WF-P0-05 | MATCH_NOT_FOUND is rejected pre-RuleSet | Covered |
+| WF-P0-06 | MATCH_NOT_IN_PROGRESS is rejected pre-RuleSet | Covered |
+| WF-P0-07 | TURN_NOT_ACTIVE is rejected pre-RuleSet | Covered |
+| WF-P0-08 | ACTOR_NOT_AUTHORIZED is rejected pre-RuleSet | Covered |
+| WF-P0-09 | VERSION_CONFLICT is rejected pre-RuleSet | Covered |
+| WF-P0-10A | Legitimate idempotent replay returns previous response | Covered |
+| WF-P0-10B | Idempotency conflict is rejected with IDEMPOTENCY_CONFLICT | Covered |
+| WF-P0-11 | No directive post-RuleSet -> RULESET_CONTRACT_VIOLATION | Covered |
+| WF-P0-12 | FINISH_MATCH without MatchOutcome -> MATCH_OUTCOME_REQUIRED | Covered |
+| WF-P0-13 | CANCEL_MATCH without CancellationReason -> CANCELLATION_REASON_REQUIRED | Covered |
+| WF-P0-14 | FINISH_MATCH + CANCEL_MATCH -> TERMINAL_DIRECTIVES_CONFLICT | Covered |
+| WF-P0-15 | Terminal match rejects SubmitAction with MATCH_ALREADY_TERMINAL | Covered |
+| WF-P0-16 | RuleSet business rejection with REJECT_ACTION is handled as valid result | Covered |
+| WF-P0-17 | RuleSet rejection code remains opaque and unchanged | Covered |
+| WF-P0-18 | RuleSet rejection logging follows requested LogTarget only | Covered |
+| WF-P0-19 | RuleSet rejection does not mutate state | Covered |
+| WF-P0-20 | RuleSet rejection is not confused with ENGINE rejection | Covered |
+| WF-P0-21 | Invalid directive combination post-RuleSet -> INVALID_ENGINE_DIRECTIVE_COMBINATION | Covered |
+
+## P0 Exit Checklist
+
+- [ ] CR-P0 and WF-P0 suites are fully covered and aligned with implemented behavior.
+- [ ] RuleSet/ActionResolution contract remains stable and centrally validated.
+- [ ] ENGINE and RULESET rejection paths are clearly separated.
+- [ ] Terminal states are opposable and block further submit actions.
+- [ ] Minimal idempotency behavior (10A/10B) is covered and deterministic.
+- [ ] RuleSet business rejection path (WF-P0-16..20) is covered with opaque code handling.
+- [ ] Documentation reflects actual behavior without scope drift.
+- [ ] Full test suite passes with mvn -q test.
+
+## Final P0 Decision
+
+Mark one outcome after final test run:
+
+- [ ] P0 DONE
+- [ ] P0 NOT DONE
+
+Decision basis:
+
+- P0 DONE requires all checklist items above and green test execution.
+- P0 NOT DONE applies if any P0 invariant, test, or alignment item is missing.
