@@ -1,0 +1,11 @@
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\ActionResolution.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\ActionResolutionContractValidator.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\CancellationReason.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\EngineDirective.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\EvaluationResult.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\LogTarget.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\MatchOutcome.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\ParticipantResult.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\Rejection.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RejectionOrigin.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RuleSet.java
