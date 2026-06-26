@@ -7,6 +7,8 @@ import io.mastermindarena.deduction.engine.contract.ActionResolution;
 import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
 import io.mastermindarena.deduction.engine.contract.EngineDirective;
 import io.mastermindarena.deduction.engine.contract.LogTarget;
+import io.mastermindarena.deduction.engine.contract.MatchOutcome;
+import io.mastermindarena.deduction.engine.contract.ParticipantResult;
 import io.mastermindarena.deduction.engine.contract.Rejection;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
 import io.mastermindarena.deduction.engine.contract.RuleSet;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -165,6 +168,47 @@ class P1BFilePersistenceIntegrationTest {
 
         assertFalse(rejected.accepted());
         assertEquals(List.of("ActionSubmitted"), rejectContext.eventSink.allEvents());
+    }
+
+    @Test
+    void p1c_terminalFinishedStateRoundTripThroughFileMatchStateStore() {
+        Path root = tempDir.resolve("terminal-roundtrip");
+        FileMatchStateStore store = new FileMatchStateStore(root.resolve("state"));
+
+        MatchOutcome outcome = new MatchOutcome(
+                "FINISHED",
+                "RULESET_DECIDED",
+                List.of(
+                        new ParticipantResult("p1", "WIN", 1),
+                        new ParticipantResult("p2", "LOSE", 2)
+                ),
+                Instant.parse("2026-06-26T12:00:00Z")
+        );
+
+        MatchRuntimeState finished = new MatchRuntimeState(
+                "match-p1c-finished",
+                3,
+                1,
+                true,
+                List.of("p1", "p2"),
+                9,
+                "FINISHED",
+                outcome,
+                null
+        );
+
+        store.save(finished);
+
+        FileMatchStateStore reloadedStore = new FileMatchStateStore(root.resolve("state"));
+        MatchRuntimeState reloaded = reloadedStore.findById("match-p1c-finished").orElseThrow();
+
+        assertEquals("match-p1c-finished", reloaded.matchId());
+        assertEquals(9, reloaded.version());
+        assertEquals("FINISHED", reloaded.status());
+        assertEquals("p2", reloaded.currentActorId());
+        assertEquals("p1", reloaded.matchOutcomeOptional().orElseThrow().participantResults().get(0).participantId());
+        assertEquals("RULESET_DECIDED", reloaded.matchOutcomeOptional().orElseThrow().completionReason());
+        assertEquals(2, reloaded.matchOutcomeOptional().orElseThrow().participantResults().size());
     }
 
     private static MatchRuntimeState inProgressState(String matchId, long version) {

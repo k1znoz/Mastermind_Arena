@@ -65,3 +65,63 @@ Start detailed P1-A framing (no coding yet):
 - define minimal application input/output contract,
 - freeze mapping and error propagation rules,
 - define P1-A integration test matrix aligned with P0 invariants.
+
+## P1-B Completion Note
+
+### Decision
+P1-B is completed with local file-based persistence adapters.
+
+### Implemented
+- `IdempotencyStore` port.
+- `FileMatchStateStore`.
+- `FileIdempotencyStore`.
+- `FileWorkflowEventSink`.
+- Persistent integration tests for nominal submit, structural rejection without mutation, idempotent replay, idempotency conflict, and expected event persistence.
+
+### Constraints Confirmed
+- No Spring.
+- No JPA.
+- No H2.
+- No database.
+- No REST.
+- No Security.
+- No WebSocket.
+- No UI.
+- `ActionResolution` unchanged.
+- Engine remains game-agnostic.
+
+### Known Debt
+- Minimal file codec, not a long-term exchange format.
+- No advanced inter-process concurrency strategy.
+- Append-only event journal without rotation or production outbox semantics.
+- Idempotent result restoration covers the subset needed for P1-B.
+
+### Status
+`P1-B DONE`
+
+## File Persistence Operational Limits
+
+The P1-B file persistence adapters are intended as minimal local persistence for integration hardening, not as production-grade storage.
+
+### Format
+- UTF-8 local files.
+- Deterministic line-based records.
+- URL-safe Base64 encoded fields.
+- Tab-separated technical fields.
+- SHA-256 derived file names for persisted keys.
+
+### Guarantees
+- Local best-effort durability.
+- Deterministic serialization/deserialization for supported workflow state.
+- Suitable for single-process integration scenarios.
+
+### Limits
+- No inter-process locking.
+- No distributed consistency.
+- No transaction manager.
+- No event journal rotation.
+- No production outbox semantics.
+- No long-term exchange-format commitment.
+
+### Corruption Handling
+Invalid or unsupported persisted data should fail fast rather than be silently repaired or partially interpreted.
