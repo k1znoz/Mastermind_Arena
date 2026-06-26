@@ -526,4 +526,242 @@ class SubmitActionWorkflowTest {
         assertEquals(eventsAfterFirst, eventSink.allEvents());
         assertEquals(r1.state(), stateStore.findById("match-idem-conflict").orElseThrow());
     }
+
+    @Test
+    void wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return ActionResolution.of(Set.of());
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-e11",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> orchestrator.submit(new SubmitActionCommand("match-e11", "p1", 0, "k-e11", "payload"))
+        );
+
+        assertEquals(ActionResolutionContractValidator.RULESET_CONTRACT_VIOLATION, ex.getMessage());
+        assertEquals(1, invocations.get());
+        assertEquals(initial, stateStore.findById("match-e11").orElseThrow());
+        assertEquals(List.of("ActionSubmitted"), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP012_finishMatchWithoutOutcomeRejectedWithMatchOutcomeRequired() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.ACCEPT_ACTION, EngineDirective.FINISH_MATCH),
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-e12",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> orchestrator.submit(new SubmitActionCommand("match-e12", "p1", 0, "k-e12", "payload"))
+        );
+
+        assertEquals(ActionResolutionContractValidator.MATCH_OUTCOME_REQUIRED, ex.getMessage());
+        assertEquals(1, invocations.get());
+        assertEquals(initial, stateStore.findById("match-e12").orElseThrow());
+        assertEquals(List.of("ActionSubmitted"), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.ACCEPT_ACTION, EngineDirective.CANCEL_MATCH),
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-e13",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> orchestrator.submit(new SubmitActionCommand("match-e13", "p1", 0, "k-e13", "payload"))
+        );
+
+        assertEquals(ActionResolutionContractValidator.CANCELLATION_REASON_REQUIRED, ex.getMessage());
+        assertEquals(1, invocations.get());
+        assertEquals(initial, stateStore.findById("match-e13").orElseThrow());
+        assertEquals(List.of("ActionSubmitted"), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.ACCEPT_ACTION, EngineDirective.FINISH_MATCH, EngineDirective.CANCEL_MATCH),
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-e14",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> orchestrator.submit(new SubmitActionCommand("match-e14", "p1", 0, "k-e14", "payload"))
+        );
+
+        assertEquals(ActionResolutionContractValidator.TERMINAL_DIRECTIVES_CONFLICT, ex.getMessage());
+        assertEquals(1, invocations.get());
+        assertEquals(initial, stateStore.findById("match-e14").orElseThrow());
+        assertEquals(List.of("ActionSubmitted"), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP021_invalidDirectiveCombinationRejectedWithInvalidEngineDirectiveCombination() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.ACCEPT_ACTION, EngineDirective.CONTINUE_TURN, EngineDirective.END_TURN),
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-e21",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> orchestrator.submit(new SubmitActionCommand("match-e21", "p1", 0, "k-e21", "payload"))
+        );
+
+        assertEquals(ActionResolutionContractValidator.INVALID_ENGINE_DIRECTIVE_COMBINATION, ex.getMessage());
+        assertEquals(1, invocations.get());
+        assertEquals(initial, stateStore.findById("match-e21").orElseThrow());
+        assertEquals(List.of("ActionSubmitted"), eventSink.allEvents());
+    }
 }
