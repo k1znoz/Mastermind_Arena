@@ -15,6 +15,7 @@ public final class SubmitActionOrchestrator {
     private final EventSink eventSink;
     private final RuleSet ruleSet;
     private final ActionResolutionContractValidator validator;
+    private final InMemoryIdempotencyStore idempotencyStore;
 
     public SubmitActionOrchestrator(
             MatchStateStore stateStore,
@@ -26,11 +27,22 @@ public final class SubmitActionOrchestrator {
         this.eventSink = eventSink;
         this.ruleSet = ruleSet;
         this.validator = validator;
+        this.idempotencyStore = new InMemoryIdempotencyStore();
     }
 
     public SubmitActionResult submit(SubmitActionCommand command) {
         MatchRuntimeState current = stateStore.findById(command.matchId())
                 .orElseThrow(() -> new IllegalStateException("MATCH_NOT_FOUND"));
+
+        String idempotencyScopeKey = command.matchId() + "|" + command.actorId() + "|" + command.idempotencyKey();
+        String requestFingerprint = command.expectedVersion() + "|" + String.valueOf(command.actionPayload());
+        InMemoryIdempotencyStore.Entry existing = idempotencyStore.find(idempotencyScopeKey).orElse(null);
+        if (existing != null) {
+            if (existing.fingerprint().equals(requestFingerprint)) {
+                return existing.result();
+            }
+            throw new IllegalStateException("IDEMPOTENCY_CONFLICT");
+        }
 
         if (current.isTerminal()) {
             throw new IllegalStateException("MATCH_ALREADY_TERMINAL");
@@ -40,8 +52,16 @@ public final class SubmitActionOrchestrator {
             throw new IllegalStateException("MATCH_NOT_IN_PROGRESS");
         }
 
+        if (!current.turnActive()) {
+            throw new IllegalStateException("TURN_NOT_ACTIVE");
+        }
+
         if (!current.currentActorId().equals(command.actorId())) {
             throw new IllegalStateException("ACTOR_NOT_AUTHORIZED");
+        }
+
+        if (command.expectedVersion() != current.version()) {
+            throw new IllegalStateException("VERSION_CONFLICT");
         }
 
         List<String> emitted = new ArrayList<>();
@@ -80,7 +100,9 @@ public final class SubmitActionOrchestrator {
         }
 
         stateStore.save(updated);
-        return new SubmitActionResult(updated, resolution, List.copyOf(emitted));
+        SubmitActionResult result = new SubmitActionResult(updated, resolution, List.copyOf(emitted));
+        idempotencyStore.save(idempotencyScopeKey, new InMemoryIdempotencyStore.Entry(requestFingerprint, result));
+        return result;
     }
 
     private void emit(List<String> emitted, String event) {

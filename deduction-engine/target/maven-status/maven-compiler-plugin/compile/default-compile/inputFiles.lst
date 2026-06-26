@@ -11,6 +11,7 @@ C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermind
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RuleSet.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\EventSink.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryEventSink.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryIdempotencyStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryMatchStateStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchRuntimeState.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchStateStore.java
