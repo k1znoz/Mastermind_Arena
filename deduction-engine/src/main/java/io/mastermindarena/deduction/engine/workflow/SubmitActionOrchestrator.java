@@ -10,6 +10,7 @@ import io.mastermindarena.deduction.engine.contract.RuleSet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class SubmitActionOrchestrator {
@@ -17,7 +18,7 @@ public final class SubmitActionOrchestrator {
     private final EventSink eventSink;
     private final RuleSet ruleSet;
     private final ActionResolutionContractValidator validator;
-    private final InMemoryIdempotencyStore idempotencyStore;
+    private final IdempotencyStore idempotencyStore;
 
     public SubmitActionOrchestrator(
             MatchStateStore stateStore,
@@ -25,11 +26,21 @@ public final class SubmitActionOrchestrator {
             RuleSet ruleSet,
             ActionResolutionContractValidator validator
     ) {
+        this(stateStore, eventSink, ruleSet, validator, new InMemoryIdempotencyStore());
+    }
+
+    public SubmitActionOrchestrator(
+            MatchStateStore stateStore,
+            EventSink eventSink,
+            RuleSet ruleSet,
+            ActionResolutionContractValidator validator,
+            IdempotencyStore idempotencyStore
+    ) {
         this.stateStore = stateStore;
         this.eventSink = eventSink;
         this.ruleSet = ruleSet;
         this.validator = validator;
-        this.idempotencyStore = new InMemoryIdempotencyStore();
+        this.idempotencyStore = Objects.requireNonNull(idempotencyStore, "idempotencyStore is required");
     }
 
     public SubmitActionResult submit(SubmitActionCommand command) {
@@ -38,7 +49,7 @@ public final class SubmitActionOrchestrator {
 
         String idempotencyScopeKey = command.matchId() + "|" + command.actorId() + "|" + command.idempotencyKey();
         String requestFingerprint = command.expectedVersion() + "|" + String.valueOf(command.actionPayload());
-        InMemoryIdempotencyStore.Entry existing = idempotencyStore.find(idempotencyScopeKey).orElse(null);
+        IdempotencyStore.Entry existing = idempotencyStore.find(idempotencyScopeKey).orElse(null);
         if (existing != null) {
             if (existing.fingerprint().equals(requestFingerprint)) {
                 return existing.result();
@@ -91,7 +102,7 @@ public final class SubmitActionOrchestrator {
             }
 
             SubmitActionResult result = new SubmitActionResult(current, resolution, List.copyOf(emitted));
-            idempotencyStore.save(idempotencyScopeKey, new InMemoryIdempotencyStore.Entry(requestFingerprint, result));
+            idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
             return result;
         }
 
@@ -122,7 +133,7 @@ public final class SubmitActionOrchestrator {
 
         stateStore.save(updated);
         SubmitActionResult result = new SubmitActionResult(updated, resolution, List.copyOf(emitted));
-        idempotencyStore.save(idempotencyScopeKey, new InMemoryIdempotencyStore.Entry(requestFingerprint, result));
+        idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
         return result;
     }
 

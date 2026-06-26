@@ -14,6 +14,7 @@ C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermind
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RejectionOrigin.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RuleSet.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\EventSink.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\IdempotencyStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryEventSink.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryIdempotencyStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryMatchStateStore.java
@@ -22,3 +23,7 @@ C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermind
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionCommand.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionOrchestrator.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionResult.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\infrastructure\file\FileIdempotencyStore.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\infrastructure\file\FileMatchStateStore.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\infrastructure\file\FilePersistenceCodec.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\infrastructure\file\FileWorkflowEventSink.java

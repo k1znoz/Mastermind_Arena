@@ -4,17 +4,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-final class InMemoryIdempotencyStore {
+public final class InMemoryIdempotencyStore implements IdempotencyStore {
     private final Map<String, Entry> entries = new ConcurrentHashMap<>();
 
-    Optional<Entry> find(String key) {
+    @Override
+    public Optional<Entry> find(String key) {
         return Optional.ofNullable(entries.get(key));
     }
 
-    void save(String key, Entry entry) {
+    @Override
+    public void save(String key, Entry entry) {
         entries.put(key, entry);
-    }
-
-    record Entry(String fingerprint, SubmitActionResult result) {
     }
 }
