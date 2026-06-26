@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.027" tests="22" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest" time="0.059" tests="4" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -59,26 +59,8 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="wfP016_businessActionRejectedByRuleSetWithRejectAction" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP003_finishMatchWithOutcome" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP020_rulesetRejectionIsNotConfusedWithEngineRejection" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP002_acceptActionEndTurnAndStartNextTurn" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
-  <testcase name="wfP012_finishMatchWithoutOutcomeRejectedWithMatchOutcomeRequired" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP008_actorNotAuthorized" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
-  <testcase name="wfP010a_idempotentReplayReturnsPreviousResponseWithoutNewEffects" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP017_rulesetOpaqueCodeIsPreservedAsIs" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP009_versionConflict" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP015_terminalMatchRefusesSubmitActionAndDoesNotInvokeRuleSet" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
-  <testcase name="wfP019_rulesetRejectionDoesNotMutateState" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP005_matchNotFound" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP010b_idempotencyConflict" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP007_turnNotActive" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
-  <testcase name="wfP021_invalidDirectiveCombinationRejectedWithInvalidEngineDirectiveCombination" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP004_cancelMatchWithCancellationReason" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP001_acceptActionAndContinueTurn" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.001"/>
-  <testcase name="wfP006_matchNotInProgress" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
+  <testcase name="p1a_nominalAccepted" classname="io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest" time="0.028"/>
+  <testcase name="p1a_idempotentReplayWhenSameRequestIsResubmitted" classname="io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest" time="0.012"/>
+  <testcase name="p1a_structuralRejectionMatchNotFound" classname="io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest" time="0.002"/>
+  <testcase name="p1a_rulesetRejectionIsPreserved" classname="io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest" time="0.003"/>
 </testsuite>
