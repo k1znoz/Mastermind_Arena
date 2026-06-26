@@ -32,6 +32,10 @@ public final class SubmitActionOrchestrator {
         MatchRuntimeState current = stateStore.findById(command.matchId())
                 .orElseThrow(() -> new IllegalStateException("MATCH_NOT_FOUND"));
 
+        if (current.isTerminal()) {
+            throw new IllegalStateException("MATCH_ALREADY_TERMINAL");
+        }
+
         if (!"IN_PROGRESS".equals(current.status())) {
             throw new IllegalStateException("MATCH_NOT_IN_PROGRESS");
         }
@@ -65,6 +69,12 @@ public final class SubmitActionOrchestrator {
             emit(emitted, "TurnEnded");
             updated = current.nextTurn();
             emit(emitted, "TurnStarted");
+        } else if (directives.contains(EngineDirective.FINISH_MATCH)) {
+            emit(emitted, "MatchFinished");
+            updated = current.finished(resolution.matchOutcome().orElseThrow());
+        } else if (directives.contains(EngineDirective.CANCEL_MATCH)) {
+            emit(emitted, "MatchCancelled");
+            updated = current.cancelled(resolution.cancellationReason().orElseThrow());
         } else {
             throw new IllegalStateException("INVALID_ENGINE_DIRECTIVE_COMBINATION");
         }
