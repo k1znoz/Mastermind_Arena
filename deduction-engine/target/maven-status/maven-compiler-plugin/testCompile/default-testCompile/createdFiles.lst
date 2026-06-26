@@ -1,0 +1,5 @@
+io\mastermindarena\deduction\engine\workflow\SubmitActionWorkflowTest.class
+io\mastermindarena\deduction\application\persistence\P1BFilePersistenceIntegrationTest.class
+io\mastermindarena\deduction\application\submitaction\SubmitActionApplicationIntegrationTest.class
+io\mastermindarena\deduction\application\persistence\P1BFilePersistenceIntegrationTest$PersistenceContext.class
+io\mastermindarena\deduction\engine\contract\ActionResolutionContractValidatorTest.class
