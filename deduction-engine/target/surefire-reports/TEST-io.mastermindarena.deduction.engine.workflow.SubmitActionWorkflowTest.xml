@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.042" tests="7" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -59,11 +59,6 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="crP001_resolutionMustContainAtLeastOneDirective" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.016"/>
-  <testcase name="crP004_finishAndCancelAreMutuallyExclusive" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.0"/>
-  <testcase name="crP006_directiveCombinationsMustBeCoherent" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.0"/>
-  <testcase name="crP005_directivesMustBeAllowedAndStructural" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.0"/>
-  <testcase name="crP002_finishMatchRequiresMatchOutcome" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.0"/>
-  <testcase name="crP003_cancelMatchRequiresCancellationReason" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.0"/>
-  <testcase name="crP007_rulesetRejectionRequiresRejectActionAndIsValidWhenConsistent" classname="io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidatorTest" time="0.0"/>
+  <testcase name="wfP002_acceptActionEndTurnAndStartNextTurn" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
+  <testcase name="wfP001_acceptActionAndContinueTurn" classname="io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest" time="0.0"/>
 </testsuite>
