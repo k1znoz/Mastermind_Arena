@@ -4,8 +4,11 @@ import io.mastermindarena.deduction.engine.contract.ActionResolution;
 import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
 import io.mastermindarena.deduction.engine.contract.CancellationReason;
 import io.mastermindarena.deduction.engine.contract.EngineDirective;
+import io.mastermindarena.deduction.engine.contract.LogTarget;
 import io.mastermindarena.deduction.engine.contract.MatchOutcome;
 import io.mastermindarena.deduction.engine.contract.ParticipantResult;
+import io.mastermindarena.deduction.engine.contract.Rejection;
+import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
 import io.mastermindarena.deduction.engine.contract.RuleSet;
 import org.junit.jupiter.api.Test;
 
@@ -763,5 +766,284 @@ class SubmitActionWorkflowTest {
         assertEquals(1, invocations.get());
         assertEquals(initial, stateStore.findById("match-e21").orElseThrow());
         assertEquals(List.of("ActionSubmitted"), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP016_businessActionRejectedByRuleSetWithRejectAction() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        Rejection businessRejection = new Rejection(
+                RejectionOrigin.RULESET,
+                "INVALID_GUESS_LENGTH",
+                null,
+                null,
+                Set.of(LogTarget.MATCH_HISTORY)
+        );
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.REJECT_ACTION),
+                    null,
+                    null,
+                    null,
+                    businessRejection,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-f16",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        SubmitActionResult result = orchestrator.submit(new SubmitActionCommand("match-f16", "p1", 0, "k-f16", "payload"));
+
+        assertEquals(1, invocations.get());
+        assertEquals(RejectionOrigin.RULESET, result.resolution().rejection().orElseThrow().origin());
+        assertEquals(true, result.resolution().engineDirectives().contains(EngineDirective.REJECT_ACTION));
+        assertEquals(initial, result.state());
+        assertEquals(List.of("ActionSubmitted", "ActionRejected"), result.emittedEvents());
+        assertEquals(result.emittedEvents(), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP017_rulesetOpaqueCodeIsPreservedAsIs() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        String opaqueCode = "MASTERMIND_CUSTOM_OPAQUE_CODE_42";
+        Rejection businessRejection = new Rejection(
+                RejectionOrigin.RULESET,
+                opaqueCode,
+                null,
+                null,
+                Set.of(LogTarget.MATCH_HISTORY)
+        );
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.REJECT_ACTION),
+                    null,
+                    null,
+                    null,
+                    businessRejection,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-f17",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        SubmitActionResult result = orchestrator.submit(new SubmitActionCommand("match-f17", "p1", 0, "k-f17", "payload"));
+
+        assertEquals(1, invocations.get());
+        assertEquals(opaqueCode, result.resolution().rejection().orElseThrow().code());
+    }
+
+    @Test
+    void wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-f18",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+
+        RuleSet ruleSetHistory = input -> new ActionResolution(
+                Set.of(EngineDirective.REJECT_ACTION),
+                null,
+                null,
+                null,
+                new Rejection(RejectionOrigin.RULESET, "CODE_A", null, null, Set.of(LogTarget.MATCH_HISTORY)),
+                List.of()
+        );
+
+        RuleSet ruleSetDomain = input -> new ActionResolution(
+                Set.of(EngineDirective.REJECT_ACTION),
+                null,
+                null,
+                null,
+                new Rejection(RejectionOrigin.RULESET, "CODE_B", null, null, Set.of(LogTarget.DOMAIN_EVENT_LOG)),
+                List.of()
+        );
+
+        RuleSet ruleSetNoBusinessLog = input -> new ActionResolution(
+                Set.of(EngineDirective.REJECT_ACTION),
+                null,
+                null,
+                null,
+                new Rejection(RejectionOrigin.RULESET, "CODE_C", null, null, Set.of(LogTarget.TECHNICAL_LOG)),
+                List.of()
+        );
+
+        stateStore.save(initial);
+        InMemoryEventSink sinkHistory = new InMemoryEventSink();
+        SubmitActionResult r1 = new SubmitActionOrchestrator(stateStore, sinkHistory, ruleSetHistory, new ActionResolutionContractValidator())
+                .submit(new SubmitActionCommand("match-f18", "p1", 0, "k-f18-1", "payload"));
+        assertEquals(List.of("ActionSubmitted", "ActionRejected"), r1.emittedEvents());
+
+        stateStore.save(initial);
+        InMemoryEventSink sinkDomain = new InMemoryEventSink();
+        SubmitActionResult r2 = new SubmitActionOrchestrator(stateStore, sinkDomain, ruleSetDomain, new ActionResolutionContractValidator())
+                .submit(new SubmitActionCommand("match-f18", "p1", 0, "k-f18-2", "payload"));
+        assertEquals(List.of("ActionSubmitted", "ActionRejected"), r2.emittedEvents());
+
+        stateStore.save(initial);
+        InMemoryEventSink sinkNone = new InMemoryEventSink();
+        SubmitActionResult r3 = new SubmitActionOrchestrator(stateStore, sinkNone, ruleSetNoBusinessLog, new ActionResolutionContractValidator())
+                .submit(new SubmitActionCommand("match-f18", "p1", 0, "k-f18-3", "payload"));
+        assertEquals(List.of("ActionSubmitted"), r3.emittedEvents());
+    }
+
+    @Test
+    void wfP019_rulesetRejectionDoesNotMutateState() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        Rejection businessRejection = new Rejection(
+                RejectionOrigin.RULESET,
+                "NO_MUTATION",
+                null,
+                null,
+                Set.of(LogTarget.MATCH_HISTORY)
+        );
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.REJECT_ACTION),
+                    null,
+                    null,
+                    null,
+                    businessRejection,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-f19",
+                7,
+                1,
+                true,
+                List.of("p1", "p2"),
+                4,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        SubmitActionResult result = orchestrator.submit(new SubmitActionCommand("match-f19", "p2", 4, "k-f19", "payload"));
+
+        assertEquals(1, invocations.get());
+        assertEquals(initial, result.state());
+        assertEquals(initial, stateStore.findById("match-f19").orElseThrow());
+        assertEquals(List.of("ActionSubmitted", "ActionRejected"), eventSink.allEvents());
+    }
+
+    @Test
+    void wfP020_rulesetRejectionIsNotConfusedWithEngineRejection() {
+        InMemoryMatchStateStore stateStore = new InMemoryMatchStateStore();
+        InMemoryEventSink eventSink = new InMemoryEventSink();
+        AtomicInteger invocations = new AtomicInteger(0);
+
+        Rejection businessRejection = new Rejection(
+                RejectionOrigin.RULESET,
+                "OPAQUE_GAME_CODE",
+                null,
+                null,
+                Set.of(LogTarget.MATCH_HISTORY)
+        );
+
+        RuleSet ruleSet = input -> {
+            invocations.incrementAndGet();
+            return new ActionResolution(
+                    Set.of(EngineDirective.REJECT_ACTION),
+                    null,
+                    null,
+                    null,
+                    businessRejection,
+                    List.of()
+            );
+        };
+
+        MatchRuntimeState initial = new MatchRuntimeState(
+                "match-f20",
+                1,
+                0,
+                true,
+                List.of("p1", "p2"),
+                0,
+                "IN_PROGRESS",
+                null,
+                null
+        );
+        stateStore.save(initial);
+
+        SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
+                stateStore,
+                eventSink,
+                ruleSet,
+                new ActionResolutionContractValidator()
+        );
+
+        SubmitActionResult result = orchestrator.submit(new SubmitActionCommand("match-f20", "p1", 0, "k-f20", "payload"));
+
+        assertEquals(1, invocations.get());
+        assertEquals(RejectionOrigin.RULESET, result.resolution().rejection().orElseThrow().origin());
+        assertEquals("OPAQUE_GAME_CODE", result.resolution().rejection().orElseThrow().code());
+        assertEquals(false, result.emittedEvents().contains("ActionAccepted"));
+        assertEquals(List.of("ActionSubmitted", "ActionRejected"), result.emittedEvents());
     }
 }

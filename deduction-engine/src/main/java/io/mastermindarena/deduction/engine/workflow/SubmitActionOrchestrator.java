@@ -3,7 +3,9 @@ package io.mastermindarena.deduction.engine.workflow;
 import io.mastermindarena.deduction.engine.contract.ActionResolution;
 import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
 import io.mastermindarena.deduction.engine.contract.EngineDirective;
+import io.mastermindarena.deduction.engine.contract.LogTarget;
 import io.mastermindarena.deduction.engine.contract.Rejection;
+import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
 import io.mastermindarena.deduction.engine.contract.RuleSet;
 
 import java.util.ArrayList;
@@ -74,6 +76,25 @@ public final class SubmitActionOrchestrator {
         }
 
         Set<EngineDirective> directives = resolution.engineDirectives();
+        if (directives.contains(EngineDirective.REJECT_ACTION)) {
+            Rejection rejection = resolution.rejection().orElseThrow(
+                    () -> new IllegalStateException(ActionResolutionContractValidator.RULESET_CONTRACT_VIOLATION)
+            );
+
+            if (rejection.origin() != RejectionOrigin.RULESET) {
+                throw new IllegalStateException("ENGINE_DIRECTIVE_NOT_ALLOWED");
+            }
+
+            if (rejection.targetLogs().contains(LogTarget.MATCH_HISTORY)
+                    || rejection.targetLogs().contains(LogTarget.DOMAIN_EVENT_LOG)) {
+                emit(emitted, "ActionRejected");
+            }
+
+            SubmitActionResult result = new SubmitActionResult(current, resolution, List.copyOf(emitted));
+            idempotencyStore.save(idempotencyScopeKey, new InMemoryIdempotencyStore.Entry(requestFingerprint, result));
+            return result;
+        }
+
         if (!directives.contains(EngineDirective.ACCEPT_ACTION)) {
             throw new IllegalStateException("ENGINE_DIRECTIVE_NOT_ALLOWED");
         }
