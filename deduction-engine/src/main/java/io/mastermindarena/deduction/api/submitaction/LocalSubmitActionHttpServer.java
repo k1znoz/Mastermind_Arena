@@ -10,27 +10,32 @@ import io.mastermindarena.deduction.engine.contract.EngineDirective;
 import io.mastermindarena.deduction.engine.contract.RuleSet;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator;
-import io.mastermindarena.deduction.infrastructure.preferences.PreferencesIdempotencyStore;
-import io.mastermindarena.deduction.infrastructure.preferences.PreferencesMatchStateStore;
-import io.mastermindarena.deduction.infrastructure.preferences.PreferencesWorkflowEventSink;
+import io.mastermindarena.deduction.infrastructure.jdbc.JdbcIdempotencyStore;
+import io.mastermindarena.deduction.infrastructure.jdbc.JdbcMatchStateStore;
+import io.mastermindarena.deduction.infrastructure.jdbc.JdbcPersistenceContext;
+import io.mastermindarena.deduction.infrastructure.jdbc.JdbcSchemaMigrator;
+import io.mastermindarena.deduction.infrastructure.jdbc.JdbcWorkflowEventSink;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.prefs.Preferences;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private final HttpServer server;
-    private final Preferences preferencesRoot;
+    private final RuntimeMetrics metrics;
 
-    private LocalSubmitActionHttpServer(HttpServer server, Preferences preferencesRoot) {
+    private LocalSubmitActionHttpServer(HttpServer server, RuntimeMetrics metrics) {
         this.server = server;
-        this.preferencesRoot = preferencesRoot;
+        this.metrics = metrics;
     }
 
     public static LocalSubmitActionHttpServer create(LocalSubmitActionRuntimeConfig config) {
@@ -39,9 +44,16 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(config.port()), 0);
             ObjectMapper objectMapper = new ObjectMapper();
-            Preferences preferencesRoot = Preferences.userRoot().node(config.persistenceNode());
+                RuntimeMetrics metrics = new RuntimeMetrics();
+            JdbcPersistenceContext persistenceContext = new JdbcPersistenceContext(
+                    config.dbUrl(),
+                    config.dbUser(),
+                    config.dbPassword(),
+                    config.dbSchema()
+            );
+            new JdbcSchemaMigrator(persistenceContext).migrateToLatest();
 
-            PreferencesMatchStateStore stateStore = new PreferencesMatchStateStore(preferencesRoot);
+            JdbcMatchStateStore stateStore = new JdbcMatchStateStore(persistenceContext);
             stateStore.findById(config.seedMatchId()).orElseGet(() -> {
                 MatchRuntimeState seeded = new MatchRuntimeState(
                         config.seedMatchId(),
@@ -58,21 +70,29 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 return seeded;
             });
 
-            PreferencesWorkflowEventSink eventSink = new PreferencesWorkflowEventSink(preferencesRoot);
+            JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
             RuleSet ruleSet = input -> ActionResolution.of(Set.of(EngineDirective.ACCEPT_ACTION, EngineDirective.CONTINUE_TURN));
             SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
                     stateStore,
                     eventSink,
                     ruleSet,
                     new ActionResolutionContractValidator(),
-                    new PreferencesIdempotencyStore(preferencesRoot)
+                    new JdbcIdempotencyStore(persistenceContext)
             );
             LocalSubmitActionEndpoint endpoint = new LocalSubmitActionEndpoint(new SubmitActionApplicationService(orchestrator));
 
-            server.createContext(config.path(), exchange -> handleSubmitAction(exchange, endpoint, objectMapper, config.authBearerToken()));
-            server.createContext("/health", exchange -> handleHealth(exchange, objectMapper));
+            server.createContext(config.path(), exchange -> handleSubmitAction(
+                    exchange,
+                    endpoint,
+                    objectMapper,
+                    config.apiKeyHeaderName(),
+                    config.apiKeyValue(),
+                    config.requestIdHeaderName(),
+                    metrics
+            ));
+            server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), metrics));
             server.setExecutor(null);
-            return new LocalSubmitActionHttpServer(server, preferencesRoot);
+            return new LocalSubmitActionHttpServer(server, metrics);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create local SubmitAction HTTP server", e);
         }
@@ -82,44 +102,83 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             HttpExchange exchange,
             LocalSubmitActionEndpoint endpoint,
             ObjectMapper objectMapper,
-            String bearerToken
+            String apiKeyHeaderName,
+            String apiKeyValue,
+            String requestIdHeaderName,
+            RuntimeMetrics metrics
     ) throws IOException {
+        long startNanos = System.nanoTime();
+        String requestId = resolveRequestId(exchange, requestIdHeaderName);
+        setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
             if (!LocalSubmitActionEndpoint.METHOD.equalsIgnoreCase(exchange.getRequestMethod())) {
-                logStructured("request_rejected", path, exchange.getRequestMethod(), 405, "METHOD_NOT_ALLOWED");
+                logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(405, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
                 return;
             }
 
-            String authorization = exchange.getRequestHeaders().getFirst("Authorization");
-            String expected = "Bearer " + bearerToken;
-            if (!expected.equals(authorization)) {
-                logStructured("request_rejected", path, exchange.getRequestMethod(), 401, "UNAUTHORIZED");
+            String providedApiKey = exchange.getRequestHeaders().getFirst(apiKeyHeaderName);
+            if (!secureEquals(apiKeyValue, providedApiKey)) {
+                logStructured("request_rejected", path, method, 401, "UNAUTHORIZED", requestId, elapsedMillis(startNanos), metrics.record(401, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 401, new ErrorBody("UNAUTHORIZED"));
                 return;
             }
 
             SubmitActionHttpRequest request = objectMapper.readValue(exchange.getRequestBody(), SubmitActionHttpRequest.class);
             SubmitActionHttpResponse.Envelope response = endpoint.postSubmitAction(request);
-            logStructured("submit_action", path, exchange.getRequestMethod(), response.statusCode(), response.body().accepted() ? "ACCEPTED" : response.body().rejectionCode());
+            long elapsedMillis = elapsedMillis(startNanos);
+            logStructured(
+                    "submit_action",
+                    path,
+                    method,
+                    response.statusCode(),
+                    response.body().accepted() ? "ACCEPTED" : response.body().rejectionCode(),
+                    requestId,
+                    elapsedMillis,
+                    metrics.record(response.statusCode(), elapsedMillis)
+            );
             writeJson(exchange, objectMapper, response.statusCode(), response.body());
         } catch (RuntimeException ex) {
-            logStructured("request_rejected", exchange.getRequestURI().getPath(), exchange.getRequestMethod(), 400, "INVALID_REQUEST");
+            long elapsedMillis = elapsedMillis(startNanos);
+            logStructured(
+                    "request_rejected",
+                    exchange.getRequestURI().getPath(),
+                    exchange.getRequestMethod(),
+                    400,
+                    "INVALID_REQUEST",
+                    requestId,
+                    elapsedMillis,
+                    metrics.record(400, elapsedMillis)
+            );
             writeJson(exchange, objectMapper, 400, new ErrorBody("INVALID_REQUEST"));
         }
     }
 
-    private static void handleHealth(HttpExchange exchange, ObjectMapper objectMapper) throws IOException {
+    private static void handleHealth(
+            HttpExchange exchange,
+            ObjectMapper objectMapper,
+            String requestIdHeaderName,
+            RuntimeMetrics metrics
+    ) throws IOException {
+        long startNanos = System.nanoTime();
+        String requestId = resolveRequestId(exchange, requestIdHeaderName);
+        setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
         try (exchange) {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-                logStructured("request_rejected", exchange.getRequestURI().getPath(), exchange.getRequestMethod(), 405, "METHOD_NOT_ALLOWED");
+                long elapsedMillis = elapsedMillis(startNanos);
+                logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(405, elapsedMillis));
                 writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
                 return;
             }
 
-            logStructured("health", exchange.getRequestURI().getPath(), exchange.getRequestMethod(), 200, "UP");
-            writeJson(exchange, objectMapper, 200, new HealthBody("UP"));
+            long elapsedMillis = elapsedMillis(startNanos);
+            RuntimeMetricsSnapshot snapshot = metrics.record(200, elapsedMillis);
+            logStructured("health", path, method, 200, "UP", requestId, elapsedMillis, snapshot);
+            writeJson(exchange, objectMapper, 200, new HealthBody("UP", snapshot.requestsOk(), snapshot.requestsKo(), snapshot.averageLatencyMs()));
         }
     }
 
@@ -134,7 +193,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
 
     public void start() {
         server.start();
-        logStructured("server_started", "n/a", "N/A", 0, "STARTED");
+        logStructured("server_started", "n/a", "N/A", 0, "STARTED", "n/a", 0L, metrics.snapshot());
     }
 
     public void stop() {
@@ -145,8 +204,8 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         return server.getAddress().getPort();
     }
 
-    public Preferences preferencesRoot() {
-        return preferencesRoot;
+    RuntimeMetricsSnapshot metricsSnapshot() {
+        return metrics.snapshot();
     }
 
     @Override
@@ -157,24 +216,100 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private record ErrorBody(String code) {
     }
 
-    private record HealthBody(String status) {
+    private record HealthBody(
+            String status,
+            long requestsOk,
+            long requestsKo,
+            long averageLatencyMs
+    ) {
     }
 
-    private static void logStructured(String event, String path, String method, int statusCode, String outcome) {
+    private static void logStructured(
+            String event,
+            String path,
+            String method,
+            int statusCode,
+            String outcome,
+            String requestId,
+            long durationMs,
+            RuntimeMetricsSnapshot metrics
+    ) {
         String escapedEvent = escapeJson(event);
         String escapedPath = escapeJson(path);
         String escapedMethod = escapeJson(method);
         String escapedOutcome = escapeJson(outcome);
+        String escapedRequestId = escapeJson(requestId);
         System.out.println(String.format(Locale.ROOT,
-                "{\"event\":\"%s\",\"path\":\"%s\",\"method\":\"%s\",\"statusCode\":%d,\"outcome\":\"%s\"}",
+                "{\"event\":\"%s\",\"path\":\"%s\",\"method\":\"%s\",\"statusCode\":%d,\"outcome\":\"%s\",\"requestId\":\"%s\",\"durationMs\":%d,\"requestsTotal\":%d,\"requestsOk\":%d,\"requestsKo\":%d,\"averageLatencyMs\":%d}",
                 escapedEvent,
                 escapedPath,
                 escapedMethod,
                 statusCode,
-                escapedOutcome));
+                escapedOutcome,
+                escapedRequestId,
+                durationMs,
+                metrics.requestsTotal(),
+                metrics.requestsOk(),
+                metrics.requestsKo(),
+                metrics.averageLatencyMs()));
+    }
+
+    private static String resolveRequestId(HttpExchange exchange, String requestIdHeaderName) {
+        String provided = exchange.getRequestHeaders().getFirst(requestIdHeaderName);
+        if (provided == null || provided.isBlank()) {
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+        }
+        return provided;
+    }
+
+    private static void setResponseRequestIdHeader(HttpExchange exchange, String requestIdHeaderName, String requestId) {
+        exchange.getResponseHeaders().set(requestIdHeaderName, requestId);
+    }
+
+    private static long elapsedMillis(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
     }
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static boolean secureEquals(String expected, String provided) {
+        if (provided == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                expected.getBytes(StandardCharsets.UTF_8),
+                provided.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    record RuntimeMetricsSnapshot(long requestsTotal, long requestsOk, long requestsKo, long averageLatencyMs) {
+    }
+
+    private static final class RuntimeMetrics {
+        private final AtomicLong requestsTotal = new AtomicLong();
+        private final AtomicLong requestsOk = new AtomicLong();
+        private final AtomicLong requestsKo = new AtomicLong();
+        private final AtomicLong latencyTotalMs = new AtomicLong();
+
+        RuntimeMetricsSnapshot record(int statusCode, long latencyMs) {
+            requestsTotal.incrementAndGet();
+            if (statusCode >= 200 && statusCode < 400) {
+                requestsOk.incrementAndGet();
+            } else {
+                requestsKo.incrementAndGet();
+            }
+            latencyTotalMs.addAndGet(Math.max(latencyMs, 0L));
+            return snapshot();
+        }
+
+        RuntimeMetricsSnapshot snapshot() {
+            long total = requestsTotal.get();
+            long ok = requestsOk.get();
+            long ko = requestsKo.get();
+            long avg = total == 0L ? 0L : latencyTotalMs.get() / total;
+            return new RuntimeMetricsSnapshot(total, ok, ko, avg);
+        }
     }
 }

@@ -5,16 +5,26 @@ import java.util.Objects;
 public record LocalSubmitActionRuntimeConfig(
         int port,
         String path,
-    String authBearerToken,
-    String persistenceNode,
+        String apiKeyHeaderName,
+        String apiKeyValue,
+    String requestIdHeaderName,
+    String dbUrl,
+    String dbUser,
+    String dbPassword,
+    String dbSchema,
         String seedMatchId,
         String seedActorId,
         String seedOpponentId
 ) {
     public LocalSubmitActionRuntimeConfig {
         Objects.requireNonNull(path, "path is required");
-        Objects.requireNonNull(authBearerToken, "authBearerToken is required");
-        Objects.requireNonNull(persistenceNode, "persistenceNode is required");
+        Objects.requireNonNull(apiKeyHeaderName, "apiKeyHeaderName is required");
+        Objects.requireNonNull(apiKeyValue, "apiKeyValue is required");
+        Objects.requireNonNull(requestIdHeaderName, "requestIdHeaderName is required");
+        Objects.requireNonNull(dbUrl, "dbUrl is required");
+        Objects.requireNonNull(dbUser, "dbUser is required");
+        Objects.requireNonNull(dbPassword, "dbPassword is required");
+        Objects.requireNonNull(dbSchema, "dbSchema is required");
         Objects.requireNonNull(seedMatchId, "seedMatchId is required");
         Objects.requireNonNull(seedActorId, "seedActorId is required");
         Objects.requireNonNull(seedOpponentId, "seedOpponentId is required");
@@ -24,33 +34,78 @@ public record LocalSubmitActionRuntimeConfig(
         if (path.isBlank() || !path.startsWith("/")) {
             throw new IllegalArgumentException("path must start with '/'");
         }
+        if (apiKeyHeaderName.isBlank()) {
+            throw new IllegalArgumentException("apiKeyHeaderName must not be blank");
+        }
+        if (apiKeyValue.isBlank()) {
+            throw new IllegalArgumentException("apiKeyValue must not be blank");
+        }
+        if (requestIdHeaderName.isBlank()) {
+            throw new IllegalArgumentException("requestIdHeaderName must not be blank");
+        }
+        if (dbUrl.isBlank()) {
+            throw new IllegalArgumentException("dbUrl must not be blank");
+        }
+        if (dbUser.isBlank()) {
+            throw new IllegalArgumentException("dbUser must not be blank");
+        }
+        if (dbSchema.isBlank()) {
+            throw new IllegalArgumentException("dbSchema must not be blank");
+        }
+        requireSupabaseSslMode(dbUrl);
     }
 
     public static LocalSubmitActionRuntimeConfig fromEnvironment() {
         return new LocalSubmitActionRuntimeConfig(
-                intValue("submitAction.port", "SUBMIT_ACTION_PORT", 8080),
-                stringValue("submitAction.path", "SUBMIT_ACTION_PATH", LocalSubmitActionEndpoint.PATH),
-            stringValue("submitAction.auth.bearer", "SUBMIT_ACTION_AUTH_BEARER", "dev-submit-action-token"),
-            stringValue("submitAction.persistence.node", "SUBMIT_ACTION_PERSISTENCE_NODE", "/io/mastermindarena/local-submit-action"),
-                stringValue("submitAction.seed.matchId", "SUBMIT_ACTION_SEED_MATCH_ID", "local-match"),
-                stringValue("submitAction.seed.actorId", "SUBMIT_ACTION_SEED_ACTOR_ID", "p1"),
-                stringValue("submitAction.seed.opponentId", "SUBMIT_ACTION_SEED_OPPONENT_ID", "p2")
+                intValue("submitAction.port", new String[]{"APP_HTTP_PORT", "SUBMIT_ACTION_PORT"}, 8080),
+                stringValue("submitAction.path", new String[]{"SUBMIT_ACTION_PATH"}, LocalSubmitActionEndpoint.PATH),
+                stringValue("submitAction.auth.apiKeyHeader", new String[]{"APP_API_KEY_HEADER", "SUBMIT_ACTION_API_KEY_HEADER"}, "X-API-Key"),
+                stringValue("submitAction.auth.apiKeyValue", new String[]{"APP_API_KEY", "SUBMIT_ACTION_API_KEY_VALUE"}, "dev-submit-action-key"),
+                stringValue("submitAction.observability.requestIdHeader", new String[]{"APP_REQUEST_ID_HEADER"}, "X-Request-Id"),
+                stringValue("submitAction.db.url", new String[]{"APP_DB_URL", "SUBMIT_ACTION_DB_URL"}, "jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require"),
+                stringValue("submitAction.db.user", new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER"}, "postgres"),
+                stringValue("submitAction.db.password", new String[]{"APP_DB_PASSWORD", "SUBMIT_ACTION_DB_PASSWORD"}, "change-me-db-password"),
+                stringValue("submitAction.db.schema", new String[]{"APP_DB_SCHEMA", "SUBMIT_ACTION_DB_SCHEMA"}, "public"),
+                stringValue("submitAction.seed.matchId", new String[]{"SUBMIT_ACTION_SEED_MATCH_ID"}, "local-match"),
+                stringValue("submitAction.seed.actorId", new String[]{"SUBMIT_ACTION_SEED_ACTOR_ID"}, "p1"),
+                stringValue("submitAction.seed.opponentId", new String[]{"SUBMIT_ACTION_SEED_OPPONENT_ID"}, "p2")
         );
     }
 
-    private static int intValue(String propertyName, String envName, int defaultValue) {
+    public static String resolutionRule() {
+        return "system property first, then known environment aliases, then default value";
+    }
+
+    private static int intValue(String propertyName, String[] envNames, int defaultValue) {
         String raw = System.getProperty(propertyName);
         if (raw == null || raw.isBlank()) {
-            raw = System.getenv(envName);
+            raw = firstEnvironmentValue(envNames);
         }
         return raw == null || raw.isBlank() ? defaultValue : Integer.parseInt(raw);
     }
 
-    private static String stringValue(String propertyName, String envName, String defaultValue) {
+    private static String stringValue(String propertyName, String[] envNames, String defaultValue) {
         String raw = System.getProperty(propertyName);
         if (raw == null || raw.isBlank()) {
-            raw = System.getenv(envName);
+            raw = firstEnvironmentValue(envNames);
         }
         return raw == null || raw.isBlank() ? defaultValue : raw;
+    }
+
+    private static String firstEnvironmentValue(String[] envNames) {
+        for (String envName : envNames) {
+            String raw = System.getenv(envName);
+            if (raw != null && !raw.isBlank()) {
+                return raw;
+            }
+        }
+        return null;
+    }
+
+    private static void requireSupabaseSslMode(String dbUrl) {
+        String normalized = dbUrl.toLowerCase();
+        if (normalized.contains(".supabase.co") && !normalized.matches(".*[?&]sslmode=require([&#].*)?$")) {
+            throw new IllegalArgumentException("Supabase PostgreSQL URL must include sslmode=require");
+        }
     }
 }

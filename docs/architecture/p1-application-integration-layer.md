@@ -235,11 +235,13 @@ Invalid or unsupported persisted data should fail fast rather than be silently r
 ### Minimal Configuration
 - `submitAction.port` or `SUBMIT_ACTION_PORT` (default `8080`)
 - `submitAction.path` or `SUBMIT_ACTION_PATH` (default `/local/submit-action`)
-- `submitAction.auth.bearer` or `SUBMIT_ACTION_AUTH_BEARER` (default `dev-submit-action-token`)
+- `submitAction.auth.apiKeyHeader` or `SUBMIT_ACTION_API_KEY_HEADER` (default `X-API-Key`)
+- `submitAction.auth.apiKeyValue` or `SUBMIT_ACTION_API_KEY_VALUE` (default `dev-submit-action-key`)
 - `submitAction.persistence.node` or `SUBMIT_ACTION_PERSISTENCE_NODE` (Preferences node path)
 - `submitAction.seed.matchId` or `SUBMIT_ACTION_SEED_MATCH_ID` (default `local-match`)
 - `submitAction.seed.actorId` or `SUBMIT_ACTION_SEED_ACTOR_ID` (default `p1`)
 - `submitAction.seed.opponentId` or `SUBMIT_ACTION_SEED_OPPONENT_ID` (default `p2`)
+- Resolution rule: system property first, then environment variable, then default value.
 
 ## P5-C Runtime Operations Note
 
@@ -249,15 +251,17 @@ Invalid or unsupported persisted data should fail fast rather than be silently r
 ### Configuration
 - Port: `submitAction.port` / `SUBMIT_ACTION_PORT`
 - Path: `submitAction.path` / `SUBMIT_ACTION_PATH`
-- Bearer token: `submitAction.auth.bearer` / `SUBMIT_ACTION_AUTH_BEARER`
+- API key header: `submitAction.auth.apiKeyHeader` / `SUBMIT_ACTION_API_KEY_HEADER`
+- API key value: `submitAction.auth.apiKeyValue` / `SUBMIT_ACTION_API_KEY_VALUE`
 - Preferences persistence node: `submitAction.persistence.node` / `SUBMIT_ACTION_PERSISTENCE_NODE`
+- Resolution order: system property -> environment variable -> default value
 
 ### Endpoints
 - `POST /local/submit-action`
 - `GET /health`
 
 ### Authentication
-- `POST /local/submit-action` requires `Authorization: Bearer <token>`
+- `POST /local/submit-action` requires `<configured header>: <configured api key>`
 - `GET /health` is intentionally unauthenticated in P5 scope
 
 ### Structured Logs
@@ -281,3 +285,90 @@ Invalid or unsupported persisted data should fail fast rather than be silently r
 - P5-B: DONE
 - P5-C: DONE
 - P5: DONE
+
+## P6-B Runtime Persistence (Supabase PostgreSQL via JDBC)
+
+### Configuration
+- `APP_DB_URL` (or `submitAction.db.url`) is required.
+- `APP_DB_USER` (or `submitAction.db.user`) is required.
+- `APP_DB_PASSWORD` (or `submitAction.db.password`) is required.
+- `APP_DB_SCHEMA` (or `submitAction.db.schema`) is optional, default `public`.
+
+Resolution order remains: system property -> environment variable -> default value.
+
+### SSL Requirement
+- When URL points to Supabase (`*.supabase.co`), `sslmode=require` is mandatory in `APP_DB_URL`.
+
+### Startup Migration Strategy
+- Runtime applies schema migration `V1__submit_action_init.sql` at startup.
+- Migration creates (if missing):
+- `${schema}.schema_version`
+- `${schema}.match_state`
+- `${schema}.idempotency`
+- `${schema}.workflow_event`
+- Version row `1` is inserted in `${schema}.schema_version` if absent.
+
+### Stores Wired for SubmitAction
+- `MatchStateStore` -> JDBC table `${schema}.match_state`
+- `IdempotencyStore` -> JDBC table `${schema}.idempotency`
+- `EventSink` -> JDBC table `${schema}.workflow_event`
+
+### Operational Prerequisites
+- PostgreSQL-compatible endpoint reachable from runtime (Supabase target).
+- DB credentials provisioned with DDL/DML rights on target schema.
+- Startup user must be allowed to create schema/tables if first launch on empty schema.
+
+### Limits (Intentional)
+- Minimal single-service migration strategy (no Flyway/Liquibase orchestration in P6-B).
+- No advanced connection pooling in this increment.
+- Scope remains SubmitAction-only runtime path.
+
+## P6-C Operations Runbook (Short)
+
+### Configuration
+- API auth header/value:
+- `APP_API_KEY_HEADER` / `submitAction.auth.apiKeyHeader`
+- `APP_API_KEY` / `submitAction.auth.apiKeyValue`
+- DB runtime:
+- `APP_DB_URL` / `submitAction.db.url`
+- `APP_DB_USER` / `submitAction.db.user`
+- `APP_DB_PASSWORD` / `submitAction.db.password`
+- `APP_DB_SCHEMA` / `submitAction.db.schema` (default `public`)
+- Request correlation header:
+- `APP_REQUEST_ID_HEADER` / `submitAction.observability.requestIdHeader` (default `X-Request-Id`)
+
+### Launch
+- `mvn -q -pl deduction-engine exec:java -Dexec.mainClass=io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerMain`
+
+### Health
+- `GET /health` remains available.
+- Response includes `status=UP` and basic runtime metric snapshot (`requestsOk`, `requestsKo`, `averageLatencyMs`).
+
+### Logs + Correlation
+- Each request log line now includes:
+- `requestId`
+- `durationMs`
+- `requestsTotal`
+- `requestsOk`
+- `requestsKo`
+- `averageLatencyMs`
+- Correlation rule:
+- if incoming `X-Request-Id` (or configured header) is present, server reuses it;
+- otherwise server generates one and returns it in the same response header.
+
+### Basic Metrics (No Heavy Stack)
+- Counters exposed through structured logs and health payload:
+- OK requests (`2xx-3xx`),
+- KO requests (`4xx-5xx`),
+- average latency in ms.
+
+### Limits
+- Metrics are in-memory runtime counters only (reset on restart).
+- No external metrics backend, tracing backend, or alerting platform in P6-C scope.
+- SubmitAction-only runtime path remains unchanged.
+
+## P6 Closure Status
+
+- P6-A: DONE
+- P6-B: DONE
+- P6-C: DONE
