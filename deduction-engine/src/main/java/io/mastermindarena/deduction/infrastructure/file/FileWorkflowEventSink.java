@@ -32,7 +32,17 @@ public final class FileWorkflowEventSink implements EventSink {
     public void publish(String event) {
         String encoded = FilePersistenceCodec.encode(event) + System.lineSeparator();
         try {
-            Files.writeString(filePath, encoded, StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+            Path parent = filePath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.writeString(
+                    filePath,
+                    encoded,
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND
+            );
         } catch (IOException e) {
             throw new IllegalStateException("Unable to persist workflow event", e);
         }

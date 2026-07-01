@@ -7,9 +7,13 @@ io\mastermindarena\deduction\engine\workflow\InMemoryMatchStateStore.class
 io\mastermindarena\deduction\infrastructure\file\FileIdempotencyStore.class
 io\mastermindarena\deduction\engine\contract\RejectionOrigin.class
 io\mastermindarena\deduction\engine\workflow\MatchRuntimeState.class
+io\mastermindarena\deduction\api\submitaction\SubmitActionHttpResponse.class
+io\mastermindarena\deduction\api\submitaction\SubmitActionHttpMapper.class
 io\mastermindarena\deduction\engine\contract\CancellationReason.class
+io\mastermindarena\deduction\api\submitaction\SubmitActionHttpRequest.class
 io\mastermindarena\deduction\engine\contract\LogTarget.class
 io\mastermindarena\deduction\engine\workflow\IdempotencyStore$Entry.class
+io\mastermindarena\deduction\api\submitaction\SubmitActionHttpResponse$Envelope.class
 io\mastermindarena\deduction\engine\contract\ActionResolution.class
 io\mastermindarena\deduction\engine\workflow\SubmitActionResult.class
 io\mastermindarena\deduction\engine\contract\ParticipantResult.class
@@ -22,6 +26,7 @@ io\mastermindarena\deduction\application\submitaction\SubmitActionApplicationReq
 io\mastermindarena\deduction\engine\workflow\MatchStateStore.class
 io\mastermindarena\deduction\engine\workflow\InMemoryIdempotencyStore.class
 io\mastermindarena\deduction\application\submitaction\SubmitActionApplicationResponse.class
+io\mastermindarena\deduction\api\submitaction\LocalSubmitActionEndpoint.class
 io\mastermindarena\deduction\engine\workflow\EventSink.class
 io\mastermindarena\deduction\engine\contract\Rejection.class
 io\mastermindarena\deduction\application\submitaction\SubmitActionApplicationService.class

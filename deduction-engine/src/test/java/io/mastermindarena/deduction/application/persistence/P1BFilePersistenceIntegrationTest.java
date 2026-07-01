@@ -5,6 +5,7 @@ import io.mastermindarena.deduction.application.submitaction.SubmitActionApplica
 import io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationService;
 import io.mastermindarena.deduction.engine.contract.ActionResolution;
 import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
+import io.mastermindarena.deduction.engine.contract.CancellationReason;
 import io.mastermindarena.deduction.engine.contract.EngineDirective;
 import io.mastermindarena.deduction.engine.contract.LogTarget;
 import io.mastermindarena.deduction.engine.contract.MatchOutcome;
@@ -20,6 +21,9 @@ import io.mastermindarena.deduction.infrastructure.file.FileWorkflowEventSink;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -210,6 +214,90 @@ class P1BFilePersistenceIntegrationTest {
         assertEquals("RULESET_DECIDED", reloaded.matchOutcomeOptional().orElseThrow().completionReason());
         assertEquals(2, reloaded.matchOutcomeOptional().orElseThrow().participantResults().size());
     }
+
+    @Test
+    void p2a_fileStateRoundTripRemainsReadableWithTrailingNewlineNoise() throws IOException {
+        Path root = tempDir.resolve("newline-noise");
+        FileMatchStateStore store = new FileMatchStateStore(root.resolve("state"));
+
+        MatchOutcome outcome = new MatchOutcome(
+                "FINISHED",
+                "RULESET_DECIDED",
+                List.of(
+                        new ParticipantResult("p1", "WIN", 1),
+                        new ParticipantResult("p2", "LOSE", 2)
+                ),
+                Instant.parse("2026-07-01T10:00:00Z")
+        );
+
+        MatchRuntimeState finished = new MatchRuntimeState(
+                "match-p2a-newline",
+                4,
+                0,
+                true,
+                List.of("p1", "p2"),
+                11,
+                "FINISHED",
+                outcome,
+                null
+        );
+
+        store.save(finished);
+
+        Path stateFile = Files.list(root.resolve("state")).findFirst().orElseThrow();
+        String raw = Files.readString(stateFile, StandardCharsets.UTF_8);
+        Files.writeString(stateFile, raw + System.lineSeparator(), StandardCharsets.UTF_8);
+
+        MatchRuntimeState reloaded = new FileMatchStateStore(root.resolve("state"))
+                .findById("match-p2a-newline")
+                .orElseThrow();
+
+        assertEquals("match-p2a-newline", reloaded.matchId());
+        assertEquals(11, reloaded.version());
+        assertEquals("FINISHED", reloaded.status());
+    }
+
+    @Test
+    void p2a_eventSinkPublishesEvenIfLogFileWasDeletedAfterInitialization() throws IOException {
+        Path logPath = tempDir.resolve("event-recreate").resolve("workflow-events.log");
+        FileWorkflowEventSink sink = new FileWorkflowEventSink(logPath);
+
+        Files.delete(logPath);
+        sink.publish("ActionSubmitted");
+
+        assertEquals(List.of("ActionSubmitted"), sink.allEvents());
+    }
+
+        @Test
+        void p2b_terminalCancelledStateRoundTripThroughFileMatchStateStore() {
+                Path root = tempDir.resolve("terminal-cancelled-roundtrip");
+                FileMatchStateStore store = new FileMatchStateStore(root.resolve("state"));
+
+                MatchRuntimeState cancelled = new MatchRuntimeState(
+                                "match-p2b-cancelled",
+                                2,
+                                0,
+                                true,
+                                List.of("p1", "p2"),
+                                5,
+                                "CANCELLED",
+                                null,
+                                new CancellationReason("HOST_CANCELLED")
+                );
+
+                store.save(cancelled);
+
+                MatchRuntimeState reloaded = new FileMatchStateStore(root.resolve("state"))
+                                .findById("match-p2b-cancelled")
+                                .orElseThrow();
+
+                assertEquals("match-p2b-cancelled", reloaded.matchId());
+                assertEquals(5, reloaded.version());
+                assertEquals("CANCELLED", reloaded.status());
+                assertEquals("p1", reloaded.currentActorId());
+                assertEquals("HOST_CANCELLED", reloaded.cancellationReasonOptional().orElseThrow().code());
+                assertEquals(true, reloaded.matchOutcomeOptional().isEmpty());
+        }
 
     private static MatchRuntimeState inProgressState(String matchId, long version) {
         return new MatchRuntimeState(

@@ -30,7 +30,7 @@ final class FilePersistenceCodec {
     }
 
     static String decode(String value) {
-        return new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8);
+        return new String(Base64.getUrlDecoder().decode(value.strip()), StandardCharsets.UTF_8);
     }
 
     static String encodeStringList(List<String> values) {

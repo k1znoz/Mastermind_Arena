@@ -125,3 +125,102 @@ The P1-B file persistence adapters are intended as minimal local persistence for
 
 ### Corruption Handling
 Invalid or unsupported persisted data should fail fast rather than be silently repaired or partially interpreted.
+
+## P2-B Boundary Guardrails (Checklist)
+
+- [x] Engine package contains no Mastermind-specific business logic.
+- [x] `ActionResolution` contract remains unchanged.
+- [x] Application layer maps to/from engine contracts without semantic transformation of rejection origin/code.
+- [x] File persistence remains an infrastructure adapter concern only.
+- [x] No REST, no database, no Spring/JPA/H2 introduced in P2.
+
+## P2-C Local Runbook (File Persistence)
+
+### Prerequisites
+- JDK 25 active in shell (`mvn -version` should report Java 25.x).
+- Maven 3.9.x available on PATH.
+
+### Validation Command
+- Run full verification with: `mvn -q test`.
+
+### Operational Limits
+- File persistence is local and adapter-based only.
+- Single-process integration target; no inter-process locking guarantees.
+- Append-only workflow journal; no rotation and no production outbox semantics.
+
+## P2 Known Debt (Consolidated)
+
+- File codec is intentionally minimal and not a long-term exchange format.
+- No advanced inter-process concurrency strategy for local file persistence.
+- Workflow event journal remains append-only with no rotation lifecycle.
+- Idempotent result restoration is limited to the subset required by current P1/P2 flows.
+
+## P2 Closure Status
+
+- P2-A: DONE
+- P2-B: DONE
+- P2-C: DONE
+- P2: DONE
+
+## P3-A Minimal SubmitAction HTTP Contract
+
+### Request Payload
+- `matchId` (string, required)
+- `actorId` (string, required)
+- `expectedVersion` (number, required)
+- `idempotencyKey` (string, required)
+- `actionPayload` (opaque object, required)
+
+### Response Payload
+- `accepted` (boolean)
+- `rejectionOrigin` (nullable string: `ENGINE` or `RULESET`)
+- `rejectionCode` (nullable string)
+- `matchId` (nullable string)
+- `version` (nullable number)
+- `status` (nullable string)
+- `emittedEvents` (array of strings)
+
+### Transport Mapping Table
+- Nominal success (`accepted=true`) -> HTTP `200`
+- RULESET rejection (`rejectionOrigin=RULESET`) -> HTTP `422`
+- ENGINE `MATCH_NOT_FOUND` -> HTTP `404`
+- ENGINE `ACTOR_NOT_AUTHORIZED` -> HTTP `403`
+- ENGINE `MATCH_NOT_IN_PROGRESS` / `TURN_NOT_ACTIVE` / `VERSION_CONFLICT` / `IDEMPOTENCY_CONFLICT` / `MATCH_ALREADY_TERMINAL` -> HTTP `409`
+- Other ENGINE structural errors -> HTTP `400`
+
+## P3-C Local API SubmitAction Note
+
+### Endpoint
+- Method: `POST`
+- Path: `/local/submit-action`
+
+### Minimal Payload
+- Request: `matchId`, `actorId`, `expectedVersion`, `idempotencyKey`, `actionPayload`.
+- Response: `accepted`, `rejectionOrigin`, `rejectionCode`, `matchId`, `version`, `status`, `emittedEvents`.
+
+### Status Mapping
+- `200`: nominal accepted submit.
+- `422`: RULESET rejection.
+- `404`: ENGINE `MATCH_NOT_FOUND`.
+- `409`: ENGINE structural conflicts (`VERSION_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `MATCH_NOT_IN_PROGRESS`, `TURN_NOT_ACTIVE`, `MATCH_ALREADY_TERMINAL`).
+- `403`: ENGINE `ACTOR_NOT_AUTHORIZED`.
+- `400`: other ENGINE structural errors.
+
+### Operational Limits (Local/Dev Only)
+- Local endpoint for development and integration hardening only.
+- No authentication/authorization layer in P3 scope.
+- No production transport hardening (rate limiting, API versioning, distributed concerns).
+
+## P3 Known Debt (Consolidated)
+
+- Local endpoint is intentionally minimal and not production-ready.
+- Transport contract covers current SubmitAction flow only; no broader API surface in P3.
+- HTTP status mapping is intentionally structural and may require refinement when cross-cutting concerns are introduced.
+- File persistence constraints from P1/P2 still apply unchanged.
+
+## P3 Closure Status
+
+- P3-A: DONE
+- P3-B: DONE
+- P3-C: DONE
+- P3: DONE
