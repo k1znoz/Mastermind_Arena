@@ -224,3 +224,60 @@ Invalid or unsupported persisted data should fail fast rather than be silently r
 - P3-B: DONE
 - P3-C: DONE
 - P3: DONE
+
+## P5-A Local HTTP Runtime
+
+### Runtime Choice
+- Lightweight JDK `HttpServer` runtime.
+- Externalized configuration through system properties or environment variables.
+- Local launch command: `mvn -q -pl deduction-engine exec:java -Dexec.mainClass=io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerMain`
+
+### Minimal Configuration
+- `submitAction.port` or `SUBMIT_ACTION_PORT` (default `8080`)
+- `submitAction.path` or `SUBMIT_ACTION_PATH` (default `/local/submit-action`)
+- `submitAction.auth.bearer` or `SUBMIT_ACTION_AUTH_BEARER` (default `dev-submit-action-token`)
+- `submitAction.persistence.node` or `SUBMIT_ACTION_PERSISTENCE_NODE` (Preferences node path)
+- `submitAction.seed.matchId` or `SUBMIT_ACTION_SEED_MATCH_ID` (default `local-match`)
+- `submitAction.seed.actorId` or `SUBMIT_ACTION_SEED_ACTOR_ID` (default `p1`)
+- `submitAction.seed.opponentId` or `SUBMIT_ACTION_SEED_OPPONENT_ID` (default `p2`)
+
+## P5-C Runtime Operations Note
+
+### Launch
+- `mvn -q -pl deduction-engine exec:java -Dexec.mainClass=io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerMain`
+
+### Configuration
+- Port: `submitAction.port` / `SUBMIT_ACTION_PORT`
+- Path: `submitAction.path` / `SUBMIT_ACTION_PATH`
+- Bearer token: `submitAction.auth.bearer` / `SUBMIT_ACTION_AUTH_BEARER`
+- Preferences persistence node: `submitAction.persistence.node` / `SUBMIT_ACTION_PERSISTENCE_NODE`
+
+### Endpoints
+- `POST /local/submit-action`
+- `GET /health`
+
+### Authentication
+- `POST /local/submit-action` requires `Authorization: Bearer <token>`
+- `GET /health` is intentionally unauthenticated in P5 scope
+
+### Structured Logs
+- Runtime emits minimal JSON logs on startup, health requests, accepted submit requests, and rejected requests.
+
+### Known Limits
+- Single local runtime target only.
+- Preferences persistence remains a minimal “real simple” durability choice.
+- No advanced auth, no metrics stack, no tracing, no production deployment guarantees.
+
+## P5 Known Debt (Consolidated)
+
+- HTTP runtime is intentionally lightweight and not production-grade.
+- Static bearer auth is pragmatic only and must not be treated as final security architecture.
+- Preferences persistence is durable enough for local/runtime validation but not a long-term multi-instance persistence strategy.
+- Observability is limited to health and structured logs; no metrics/tracing/alerting stack in P5.
+
+## P5 Closure Status
+
+- P5-A: DONE
+- P5-B: DONE
+- P5-C: DONE
+- P5: DONE

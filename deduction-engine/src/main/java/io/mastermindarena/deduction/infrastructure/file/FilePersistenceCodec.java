@@ -21,23 +21,23 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-final class FilePersistenceCodec {
+public final class FilePersistenceCodec {
     private FilePersistenceCodec() {
     }
 
-    static String encode(String value) {
+    public static String encode(String value) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
-    static String decode(String value) {
+    public static String decode(String value) {
         return new String(Base64.getUrlDecoder().decode(value.strip()), StandardCharsets.UTF_8);
     }
 
-    static String encodeStringList(List<String> values) {
+    public static String encodeStringList(List<String> values) {
         return values.stream().map(FilePersistenceCodec::encode).collect(Collectors.joining(","));
     }
 
-    static List<String> decodeStringList(String encodedList) {
+    public static List<String> decodeStringList(String encodedList) {
         if (encodedList == null || encodedList.isBlank()) {
             return List.of();
         }
@@ -49,7 +49,7 @@ final class FilePersistenceCodec {
         return List.copyOf(result);
     }
 
-    static String serializeMatchRuntimeState(MatchRuntimeState state) {
+    public static String serializeMatchRuntimeState(MatchRuntimeState state) {
         String cancellationCode = state.cancellationReasonOptional().map(CancellationReason::code).orElse("");
         String outcome = state.matchOutcomeOptional().map(FilePersistenceCodec::serializeMatchOutcome).orElse("");
 
@@ -66,7 +66,7 @@ final class FilePersistenceCodec {
         );
     }
 
-    static MatchRuntimeState deserializeMatchRuntimeState(String line) {
+    public static MatchRuntimeState deserializeMatchRuntimeState(String line) {
         String[] fields = line.split("\t", -1);
         if (fields.length != 9) {
             throw new IllegalArgumentException("Invalid MatchRuntimeState payload");
@@ -99,7 +99,7 @@ final class FilePersistenceCodec {
         );
     }
 
-    static String serializeActionResolution(ActionResolution resolution) {
+    public static String serializeActionResolution(ActionResolution resolution) {
         String directives = resolution.engineDirectives().stream()
                 .map(Enum::name)
                 .sorted(Comparator.naturalOrder())
@@ -127,7 +127,7 @@ final class FilePersistenceCodec {
         );
     }
 
-    static ActionResolution deserializeActionResolution(String line) {
+    public static ActionResolution deserializeActionResolution(String line) {
         String[] fields = line.split("\t", -1);
         if (fields.length != 7) {
             throw new IllegalArgumentException("Invalid ActionResolution payload");
@@ -173,7 +173,7 @@ final class FilePersistenceCodec {
         );
     }
 
-    static List<String> serializeSubmitActionResult(SubmitActionResult result) {
+    public static List<String> serializeSubmitActionResult(SubmitActionResult result) {
         return List.of(
                 encode(result.state() == null ? "" : serializeMatchRuntimeState(result.state())),
                 encode(result.resolution() == null ? "" : serializeActionResolution(result.resolution())),
@@ -181,7 +181,7 @@ final class FilePersistenceCodec {
         );
     }
 
-    static SubmitActionResult deserializeSubmitActionResult(List<String> lines) {
+    public static SubmitActionResult deserializeSubmitActionResult(List<String> lines) {
         if (lines.size() != 3) {
             throw new IllegalArgumentException("Invalid SubmitActionResult payload");
         }

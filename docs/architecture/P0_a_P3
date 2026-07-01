@@ -1,0 +1,151 @@
+# Mastermind Arena — Résumé global P0 → P3
+
+## Statut global
+
+- P0 : DONE
+- P1 : DONE
+- P2 : DONE
+- P3 : DONE
+
+Validation continue confirmée par `mvn -q test` vert en clôture de chaque phase.
+
+---
+
+## P0 — Moteur workflow (socle)
+
+### Objectif
+Mettre en place un moteur de workflow agnostique du jeu, piloté par commande `SubmitAction`.
+
+### Livré
+- Contrat de résolution `ActionResolution` établi.
+- Gestion des rejets avec origines `ENGINE` / `RULESET`.
+- Gestion des états de match et transitions terminales.
+- Idempotence de base et émission d’événements workflow.
+- Suite de tests moteur initiale.
+
+### Contraintes respectées
+- Aucune logique Mastermind dans le moteur.
+- Contrat métier central stable.
+
+---
+
+## P1 — Couche applicative + persistance fichier minimale
+
+### Objectif
+Encapsuler le moteur dans une couche applicative exploitable en local, puis ajouter une persistance technique minimale.
+
+### Livré
+- Couche applicative `SubmitAction` :
+  - request/response/rejection applicatives,
+  - service applicatif,
+  - orchestration.
+- Port `IdempotencyStore` + implémentation in-memory.
+- Adapters persistance fichier (NIO) :
+  - état de match,
+  - idempotence,
+  - sink d’événements.
+- Tests d’intégration applicatifs et persistance.
+- Hardening léger P1-C :
+  - doc des limites opérationnelles,
+  - micro-test de round-trip terminal.
+
+### Contraintes respectées
+- Pas de REST/Spring/JPA/H2/DB/Security/WebSocket/UI.
+- Pas de refactor large.
+- `ActionResolution` inchangé.
+
+---
+
+## P2 — Hardening interne sans exposition
+
+### Objectif
+Renforcer fiabilité et gouvernance interne sans ouvrir d’API.
+
+### Livré
+- Micro-fix robustesse persistance:
+  - tolérance newline/whitespace à la relecture,
+  - append/create résilient si log supprimé.
+- Tests ciblés associés.
+- Non-régression consolidée.
+- Garde-fous d’architecture documentés (frontières moteur/application/infra).
+- Runbook local court + dette consolidée.
+
+### Contraintes respectées
+- Aucune exposition API.
+- Aucun chantier infra lourd.
+- Aucun changement de contrat central.
+
+---
+
+## P3 — Première exposition API locale minimale (`SubmitAction`)
+
+### Objectif
+Exposer le flux existant via une interface locale contrôlée, sans industrialisation prématurée.
+
+### Livré
+- Contrat transport HTTP minimal (DTO + mapper), testé.
+- Mapping statuts figé et documenté :
+  - 200 (succès),
+  - 422 (RULESET),
+  - 404 / 403 / 409 / 400 selon rejets ENGINE.
+- Endpoint local unique :
+  - `POST /local/submit-action`
+- Tests d’intégration API ciblés :
+  - nominal 200,
+  - RULESET 422,
+  - ENGINE 404,
+  - ENGINE 409.
+- Clôture documentaire P3-C :
+  - note API locale,
+  - limites local/dev,
+  - dette P3 consolidée.
+
+### Contraintes respectées
+- Un seul endpoint.
+- Pas d’auth complète, DB, websocket, UI.
+- Moteur toujours agnostique.
+- `ActionResolution` inchangé.
+
+---
+
+## Dette technique consolidée (fin P3)
+
+1. Persistance fichier = solution technique locale, non production-ready.
+2. Codec fichier minimal, non destiné à un format d’échange long terme.
+3. Journal append-only sans rotation/outbox.
+4. Pas de stratégie avancée de concurrence inter-processus.
+5. Restauration idempotence sur sous-ensemble suffisant P1/P2/P3.
+6. Exposition transport limitée à `SubmitAction` local.
+
+---
+
+## Hors scope maintenu (P0→P3)
+
+- REST “produit” complet multi-endpoints.
+- Base de données réelle.
+- Spring/JPA/H2.
+- AuthN/AuthZ complète.
+- WebSocket / UI / matchmaking.
+- Industrialisation distribuée (outbox robuste, scale/perf, etc.).
+- Injection de logique Mastermind dans le moteur.
+
+---
+
+## Commande de validation de référence
+
+- `mvn -q test`
+
+Résultat attendu en état sain : vert (exit code 0).
+
+---
+
+## Conclusion
+
+Le socle est maintenant:
+- stable,
+- testé,
+- documenté,
+- exposé localement de façon minimale et contrôlée.
+
+Le cycle P0→P3 est **terminé**.
+La suite logique est un cadrage P4 orienté productisation progressive (ou arrêt si objectif atteint).
