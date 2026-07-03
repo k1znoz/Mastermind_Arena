@@ -2,13 +2,14 @@
 
 /** @type {Record<string, SymbolVisual>} */
 const VISUALS = {
-  A: { token: 'A', icon: '◆', toneClass: 'symbol-tone-cyan' },
-  B: { token: 'B', icon: '●', toneClass: 'symbol-tone-rose' },
-  C: { token: 'C', icon: '▲', toneClass: 'symbol-tone-emerald' },
-  D: { token: 'D', icon: '■', toneClass: 'symbol-tone-amber' },
-  E: { token: 'E', icon: '✦', toneClass: 'symbol-tone-violet' },
-  F: { token: 'F', icon: '✚', toneClass: 'symbol-tone-red' },
-  H: { token: 'H', icon: '⬢', toneClass: 'symbol-tone-cyan' },
+  A: { token: 'A', icon: '●', toneClass: 'symbol-tone-red' },
+  B: { token: 'B', icon: '■', toneClass: 'symbol-tone-cyan' },
+  C: { token: 'C', icon: '◆', toneClass: 'symbol-tone-amber' },
+  D: { token: 'D', icon: '▲', toneClass: 'symbol-tone-lime' },
+  E: { token: 'E', icon: '⬢', toneClass: 'symbol-tone-violet' },
+  F: { token: 'F', icon: '✦', toneClass: 'symbol-tone-ice' },
+  G: { token: 'G', icon: '✚', toneClass: 'symbol-tone-rose' },
+  H: { token: 'H', icon: '◉', toneClass: 'symbol-tone-emerald' },
   L: { token: 'L', icon: 'ϟ', toneClass: 'symbol-tone-amber' },
   Q: { token: 'Q', icon: '□', toneClass: 'symbol-tone-violet' },
   T: { token: 'T', icon: '△', toneClass: 'symbol-tone-emerald' }
@@ -20,7 +21,9 @@ const FALLBACKS = /** @type {SymbolVisual[]} */ ([
   { token: '?', icon: '▲', toneClass: 'symbol-tone-emerald' },
   { token: '?', icon: '■', toneClass: 'symbol-tone-amber' },
   { token: '?', icon: '✦', toneClass: 'symbol-tone-violet' },
-  { token: '?', icon: '✚', toneClass: 'symbol-tone-red' }
+  { token: '?', icon: '✚', toneClass: 'symbol-tone-red' },
+  { token: '?', icon: '⬢', toneClass: 'symbol-tone-lime' },
+  { token: '?', icon: '◉', toneClass: 'symbol-tone-ice' }
 ])
 
 /**

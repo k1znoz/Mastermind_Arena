@@ -1,24 +1,28 @@
-function normalizeBaseUrl(baseUrl) {
-  if (!baseUrl) {
-    return ''
-  }
+import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
 
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
-}
+/**
+ * @typedef {{
+ *  baseUrl?: string,
+ *  path?: string,
+ *  apiKeyHeaderName?: string,
+ *  apiKeyValue?: string
+ * }} MatchStateClientConfig
+ */
 
-function buildUrl(baseUrl, path) {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  return `${normalizeBaseUrl(baseUrl)}${normalizedPath}`
-}
+/**
+ * @typedef {{
+ *  matchId?: string,
+ *  version?: number,
+ *  turnNumber?: number,
+ *  turnActive?: boolean,
+ *  status?: string,
+ *  actionLog?: Array<Record<string, unknown>>
+ * }} MatchStateResponse
+ */
 
-function safeJsonParse(text) {
-  try {
-    return text ? JSON.parse(text) : null
-  } catch {
-    return null
-  }
-}
-
+/**
+ * @param {MatchStateClientConfig} [config]
+ */
 export function createMatchStateClient(config = {}) {
   const {
     baseUrl = import.meta.env.VITE_API_BASE_URL ?? '',
@@ -29,7 +33,16 @@ export function createMatchStateClient(config = {}) {
 
   const endpoint = buildUrl(baseUrl, path)
 
+  /**
+   * @param {string} matchId
+   * @param {string} [actorId]
+   * @returns {Promise<MatchStateResponse>}
+   */
   async function getMatchState(matchId, actorId = '') {
+    if (!matchId) {
+      throw new Error('CLIENT:INVALID_MATCH_ID')
+    }
+
     const params = new URLSearchParams({ matchId })
     if (actorId) {
       params.set('actorId', actorId)
@@ -47,11 +60,14 @@ export function createMatchStateClient(config = {}) {
     const body = safeJsonParse(rawText)
 
     if (!response.ok) {
-      const code = body?.code ?? 'HTTP_ERROR'
-      throw new Error(code)
+      throw new Error(readErrorCode(body, 'HTTP_ERROR'))
     }
 
-    return body
+    if (!body || typeof body !== 'object') {
+      throw new Error('HTTP:INVALID_RESPONSE_BODY')
+    }
+
+    return /** @type {MatchStateResponse} */ (body)
   }
 
   return {

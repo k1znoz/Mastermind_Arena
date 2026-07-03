@@ -1,42 +1,25 @@
 <script>
-  export let matchState = /** @type {Record<string, any> | null} */ (null)
+  import { createEventDispatcher } from 'svelte'
+
   export let syncStatus = 'idle'
-  export let autoNavigationEnabled = true
-  export let onRefresh = () => {}
-  export let onToggleAutoNavigation = () => {}
+
+  const dispatch = createEventDispatcher()
+
+  function openDebug() {
+    dispatch('opendebug')
+  }
 </script>
 
 <header class="topbar">
-  <div class="brand-block">
-    <span class="brand-mark">grid</span>
-    <h1>MASTERMIND ARENA</h1>
+  <div class="brand">
+    <span class="brand-icon">⌁</span>
+    <span class="brand-text">MASTERMIND ARENA</span>
   </div>
-
-  <div class="topbar-match-pill desktop-only">
-    <div class="topbar-pill-item">
-      <span class="pill-dot danger"></span>
-      <span>{String(matchState?.turnNumber ?? 0).padStart(2, '0')}:{String((matchState?.version ?? 0) % 60).padStart(2, '0')}</span>
+  <div class="topbar-right">
+    <div class="latency">
+      <span>LATENCE</span>
+      <strong>{syncStatus === 'ok' ? '24ms' : '--'}</strong>
     </div>
-    <span class="topbar-pill-sep"></span>
-    <div class="topbar-pill-item">
-      <span class="pill-dot ok"></span>
-      <span>SYNC {syncStatus === 'ok' ? 'NOMINAL' : syncStatus.toUpperCase()}</span>
-    </div>
-  </div>
-
-  <div class="topbar-actions">
-    <div class="network-pill topbar-sync-copy">
-      <span>SYNC STATUS</span>
-      <span class="accent-value">ACTIVE_LINK</span>
-    </div>
-    <button type="button" class="topbar-btn topbar-btn-ghost desktop-only" on:click={onRefresh}>Refresh</button>
-    <button type="button" class="topbar-btn topbar-btn-tactical desktop-only" on:click={onToggleAutoNavigation}>
-      AutoNav: {autoNavigationEnabled ? 'ON' : 'OFF'}
-    </button>
-    <div class="topbar-avatars desktop-only">
-      <span>OP_01</span>
-      <span>ADV</span>
-    </div>
-    <button type="button" class="antenna-btn" aria-label="network settings">◉</button>
+    <button class="signal" type="button" on:click={openDebug}>◉</button>
   </div>
 </header>

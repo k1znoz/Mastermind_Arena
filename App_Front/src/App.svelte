@@ -1,403 +1,447 @@
 <script>
-  import { onMount } from 'svelte'
-  import { fade, fly } from 'svelte/transition'
-  import { createMatchStateClient } from './lib/api/matchStateClient'
-  import { createSubmitActionClient } from './lib/api/submitActionClient'
-  import { runtimeConfig } from './lib/api/runtimeConfig'
-  import { parseSymbolSequence } from './lib/utils/symbolSequence'
-  import TopBar from './lib/components/TopBar.svelte'
-  import StatusBar from './lib/components/StatusBar.svelte'
-  import MatchSnapshotCard from './lib/components/MatchSnapshotCard.svelte'
-  import ScreenNav from './lib/components/ScreenNav.svelte'
-  import LobbyScreen from './lib/components/LobbyScreen.svelte'
-  import SetupScreen from './lib/components/SetupScreen.svelte'
-  import ArenaScreen from './lib/components/ArenaScreen.svelte'
-  import HistoryScreen from './lib/components/HistoryScreen.svelte'
-  import ResultsScreen from './lib/components/ResultsScreen.svelte'
+	import { onDestroy, onMount } from 'svelte'
+	import { createMatchStateClient } from './lib/api/matchStateClient'
+	import { createSubmitActionClient } from './lib/api/submitActionClient'
+	import { runtimeConfig } from './lib/api/runtimeConfig'
+	import { ALLOWED_SYMBOLS, CODE_LENGTH, normalizeSymbolSequence } from './lib/utils/symbolSequence'
+	import { getSymbolVisual } from './lib/utils/symbolVisuals'
+	import TopBar from './lib/components/TopBar.svelte'
+	import BottomNav from './lib/components/BottomNav.svelte'
+	import SessionScreen from './lib/components/SessionScreen.svelte'
+	import PartieScreen from './lib/components/PartieScreen.svelte'
+	import HistoryScreen from './lib/components/HistoryScreen.svelte'
+	import SettingsScreen from './lib/components/SettingsScreen.svelte'
+	import DebugDrawer from './lib/components/DebugDrawer.svelte'
+	import ToastMessage from './lib/components/ToastMessage.svelte'
 
-  const matchStateClient = createMatchStateClient()
-  const submitActionClient = createSubmitActionClient()
+	const symbolPalette = [...ALLOWED_SYMBOLS]
+	const POLL_MS = 6000
 
-  /**
-   * @typedef {'home'|'lobby'|'setup'|'arena'|'correction'|'transition'|'results'|'history'|'recovery'} Screen
-   */
+	/** @typedef {{ kind: 'success' | 'error', text: string } | null} ToastState */
+	/** @typedef {{ turnNumber?: number, version?: number, turnActive?: boolean, status?: string, matchOutcomeStatus?: string, actionLog?: Array<Record<string, unknown>> }} MatchStateLike */
 
-  /**
-   * @typedef {Object} MatchState
-   * @property {string} matchId
-   * @property {number} version
-   * @property {number} turnNumber
-   * @property {number} currentActorIndex
-   * @property {string} currentActorId
-   * @property {boolean} turnActive
-   * @property {string[]} actorOrder
-   * @property {string} status
-   * @property {string | null} matchOutcomeStatus
-   * @property {string | null} matchOutcomeReason
-   * @property {string | null} cancellationCode
-  * @property {string[]} visibleSecretCode
-  * @property {Array<{actorId: string, turnNumber: number, actionType: string, symbols: string[], payloadSummary: string, emittedEvents: string[], resultingStatus: string, recordedAtEpochMs: number}>} actionLog
-   */
+	let activeTab = 'session'
+	let showDebugDrawer = false
+	let maskSecrets = true
 
-  const screens = /** @type {const} */ ({
-    HOME: 'home',
-    LOBBY: 'lobby',
-    SETUP: 'setup',
-    ARENA: 'arena',
-    CORRECTION: 'correction',
-    TRANSITION: 'transition',
-    RESULTS: 'results',
-    HISTORY: 'history',
-    RECOVERY: 'recovery'
-  })
+	let playerName = ''
+	let roomCode = ''
 
-  const tacticalNav = /** @type {Array<{label: string, subLabel: string, screen: Screen, icon: string}>} */ ([
-    { label: 'Match History', subLabel: '', screen: screens.HISTORY, icon: '⌁' },
-    { label: 'Active Match', subLabel: '', screen: screens.ARENA, icon: '◎' },
-    { label: 'Leaderboard', subLabel: '', screen: screens.RESULTS, icon: '▥' },
-    { label: 'Training Ground', subLabel: '', screen: screens.SETUP, icon: '◈' }
-  ])
+	let setupSequence = /** @type {string[]} */ ([])
+	let selectedSetupSlot = 0
 
-  let currentScreen = /** @type {Screen} */ (screens.LOBBY)
-  let matchState = /** @type {MatchState | null} */ (null)
-  let syncStatus = 'idle'
-  let syncMessage = ''
-  let submitStatus = 'idle'
-  let submitMessage = ''
-  let setupCodeText = ''
-  let arenaGuessText = ''
-  let autoNavigationEnabled = true
+	let draftGuess = ['', '', '', '']
+	let selectedGuessSlot = 0
 
-  function backendActionLog() {
-    return Array.isArray(matchState?.actionLog) ? matchState.actionLog : []
-  }
+	let matchState = /** @type {MatchStateLike | null} */ (null)
+	let syncStatus = 'idle'
+	let syncMessage = ''
+	let submitStatus = 'idle'
+	let submitError = ''
 
-  function derivedDefenseCode() {
-    return Array.isArray(matchState?.visibleSecretCode) ? matchState.visibleSecretCode : []
-  }
+	let toast = /** @type {ToastState} */ (null)
+	let toastTimer = /** @type {ReturnType<typeof setTimeout> | null} */ (null)
 
-  function derivedAttemptHistory() {
-    return backendActionLog()
-      .filter((entry) => entry.actionType === 'SUBMIT_GUESS' && entry.actorId === runtimeConfig.actorId)
-      .slice()
-      .reverse()
-      .map((entry, index) => ({
-        id: index + 1,
-        guess: entry.symbols,
-        accepted: true,
-        status: entry.resultingStatus,
-        version: matchState?.version ?? null,
-        emittedEvents: entry.emittedEvents,
-        createdAt: new Date(entry.recordedAtEpochMs).toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-      }))
-  }
+	let debugLastRequest = /** @type {unknown} */ (null)
+	let debugLastResponse = /** @type {unknown} */ (null)
 
-  function derivedOpponentAttempts() {
-    return backendActionLog()
-      .filter((entry) => entry.actionType === 'SUBMIT_GUESS' && entry.actorId !== runtimeConfig.actorId)
-      .slice()
-      .reverse()
-      .map((entry, index) => ({
-        id: index + 1,
-        actorId: entry.actorId,
-        guess: entry.symbols,
-        turnNumber: entry.turnNumber,
-        createdAt: new Date(entry.recordedAtEpochMs).toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-      }))
-  }
+	let apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+	let apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
+	let apiKeyValue = import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key'
 
-  function derivedTacticalLog() {
-    return backendActionLog()
-      .slice()
-      .reverse()
-      .map((entry, index) => ({
-        id: index + 1,
-        label: entry.actionType,
-        detail: `${entry.actorId} | turn ${entry.turnNumber} | ${(entry.emittedEvents ?? []).join(', ') || entry.payloadSummary || '-'}`,
-        emphasis: entry.actionType === 'SECRET_CODE_SET' ? 'primary' : entry.actionType === 'SUBMIT_GUESS' ? 'success' : 'muted',
-        createdAt: new Date(entry.recordedAtEpochMs).toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit'
-        })
-      }))
-  }
+	function currentClients() {
+		const config = {
+			baseUrl: apiBaseUrl,
+			apiKeyHeaderName,
+			apiKeyValue
+		}
 
-  function inferScreenFromState(/** @type {MatchState | null} */ state) {
-    const status = String(state?.status ?? '').toUpperCase()
+		return {
+			matchClient: createMatchStateClient(config),
+			submitClient: createSubmitActionClient(config)
+		}
+	}
 
-    if (!status) {
-      return currentScreen
-    }
+	/** @param {'success' | 'error'} kind @param {string} text */
+	function openToast(kind, text) {
+		toast = { kind, text }
+		if (toastTimer) {
+			clearTimeout(toastTimer)
+		}
+		toastTimer = setTimeout(() => {
+			toast = null
+			toastTimer = null
+		}, 2400)
+	}
 
-    if (status.includes('CREATED')) {
-      return screens.LOBBY
-    }
+	/** @param {unknown} request @param {unknown} response */
+	function logDebug(request, response) {
+		debugLastRequest = request
+		debugLastResponse = response
+	}
 
-    if (status.includes('IN_PROGRESS')) {
-      return screens.ARENA
-    }
+	/** @param {unknown} value @param {string} [keyPath] @returns {unknown} */
+	function sanitizeDebug(value, keyPath = '') {
+		const secretKey = /authorization|token|api[_-]?key|password|secret|keyvalue/i.test(keyPath)
 
-    if (status.includes('FINISHED') || status.includes('CANCELLED')) {
-      return screens.RESULTS
-    }
+		if (value === null || value === undefined) {
+			return value
+		}
 
-    return currentScreen
-  }
+		if (typeof value === 'string') {
+			if (secretKey) {
+				return '********'
+			}
+			return value
+		}
 
-  async function refreshMatchState() {
-    syncStatus = 'syncing'
-    syncMessage = 'loading match state'
+		if (typeof value !== 'object') {
+			return value
+		}
 
-    try {
-      const state = await matchStateClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
-      matchState = state
-      if (autoNavigationEnabled) {
-        currentScreen = inferScreenFromState(state)
-      }
-      syncStatus = 'ok'
-      syncMessage = `loaded v${state?.version ?? 0}`
-    } catch (error) {
-      syncStatus = 'error'
-      syncMessage = `state load failed: ${error instanceof Error ? error.message : 'unknown error'}`
-    }
-  }
+		if (Array.isArray(value)) {
+			return value.map((entry, index) => sanitizeDebug(entry, `${keyPath}[${index}]`))
+		}
 
-  onMount(async () => {
-    await refreshMatchState()
-  })
+		const out = /** @type {Record<string, unknown>} */ ({})
+		for (const [key, inner] of Object.entries(value)) {
+			out[key] = sanitizeDebug(inner, key)
+		}
+		return out
+	}
 
-  function openScreen(/** @type {Screen} */ screen) {
-    autoNavigationEnabled = false
-    currentScreen = screen
-  }
+	/** @param {unknown} value */
+	function debugJson(value) {
+		const data = maskSecrets ? sanitizeDebug(value) : value
+		return JSON.stringify(data ?? {}, null, 2)
+	}
 
-  function onSetupCodeTextChange(/** @type {Event | string} */ event) {
-    if (typeof event === 'string') {
-      setupCodeText = event
-      return
-    }
+	async function refreshMatchState() {
+		syncStatus = 'syncing'
+		syncMessage = 'Synchronisation en cours'
 
-    const target = event.currentTarget
-    setupCodeText = target instanceof HTMLInputElement ? target.value : ''
-  }
+		const request = {
+			endpoint: 'GET /match-state',
+			matchId: runtimeConfig.matchId,
+			actorId: runtimeConfig.actorId,
+			apiKeyHeaderName,
+			apiKeyValue
+		}
 
-  function onArenaGuessTextChange(/** @type {Event} */ event) {
-    const target = event.currentTarget
-    arenaGuessText = target instanceof HTMLInputElement ? target.value : ''
-  }
+		try {
+			const { matchClient } = currentClients()
+			const result = await matchClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+			matchState = result
+			syncStatus = 'ok'
+			syncMessage = 'Données backend reçues'
+			logDebug(request, { accepted: true, body: result })
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			syncStatus = 'error'
+			syncMessage = `Erreur backend: ${message}`
+			logDebug(request, { accepted: false, error: message })
+		}
+	}
 
-  function parseSecretCode(/** @type {string} */ text) {
-    return parseSymbolSequence(text, 4)
-  }
+	/** @param {Record<string, unknown>} actionPayload */
+	async function submitPayload(actionPayload) {
+		if (syncStatus !== 'ok' || !matchState) {
+			openToast('error', 'Backend non synchronisé')
+			await refreshMatchState()
+			return
+		}
 
-  function parseGuess(/** @type {string} */ text) {
-    return parseSymbolSequence(text, 4)
-  }
+		submitStatus = 'loading'
+		submitError = ''
 
-  async function submitPayload(
-    /** @type {Record<string, unknown>} */ actionPayload,
-    /** @type {string} */ actionLabel
-  ) {
-    if (!matchState) {
-      submitStatus = 'error'
-      submitMessage = 'cannot submit before match state is loaded'
-      return
-    }
+		const request = {
+			endpoint: 'POST /submit-action',
+			matchId: runtimeConfig.matchId,
+			actorId: runtimeConfig.actorId,
+			expectedVersion: matchState?.version ?? 0,
+			actionPayload,
+			apiKeyHeaderName,
+			apiKeyValue
+		}
 
-    submitStatus = 'syncing'
-    submitMessage = `${actionLabel} in progress`
+		try {
+			const { submitClient } = currentClients()
+			const response = await submitClient.submitAction({
+				matchId: runtimeConfig.matchId,
+				actorId: runtimeConfig.actorId,
+				expectedVersion: matchState?.version ?? 0,
+				actionPayload
+			})
 
-    try {
-      const response = await submitActionClient.submitAction({
-        matchId: runtimeConfig.matchId,
-        actorId: runtimeConfig.actorId,
-        expectedVersion: matchState.version,
-        actionPayload
-      })
+			submitStatus = 'success'
+			logDebug(request, response)
+			openToast('success', 'Action envoyée')
+			await refreshMatchState()
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			submitStatus = 'error'
+			submitError = message
+			logDebug(request, { accepted: false, error: submitError })
+			openToast('error', `Échec envoi: ${submitError}`)
+		}
+	}
 
-      submitStatus = response.accepted ? 'ok' : 'error'
-      submitMessage = response.accepted
-        ? `${actionLabel} accepted (v${response.version ?? 'n/a'})`
-        : `${actionLabel} rejected: ${response.rejectionOrigin ?? 'UNKNOWN'}:${response.rejectionCode ?? 'UNKNOWN'}`
+	function submitPlayerReady() {
+		submitPayload({
+			type: 'PLAYER_READY'
+		})
+	}
 
-      return response
-    } catch (error) {
-      submitStatus = 'error'
-      submitMessage = `${actionLabel} failed: ${error instanceof Error ? error.message : 'unknown error'}`
-      return null
-    }
+	function submitSecretCode() {
+		const normalizedCode = normalizeSymbolSequence(setupSequence, CODE_LENGTH, symbolPalette)
+		if (normalizedCode.length !== CODE_LENGTH) {
+			openToast('error', 'Code secret invalide (4 symboles)')
+			return
+		}
 
-    await refreshMatchState()
-  }
+		submitPayload({
+			type: 'SECRET_CODE_SET',
+			secretCode: normalizedCode
+		})
+	}
 
-  async function submitPlayerReady() {
-    const response = await submitPayload(
-      {
-        type: 'PLAYER_READY'
-      },
-      'PLAYER_READY'
-    )
+	/** @param {string} symbol */
+	function chooseSetupSymbol(symbol) {
+		setupSequence[selectedSetupSlot] = symbol
+		if (selectedSetupSlot < 3) {
+			selectedSetupSlot += 1
+		}
+		setupSequence = setupSequence.filter(Boolean)
+	}
 
-    await refreshMatchState()
-    return response
-  }
+	function clearSetupSequence() {
+		setupSequence = []
+		selectedSetupSlot = 0
+	}
 
-  async function submitSecretCodeSet() {
-    const secretCode = parseSecretCode(setupCodeText)
+	/** @param {number} index */
+	function setSelectedSetupSlot(index) {
+		selectedSetupSlot = index
+	}
 
-    if (secretCode.length !== 4) {
-      submitStatus = 'error'
-      submitMessage = 'setup requires exactly 4 symbols (example: A B C D)'
-      return
-    }
+	/** @param {string} symbol */
+	function chooseGuessSymbol(symbol) {
+		draftGuess[selectedGuessSlot] = symbol
+		if (selectedGuessSlot < 3) {
+			selectedGuessSlot += 1
+		}
+		draftGuess = [...draftGuess]
+	}
 
-    const response = await submitPayload(
-      {
-        type: 'SECRET_CODE_SET',
-        secretCode
-      },
-      'SECRET_CODE_SET'
-    )
+	function clearGuess() {
+		draftGuess = ['', '', '', '']
+		selectedGuessSlot = 0
+	}
 
-    await refreshMatchState()
-  }
+	/** @param {number} index */
+	function setSelectedGuessSlot(index) {
+		selectedGuessSlot = index
+	}
 
-  async function submitGuess() {
-    const guess = parseGuess(arenaGuessText)
+	function submitGuess() {
+		if (!canSubmitGuess) {
+			return
+		}
 
-    if (guess.length !== 4) {
-      submitStatus = 'error'
-      submitMessage = 'arena requires exactly 4 symbols (example: A B C D)'
-      return
-    }
+		const normalizedGuess = normalizeSymbolSequence(guessSequence, CODE_LENGTH, symbolPalette)
+		if (normalizedGuess.length !== CODE_LENGTH) {
+			openToast('error', 'Séquence de tentative invalide')
+			return
+		}
 
-    const response = await submitPayload(
-      {
-        type: 'SUBMIT_GUESS',
-        guess
-      },
-      'SUBMIT_GUESS'
-    )
+		submitPayload({
+			type: 'SUBMIT_GUESS',
+			guess: normalizedGuess
+		})
+	}
 
-    if (response?.accepted) {
-      arenaGuessText = ''
-    }
+	function testConnection() {
+		refreshMatchState().then(() => {
+			if (syncStatus === 'ok') {
+				openToast('success', 'Connexion backend valide')
+			} else {
+				openToast('error', 'Connexion backend indisponible')
+			}
+		})
+	}
 
-    await refreshMatchState()
-  }
+	/** @param {number | null | undefined} value */
+	function formatTimestamp(value) {
+		if (!value) {
+			return '--:--:--'
+		}
+		return new Date(value).toLocaleTimeString('fr-FR')
+	}
+
+	function formatOutcome() {
+		if (!matchState?.matchOutcomeStatus) {
+			return 'EN COURS'
+		}
+		return matchState.matchOutcomeStatus
+	}
+
+	/** @param {unknown} value @returns {string[]} */
+	function asSymbols(value) {
+		if (!Array.isArray(value)) {
+			return []
+		}
+		return value.map((entry) => String(entry))
+	}
+
+	/** @param {unknown} value @returns {number | null} */
+	function asTimestamp(value) {
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return value
+		}
+		return null
+	}
+
+	/** @param {CustomEvent<{ tab: string }>} event */
+	function onNavChange(event) {
+		activeTab = event.detail.tab
+	}
+
+	/** @param {CustomEvent<{ index: number }>} event */
+	function onSelectSetupSlot(event) {
+		setSelectedSetupSlot(event.detail.index)
+	}
+
+	/** @param {CustomEvent<{ index: number }>} event */
+	function onSelectGuessSlot(event) {
+		setSelectedGuessSlot(event.detail.index)
+	}
+
+	/** @param {CustomEvent<{ symbol: string }>} event */
+	function onChooseSetupSymbol(event) {
+		chooseSetupSymbol(event.detail.symbol)
+	}
+
+	/** @param {CustomEvent<{ symbol: string }>} event */
+	function onChooseGuessSymbol(event) {
+		chooseGuessSymbol(event.detail.symbol)
+	}
+
+	$: isPrototype = syncStatus !== 'ok'
+	$: isBackendReady = syncStatus === 'ok' && Boolean(matchState)
+	$: ctaSessionLabel = roomCode.trim() ? 'REJOINDRE LE DUEL' : 'CRÉER UNE PARTIE'
+	$: guessSequence = draftGuess.filter(Boolean)
+	$: setupSlots = Array.from({ length: CODE_LENGTH }, (_, index) => setupSequence[index] ?? '_')
+	$: turnActive = Boolean(matchState?.turnActive)
+	$: canSubmitGuess = isBackendReady && turnActive && guessSequence.length === CODE_LENGTH && submitStatus !== 'loading'
+	$: sendButtonLabel = submitStatus === 'loading'
+		? 'TRANSMISSION...'
+		: (!isBackendReady
+			? 'BACKEND HORS LIGNE'
+			: (!turnActive ? 'EN ATTENTE DU TOUR' : (guessSequence.length !== CODE_LENGTH ? 'SÉQUENCE INCOMPLÈTE' : 'ENVOYER L\'ACTION')))
+
+	$: historyRows = (matchState?.actionLog ?? []).slice().reverse()
+	$: latestAction = historyRows[0] ?? null
+
+	onMount(() => {
+		refreshMatchState()
+		const timer = setInterval(refreshMatchState, POLL_MS)
+		return () => clearInterval(timer)
+	})
+
+	onDestroy(() => {
+		if (toastTimer) {
+			clearTimeout(toastTimer)
+		}
+	})
 </script>
 
-<main class="app-shell">
-  <div class="command-layout">
-    <aside class="command-sidebar">
-      <div class="sidebar-identity">
-        <div class="sidebar-avatar">OP</div>
-        <div>
-          <p class="sidebar-name">{runtimeConfig.actorId}</p>
-          <p class="sidebar-rank">match {runtimeConfig.matchId}</p>
-        </div>
-      </div>
+<div class="app-root">
+	<div class="bg-grid"></div>
 
-      <nav class="sidebar-nav" aria-label="Navigation tactique">
-        {#each tacticalNav as item}
-          <button
-            type="button"
-            class={`sidebar-link ${currentScreen === item.screen ? 'active' : ''}`}
-            on:click={() => openScreen(item.screen)}
-          >
-            <span class="sidebar-icon">{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
-        {/each}
-      </nav>
+	<TopBar {syncStatus} on:opendebug={() => showDebugDrawer = true} />
 
-      <div class="sidebar-foot">
-        <p>logout</p>
-      </div>
-    </aside>
+	<main class="screen">
+		{#if activeTab === 'session'}
+			<SessionScreen
+				{isPrototype}
+				{submitStatus}
+				{isBackendReady}
+				{ctaSessionLabel}
+				bind:playerName
+				bind:roomCode
+				on:opendebug={() => showDebugDrawer = true}
+				on:submitready={submitPlayerReady}
+			/>
+		{/if}
 
-    <div class="command-main">
-      <TopBar
-        {matchState}
-        {syncStatus}
-        {autoNavigationEnabled}
-        onRefresh={refreshMatchState}
-        onToggleAutoNavigation={() => (autoNavigationEnabled = !autoNavigationEnabled)}
-      />
+		{#if activeTab === 'partie'}
+			<PartieScreen
+				{matchState}
+				{turnActive}
+				{setupSequence}
+				{setupSlots}
+				{selectedSetupSlot}
+				{draftGuess}
+				{selectedGuessSlot}
+				{guessSequence}
+				{symbolPalette}
+				{submitStatus}
+				{isBackendReady}
+				{canSubmitGuess}
+				{sendButtonLabel}
+				{latestAction}
+				{asSymbols}
+				{getSymbolVisual}
+				on:selectsetupslot={onSelectSetupSlot}
+				on:selectguessslot={onSelectGuessSlot}
+				on:choosesetupsymbol={onChooseSetupSymbol}
+				on:chooseguesssymbol={onChooseGuessSymbol}
+				on:clearsetup={clearSetupSequence}
+				on:submitsecret={submitSecretCode}
+				on:clearguess={clearGuess}
+				on:submitguess={submitGuess}
+			/>
+		{/if}
 
-      <StatusBar
-        {syncStatus}
-        {syncMessage}
-        {submitStatus}
-        {submitMessage}
-        matchId={runtimeConfig.matchId}
-        actorId={runtimeConfig.actorId}
-        currentActorId={matchState?.currentActorId ?? ''}
-      />
+		{#if activeTab === 'historique'}
+			<HistoryScreen
+				{runtimeConfig}
+				{isPrototype}
+				{historyRows}
+				{asSymbols}
+				{getSymbolVisual}
+				{formatTimestamp}
+				{asTimestamp}
+				onRefresh={refreshMatchState}
+			/>
+		{/if}
 
-      <section class={`screen-container screen-${currentScreen}`}>
-        {#key currentScreen}
-          <div class="screen-stage" in:fly={{ y: 10, duration: 220, opacity: 0.25 }} out:fade={{ duration: 140 }}>
-            <h2>{currentScreen.toUpperCase()}</h2>
+		{#if activeTab === 'parametres'}
+			<SettingsScreen
+				bind:apiBaseUrl
+				bind:apiKeyHeaderName
+				bind:apiKeyValue
+				{syncStatus}
+				{matchState}
+				{formatOutcome}
+				onTestConnection={testConnection}
+			/>
+		{/if}
+	</main>
 
-            {#if currentScreen === screens.LOBBY}
-              <LobbyScreen
-                {matchState}
-                {submitStatus}
-                onSubmitPlayerReady={submitPlayerReady}
-              />
-            {:else if currentScreen === screens.SETUP}
-              <SetupScreen
-                {matchState}
-                {submitStatus}
-                actorId={runtimeConfig.actorId}
-                {setupCodeText}
-                parsedSymbols={parseSecretCode(setupCodeText)}
-                onSetupCodeTextChange={onSetupCodeTextChange}
-                onSubmitSecretCodeSet={submitSecretCodeSet}
-              />
-            {:else if currentScreen === screens.ARENA}
-              <ArenaScreen
-                {matchState}
-                {submitStatus}
-                actorId={runtimeConfig.actorId}
-                guessText={arenaGuessText}
-                parsedGuess={parseGuess(arenaGuessText)}
-                defenseCode={derivedDefenseCode()}
-                attemptHistory={derivedAttemptHistory()}
-                opponentAttempts={derivedOpponentAttempts()}
-                tacticalLog={derivedTacticalLog()}
-                onGuessTextChange={onArenaGuessTextChange}
-                onSubmitGuess={submitGuess}
-              />
-            {:else if currentScreen === screens.HISTORY}
-              <HistoryScreen {matchState} logEntries={derivedTacticalLog()} />
-            {:else if currentScreen === screens.RESULTS}
-              <ResultsScreen {matchState} logEntries={derivedTacticalLog()} />
-            {:else}
-              <p>Base clean front. Screen implementation starts here.</p>
-              <MatchSnapshotCard {matchState} />
-            {/if}
-          </div>
-        {/key}
-      </section>
-    </div>
-  </div>
+	<BottomNav {activeTab} on:change={onNavChange} />
 
-  <div class="mobile-nav-wrap">
-    <ScreenNav
-      {screens}
-      {currentScreen}
-      onOpenScreen={openScreen}
-    />
-  </div>
-</main>
+	<DebugDrawer
+		open={showDebugDrawer}
+		{syncStatus}
+		bind:maskSecrets
+		{debugLastRequest}
+		{debugLastResponse}
+		{debugJson}
+		{syncMessage}
+		{submitError}
+		on:close={() => showDebugDrawer = false}
+	/>
+
+	<ToastMessage {toast} />
+</div>

@@ -1,22 +1,39 @@
+/** @param {*} baseUrl */
 function normalizeBaseUrl(baseUrl) {
   if (!baseUrl) {
     return ''
   }
 
-  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+  return String(baseUrl).endsWith('/') ? String(baseUrl).slice(0, -1) : String(baseUrl)
 }
 
+/** @param {*} baseUrl @param {*} path */
 function buildUrl(baseUrl, path) {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const textPath = String(path ?? '')
+  const normalizedPath = textPath.startsWith('/') ? textPath : `/${textPath}`
   return `${normalizeBaseUrl(baseUrl)}${normalizedPath}`
 }
 
+/** @param {*} text */
 function safeJsonParse(text) {
   try {
-    return text ? JSON.parse(text) : null
+    return text ? JSON.parse(String(text)) : null
   } catch {
     return null
   }
+}
+
+/** @param {*} body @param {string} fallbackCode */
+function readErrorCode(body, fallbackCode) {
+  if (body && typeof body === 'object') {
+    if (typeof body.rejectionCode === 'string' && body.rejectionCode) {
+      return body.rejectionCode
+    }
+    if (typeof body.code === 'string' && body.code) {
+      return body.code
+    }
+  }
+  return fallbackCode
 }
 
 function createIdempotencyKey() {
@@ -28,23 +45,37 @@ function createIdempotencyKey() {
   return `idem-${Date.now()}-${random}`
 }
 
+/** @param {*} [config] */
 export function createSubmitActionClient(config = {}) {
-  const {
-    baseUrl = import.meta.env.VITE_API_BASE_URL ?? '',
-    path = import.meta.env.VITE_SUBMIT_ACTION_PATH ?? '/api/local/submit-action',
-    apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key',
-    apiKeyValue = import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key',
-    requestIdHeaderName = import.meta.env.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
-  } = config
+  const safeConfig = /** @type {Record<string, any>} */ (config ?? {})
+  const baseUrl = safeConfig.baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? ''
+  const path = safeConfig.path ?? import.meta.env.VITE_SUBMIT_ACTION_PATH ?? '/api/local/submit-action'
+  const apiKeyHeaderName = safeConfig.apiKeyHeaderName ?? import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
+  const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key'
+  const requestIdHeaderName = safeConfig.requestIdHeaderName ?? import.meta.env.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
 
   const endpoint = buildUrl(baseUrl, path)
 
+  /** @param {*} request */
   async function submitAction({
     matchId,
     actorId,
     expectedVersion,
     actionPayload
   }) {
+    if (!matchId) {
+      throw new Error('CLIENT:INVALID_MATCH_ID')
+    }
+    if (!actorId) {
+      throw new Error('CLIENT:INVALID_ACTOR_ID')
+    }
+    if (typeof expectedVersion !== 'number' || !Number.isFinite(expectedVersion)) {
+      throw new Error('CLIENT:INVALID_EXPECTED_VERSION')
+    }
+    if (!actionPayload || typeof actionPayload !== 'object') {
+      throw new Error('CLIENT:INVALID_ACTION_PAYLOAD')
+    }
+
     const requestId = createIdempotencyKey()
     const idempotencyKey = createIdempotencyKey()
 
@@ -68,12 +99,18 @@ export function createSubmitActionClient(config = {}) {
     const body = safeJsonParse(rawText)
 
     if (!response.ok) {
-      const rejectionCode = body?.rejectionCode ?? 'HTTP_ERROR'
-      const rejectionOrigin = body?.rejectionOrigin ?? 'HTTP'
+      const rejectionCode = readErrorCode(body, 'HTTP_ERROR')
+      const rejectionOrigin = body && typeof body === 'object' && typeof body.rejectionOrigin === 'string'
+        ? body.rejectionOrigin
+        : 'HTTP'
       throw new Error(`${rejectionOrigin}:${rejectionCode}`)
     }
 
-    return body
+    if (!body || typeof body !== 'object') {
+      throw new Error('HTTP:INVALID_RESPONSE_BODY')
+    }
+
+    return /** @type {any} */ (body)
   }
 
   return {

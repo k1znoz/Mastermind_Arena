@@ -1,76 +1,63 @@
 <script>
-  export let matchState = /** @type {Record<string, any> | null} */ (null)
-  export let logEntries = /** @type {Array<Record<string, any>>} */ ([])
+  /** @type {{ matchId: string }} */
+  export let runtimeConfig = { matchId: 'local-match' }
+  export let isPrototype = true
+  /** @type {Array<Record<string, unknown>>} */
+  export let historyRows = []
 
-  $: primaryEntry = logEntries?.[0] ?? null
+  /** @type {(value: unknown) => string[]} */
+  export let asSymbols = (value) => []
+  /** @type {(value: string | null | undefined) => { icon: string, token: string, toneClass: string }} */
+  export let getSymbolVisual = (value) => ({ icon: '·', token: '_', toneClass: 'symbol-tone-muted' })
+  /** @type {(value: number | null) => string} */
+  export let formatTimestamp = (value) => '--:--:--'
+  /** @type {(value: unknown) => number | null} */
+  export let asTimestamp = (value) => null
+
+  export let onRefresh = () => {}
 </script>
 
-<div class="card history-shell history-shell-stitch">
-  <div class="history-header">
-    <div>
-      <span class="history-kicker">SESSION_REPLAY_ACTIVE</span>
-      <h3>MATCH HISTORY</h3>
-    </div>
-    <div class="history-filters">
-      <button type="button" class="history-filter active">ALL EVENTS</button>
-      <button type="button" class="history-filter">MES ACTIONS</button>
-      <button type="button" class="history-filter">ACTIONS ADVERSES</button>
-    </div>
-  </div>
-
-  <div class="history-subline">
-    <span>status: {matchState?.status ?? 'unknown'} | version: {matchState?.version ?? '-'}</span>
-    <span>turns: {matchState?.turnNumber ?? '-'}</span>
-  </div>
-
-  <div class="history-grid">
-    <section class="card history-stream-panel">
-      <div class="panel-subheader">
-        <span>CORE_LOG_STREAM.stdout</span>
-        <span class="status-dot"></span>
-      </div>
-
-      <div class="history-stream-list">
-        {#if (logEntries ?? []).length > 0}
-          {#each logEntries as entry}
-            <p>
-              <span class="log-time">[{entry.createdAt}]</span>
-              <span class={`log-label ${entry.emphasis ?? 'muted'}`}>{entry.label}:</span>
-              <span>{entry.detail}</span>
-            </p>
-          {/each}
-        {:else}
-          <p class="hint">Aucun evenement collecte pour le moment.</p>
-        {/if}
-      </div>
-    </section>
-
-    <aside class="card history-side-panel">
-      <h3>ROUND_DETAILS_05</h3>
-      {#if primaryEntry}
-        <div class="history-side-card">
-          <span class="history-kicker">INPUT_SEQUENCE</span>
-          <p>{primaryEntry.label}</p>
-        </div>
-
-        <div class="history-side-card">
-          <span class="history-kicker">FEEDBACK</span>
-          <p>{primaryEntry.detail}</p>
-        </div>
-
-        <div class="history-side-metrics">
-          <p>SYNC_STATE</p>
-          <strong>STABLE</strong>
-        </div>
-      {:else}
-        <p class="hint">Aucune entree detaillee.</p>
+<section class="historique-screen">
+  <article class="panel">
+    <div class="section-head">
+      <span class="kicker">SESSION_ID: {runtimeConfig.matchId}</span>
+      {#if isPrototype}
+        <span class="prototype-badge">historique prototype</span>
       {/if}
-    </aside>
-  </div>
+    </div>
+    <h2>Historique des tours</h2>
 
-  <div class="history-sync-pill">
-    <span class="status-dot"></span>
-    <span>PRET</span>
-    <span>SYNC</span>
-  </div>
-</div>
+    <div class="history-list">
+      {#if historyRows.length === 0}
+        <p class="muted">Aucune action enregistrée pour le moment.</p>
+      {:else}
+        {#each historyRows as entry}
+          <div class="history-row">
+            <div class="history-col mono">{String(entry.turnNumber).padStart(2, '0')}</div>
+            <div class="history-col">
+              <div class="symbol-row">
+                {#if asSymbols(entry.symbols).length === 0}
+                  <span class="muted">--</span>
+                {:else}
+                  {#each asSymbols(entry.symbols) as symbol}
+                    {@const visual = getSymbolVisual(symbol)}
+                    <span class="symbol-chip {visual.toneClass}">
+                      <span class="symbol-icon">{visual.icon}</span>
+                      <span class="symbol-token">{visual.token}</span>
+                    </span>
+                  {/each}
+                {/if}
+              </div>
+            </div>
+            <div class="history-col grow">{entry.payloadSummary}</div>
+            <div class="history-col mono">{formatTimestamp(asTimestamp(entry.recordedAtEpochMs))}</div>
+          </div>
+        {/each}
+      {/if}
+    </div>
+
+    <button type="button" class="primary-btn" on:click={onRefresh}>
+      RAFRAÎCHIR L'HISTORIQUE
+    </button>
+  </article>
+</section>
