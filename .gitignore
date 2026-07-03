@@ -2,3 +2,4 @@ Supabase
 .env
 !.env.example
 .env.docker
+designStitch
