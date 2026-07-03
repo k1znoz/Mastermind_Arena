@@ -196,7 +196,7 @@
 		if (syncStatus !== 'ok' || !matchState) {
 			openToast('error', 'Backend non synchronisé')
 			await refreshMatchState()
-			return
+			return false
 		}
 
 		submitStatus = 'loading'
@@ -211,7 +211,7 @@
 			submitError = message
 			openToast('error', `Version backend indisponible: ${message}`)
 			await refreshMatchState()
-			return
+			return false
 		}
 
 		const { submitClient } = currentClients()
@@ -256,6 +256,7 @@
 			logDebug(request, response)
 			openToast('success', 'Action envoyée')
 			await refreshMatchState()
+			return true
 		} catch (error) {
 			const submitErrorDetails = /** @type {SubmitClientError} */ (error instanceof Error ? error : new Error(String(error)))
 			if (submitErrorDetails.code === 'VERSION_CONFLICT' && typeof submitErrorDetails.version === 'number') {
@@ -267,7 +268,7 @@
 					logDebug(request, { retriedAfterVersionConflict: true, body: retryResponse })
 					openToast('success', 'Action renvoyee apres resynchronisation')
 					await refreshMatchState()
-					return
+					return true
 				} catch (retryError) {
 					error = retryError
 				}
@@ -278,13 +279,17 @@
 			submitError = message
 			logDebug(request, { accepted: false, error: submitError })
 			openToast('error', `Échec envoi: ${submitError}`)
+			return false
 		}
 	}
 
-	function submitPlayerReady() {
-		submitPayload({
+	async function submitPlayerReady() {
+		const accepted = await submitPayload({
 			type: 'PLAYER_READY'
 		})
+		if (accepted) {
+			activeTab = 'partie'
+		}
 	}
 
 	function submitSecretCode() {
