@@ -51,6 +51,14 @@
 	let apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
 	let apiKeyValue = import.meta.env.VITE_API_KEY ?? ''
 
+	function resolveGameStatePath() {
+		return apiBaseUrl ? '/local/match-state' : '/api/local/match-state'
+	}
+
+	function resolveHealthPath() {
+		return apiBaseUrl ? '/health' : '/api/health'
+	}
+
 	function currentClients() {
 		const config = {
 			baseUrl: apiBaseUrl,
@@ -59,7 +67,14 @@
 		}
 
 		return {
-			matchClient: createMatchStateClient(config),
+			matchClient: createMatchStateClient({
+				...config,
+				path: resolveGameStatePath()
+			}),
+			healthClient: createMatchStateClient({
+				...config,
+				path: resolveHealthPath()
+			}),
 			submitClient: createSubmitActionClient(config)
 		}
 	}
@@ -341,13 +356,15 @@
 	}
 
 	function testConnection() {
-		refreshMatchState().then(() => {
-			if (syncStatus === 'ok') {
+		const { healthClient } = currentClients()
+		healthClient
+			.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+			.then(() => {
 				openToast('success', 'Connexion backend valide')
-			} else {
+			})
+			.catch(() => {
 				openToast('error', 'Connexion backend indisponible')
-			}
-		})
+			})
 	}
 
 	/** @param {number | null | undefined} value */
