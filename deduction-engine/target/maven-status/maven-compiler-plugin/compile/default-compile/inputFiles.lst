@@ -1,3 +1,4 @@
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalMastermindRuleSet.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalMatchStateEndpoint.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalSubmitActionEndpoint.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalSubmitActionHttpServer.java
@@ -33,6 +34,7 @@ C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermind
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchActionRecord.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchRuntimeState.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchStateStore.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\RuleEvaluationContext.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionCommand.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionOrchestrator.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionResult.java

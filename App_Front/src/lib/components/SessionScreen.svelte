@@ -4,6 +4,7 @@
   export let isPrototype = true
   export let submitStatus = 'idle'
   export let isBackendReady = false
+  export let hasPlayerReady = false
   export let ctaSessionLabel = 'CRÉER UNE PARTIE'
 
   export let playerName = ''
@@ -51,10 +52,10 @@
     <button
       type="button"
       class="primary-btn {roomCode.trim() ? 'secondary-tone' : ''}"
-      disabled={submitStatus === 'loading' || !isBackendReady}
+      disabled={submitStatus === 'loading' || !isBackendReady || hasPlayerReady}
       on:click={submitReady}
     >
-      {submitStatus === 'loading' ? 'INITIALISATION...' : (!isBackendReady ? 'BACKEND REQUIS' : ctaSessionLabel)}
+      {submitStatus === 'loading' ? 'INITIALISATION...' : (!isBackendReady ? 'BACKEND REQUIS' : (hasPlayerReady ? 'PRÊT DÉJÀ VALIDÉ' : ctaSessionLabel))}
     </button>
   </article>
 

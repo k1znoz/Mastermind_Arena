@@ -68,9 +68,15 @@ function assertAuthConfig(headerName, apiKeyValue) {
  *  matchId?: string,
  *  version?: number,
  *  turnNumber?: number,
+ *  currentActorIndex?: number,
+ *  currentActorId?: string,
  *  turnActive?: boolean,
+ *  actorOrder?: string[],
  *  status?: string,
  *  matchOutcomeStatus?: string,
+ *  matchOutcomeReason?: string,
+ *  cancellationCode?: string,
+ *  visibleSecretCode?: string[],
  *  actionLog?: Array<Record<string, unknown>>
  * }} MatchStateResponse
  */
@@ -147,9 +153,15 @@ export function createMatchStateClient(config = {}) {
       matchId: typeof payload.matchId === 'string' ? payload.matchId : matchId,
       version: typeof payload.version === 'number' && Number.isFinite(payload.version) ? payload.version : undefined,
       turnNumber: typeof payload.turnNumber === 'number' && Number.isFinite(payload.turnNumber) ? payload.turnNumber : 0,
+      currentActorIndex: typeof payload.currentActorIndex === 'number' && Number.isFinite(payload.currentActorIndex) ? payload.currentActorIndex : undefined,
+      currentActorId: typeof payload.currentActorId === 'string' ? payload.currentActorId : undefined,
       turnActive: typeof payload.turnActive === 'boolean' ? payload.turnActive : true,
+      actorOrder: Array.isArray(payload.actorOrder) ? payload.actorOrder.map((entry) => String(entry)) : [],
       status: typeof payload.status === 'string' ? payload.status : 'IN_PROGRESS',
       matchOutcomeStatus: typeof payload.matchOutcomeStatus === 'string' ? payload.matchOutcomeStatus : undefined,
+      matchOutcomeReason: typeof payload.matchOutcomeReason === 'string' ? payload.matchOutcomeReason : undefined,
+      cancellationCode: typeof payload.cancellationCode === 'string' ? payload.cancellationCode : undefined,
+      visibleSecretCode: Array.isArray(payload.visibleSecretCode) ? payload.visibleSecretCode.map((entry) => String(entry)) : [],
       actionLog: Array.isArray(payload.actionLog) ? /** @type {Array<Record<string, unknown>>} */ (payload.actionLog) : []
     }
   }

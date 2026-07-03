@@ -80,7 +80,7 @@ public final class SubmitActionOrchestrator {
         List<String> emitted = new ArrayList<>();
         emit(emitted, "ActionSubmitted");
 
-        ActionResolution resolution = ruleSet.resolve(command.actionPayload());
+        ActionResolution resolution = ruleSet.resolve(new RuleEvaluationContext(current, command));
         Rejection validationRejection = validator.validate(resolution);
         if (validationRejection != null) {
             throw new IllegalStateException(validationRejection.code());

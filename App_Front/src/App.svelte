@@ -18,7 +18,7 @@
 	const POLL_MS = 6000
 
 	/** @typedef {{ kind: 'success' | 'error', text: string } | null} ToastState */
-	/** @typedef {{ turnNumber?: number, version?: number, turnActive?: boolean, status?: string, matchOutcomeStatus?: string, actionLog?: Array<Record<string, unknown>> }} MatchStateLike */
+	/** @typedef {{ turnNumber?: number, version?: number, currentActorIndex?: number, currentActorId?: string, turnActive?: boolean, actorOrder?: string[], status?: string, matchOutcomeStatus?: string, matchOutcomeReason?: string, cancellationCode?: string, visibleSecretCode?: string[], actionLog?: Array<Record<string, unknown>> }} MatchStateLike */
 	/** @typedef {Error & { code?: string, rejectionOrigin?: string, version?: number, matchStatus?: string }} SubmitClientError */
 
 	let activeTab = 'session'
@@ -39,6 +39,7 @@
 	let syncStatus = 'idle'
 	let syncMessage = ''
 	let submitStatus = 'idle'
+	let pendingActionType = ''
 	let submitError = ''
 
 	let toast = /** @type {ToastState} */ (null)
@@ -203,6 +204,7 @@
 			return false
 		}
 
+		pendingActionType = String(actionPayload.type ?? '')
 		submitStatus = 'loading'
 		submitError = ''
 
@@ -212,6 +214,7 @@
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error)
 			submitStatus = 'error'
+			pendingActionType = ''
 			submitError = message
 			openToast('error', `Version backend indisponible: ${message}`)
 			await refreshMatchState()
@@ -257,6 +260,7 @@
 			}
 
 			submitStatus = 'success'
+			pendingActionType = ''
 			logDebug(request, response)
 			openToast('success', 'Action envoyée')
 			await refreshMatchState()
@@ -269,6 +273,7 @@
 					const retryResponse = await submitOnce(submitErrorDetails.version)
 					syncVersionState(retryResponse.version, retryResponse.status)
 					submitStatus = 'success'
+					pendingActionType = ''
 					logDebug(request, { retriedAfterVersionConflict: true, body: retryResponse })
 					openToast('success', 'Action renvoyee apres resynchronisation')
 					await refreshMatchState()
@@ -280,6 +285,7 @@
 
 			const message = error instanceof Error ? error.message : String(error)
 			submitStatus = 'error'
+			pendingActionType = ''
 			submitError = message
 			logDebug(request, { accepted: false, error: submitError })
 			openToast('error', `Échec envoi: ${submitError}`)
@@ -288,6 +294,12 @@
 	}
 
 	async function submitPlayerReady() {
+		if (hasPlayerReady) {
+			openToast('success', 'Joueur deja pret pour cette partie')
+			activeTab = 'partie'
+			return
+		}
+
 		const accepted = await submitPayload({
 			type: 'PLAYER_READY'
 		})
@@ -297,6 +309,11 @@
 	}
 
 	function submitSecretCode() {
+		if (!canSubmitSecret) {
+			openToast('error', 'Action non autorisee a ce stade')
+			return
+		}
+
 		const normalizedCode = normalizeSymbolSequence(setupSequence, CODE_LENGTH, symbolPalette)
 		if (normalizedCode.length !== CODE_LENGTH) {
 			openToast('error', 'Code secret invalide (4 symboles)')
@@ -349,6 +366,7 @@
 
 	function submitGuess() {
 		if (!canSubmitGuess) {
+			openToast('error', 'Tentative non autorisee a ce stade')
 			return
 		}
 
@@ -437,16 +455,42 @@
 	$: ctaSessionLabel = roomCode.trim() ? 'REJOINDRE LE DUEL' : 'CRÉER UNE PARTIE'
 	$: guessSequence = draftGuess.filter(Boolean)
 	$: setupSlots = Array.from({ length: CODE_LENGTH }, (_, index) => setupSequence[index] ?? '_')
+	$: actorId = runtimeConfig.actorId
+	$: actorOrder = matchState?.actorOrder ?? []
+	$: opponentActorId = actorOrder.find((entry) => entry !== actorId) ?? null
 	$: turnActive = Boolean(matchState?.turnActive)
-	$: canSubmitGuess = isBackendReady && turnActive && guessSequence.length === CODE_LENGTH && submitStatus !== 'loading'
-	$: sendButtonLabel = submitStatus === 'loading'
+	$: isMatchTerminal = matchState?.status === 'FINISHED' || matchState?.status === 'CANCELLED'
+	$: isMyTurn = isBackendReady && turnActive && (matchState?.currentActorId ? matchState.currentActorId === actorId : true)
+	$: matchActions = matchState?.actionLog ?? []
+	$: hasPlayerReady = matchActions.some((entry) => entry?.actionType === 'PLAYER_READY' && entry?.actorId === actorId)
+	$: hasOpponentReady = opponentActorId ? matchActions.some((entry) => entry?.actionType === 'PLAYER_READY' && entry?.actorId === opponentActorId) : false
+	$: hasSecretSet = matchActions.some((entry) => entry?.actionType === 'SECRET_CODE_SET' && entry?.actorId === actorId)
+	$: hasOpponentSecretSet = opponentActorId ? matchActions.some((entry) => entry?.actionType === 'SECRET_CODE_SET' && entry?.actorId === opponentActorId) : false
+	$: isSecretSubmitting = submitStatus === 'loading' && pendingActionType === 'SECRET_CODE_SET'
+	$: isGuessSubmitting = submitStatus === 'loading' && pendingActionType === 'SUBMIT_GUESS'
+	$: canSubmitSecret = isBackendReady && isMyTurn && hasPlayerReady && !hasSecretSet && !isMatchTerminal && !isSecretSubmitting
+	$: canSubmitGuess = isBackendReady && isMyTurn && hasPlayerReady && hasSecretSet && hasOpponentSecretSet && guessSequence.length === CODE_LENGTH && !isGuessSubmitting && !isMatchTerminal
+	$: secretButtonLabel = isSecretSubmitting
+		? 'TRANSMISSION...'
+		: (hasSecretSet ? 'CODE DEJA VALIDE' : (!hasPlayerReady ? 'VALIDER PRESENCE D\'ABORD' : (!isMyTurn ? 'EN ATTENTE DU TOUR' : 'VALIDER CODE SECRET')))
+	$: sendButtonLabel = isGuessSubmitting
 		? 'TRANSMISSION...'
 		: (!isBackendReady
 			? 'BACKEND HORS LIGNE'
-			: (!turnActive ? 'EN ATTENTE DU TOUR' : (guessSequence.length !== CODE_LENGTH ? 'SÉQUENCE INCOMPLÈTE' : 'ENVOYER L\'ACTION')))
+			: (isMatchTerminal
+				? 'PARTIE TERMINEE'
+				: (!hasSecretSet
+					? 'VALIDE TON CODE D\'ABORD'
+					: (!hasOpponentSecretSet
+						? 'EN ATTENTE DU CODE ADVERSE'
+						: (!isMyTurn
+							? 'EN ATTENTE DU TOUR'
+							: (guessSequence.length !== CODE_LENGTH ? 'SÉQUENCE INCOMPLÈTE' : 'ENVOYER TENTATIVE'))))))
 
 	$: historyRows = (matchState?.actionLog ?? []).slice().reverse()
 	$: latestAction = historyRows[0] ?? null
+	$: latestOwnAction = historyRows.find((entry) => entry?.actorId === actorId) ?? null
+	$: latestOpponentAction = opponentActorId ? (historyRows.find((entry) => entry?.actorId === opponentActorId) ?? null) : null
 
 	onMount(() => {
 		refreshMatchState()
@@ -472,6 +516,7 @@
 				{isPrototype}
 				{submitStatus}
 				{isBackendReady}
+				{hasPlayerReady}
 				{ctaSessionLabel}
 				bind:playerName
 				bind:roomCode
@@ -483,7 +528,12 @@
 		{#if activeTab === 'partie'}
 			<PartieScreen
 				{matchState}
+				{isMyTurn}
 				{turnActive}
+				{hasPlayerReady}
+				{hasOpponentReady}
+				{hasSecretSet}
+				{hasOpponentSecretSet}
 				{setupSequence}
 				{setupSlots}
 				{selectedSetupSlot}
@@ -491,11 +541,17 @@
 				{selectedGuessSlot}
 				{guessSequence}
 				{symbolPalette}
-				{submitStatus}
+				{isSecretSubmitting}
+				{isGuessSubmitting}
 				{isBackendReady}
+				{canSubmitSecret}
+				{secretButtonLabel}
 				{canSubmitGuess}
 				{sendButtonLabel}
 				{latestAction}
+				{latestOwnAction}
+				{latestOpponentAction}
+				{opponentActorId}
 				{asSymbols}
 				{getSymbolVisual}
 				on:selectsetupslot={onSelectSetupSlot}

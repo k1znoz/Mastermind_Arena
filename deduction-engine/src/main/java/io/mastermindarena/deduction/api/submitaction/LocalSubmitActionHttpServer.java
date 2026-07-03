@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationService;
-import io.mastermindarena.deduction.engine.contract.ActionResolution;
 import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
-import io.mastermindarena.deduction.engine.contract.EngineDirective;
 import io.mastermindarena.deduction.engine.contract.RuleSet;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator;
@@ -85,7 +83,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             });
 
             JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
-            RuleSet ruleSet = input -> ActionResolution.of(Set.of(EngineDirective.ACCEPT_ACTION, EngineDirective.CONTINUE_TURN));
+            RuleSet ruleSet = new LocalMastermindRuleSet();
             SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
                     stateStore,
                     eventSink,
