@@ -119,9 +119,10 @@
 	async function refreshMatchState() {
 		syncStatus = 'syncing'
 		syncMessage = 'Synchronisation en cours'
+		const { matchClient } = currentClients()
 
 		const request = {
-			endpoint: 'GET /match-state',
+			endpoint: `GET ${matchClient.endpoint}`,
 			matchId: runtimeConfig.matchId,
 			actorId: runtimeConfig.actorId,
 			apiKeyHeaderName,
@@ -129,7 +130,6 @@
 		}
 
 		try {
-			const { matchClient } = currentClients()
 			const result = await matchClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
 			matchState = result
 			syncStatus = 'ok'
@@ -154,8 +154,9 @@
 		submitStatus = 'loading'
 		submitError = ''
 
+		const { submitClient } = currentClients()
 		const request = {
-			endpoint: 'POST /submit-action',
+			endpoint: `POST ${submitClient.endpoint}`,
 			matchId: runtimeConfig.matchId,
 			actorId: runtimeConfig.actorId,
 			expectedVersion: matchState?.version ?? 0,
@@ -165,7 +166,6 @@
 		}
 
 		try {
-			const { submitClient } = currentClients()
 			const response = await submitClient.submitAction({
 				matchId: runtimeConfig.matchId,
 				actorId: runtimeConfig.actorId,

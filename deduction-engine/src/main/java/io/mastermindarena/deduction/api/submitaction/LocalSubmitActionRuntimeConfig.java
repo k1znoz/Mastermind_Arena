@@ -8,6 +8,10 @@ public record LocalSubmitActionRuntimeConfig(
         String apiKeyHeaderName,
         String apiKeyValue,
     String requestIdHeaderName,
+    String corsAllowedOrigins,
+    String corsAllowedMethods,
+    String corsAllowedHeaders,
+    int corsMaxAgeSeconds,
     String dbUrl,
     String dbUser,
     String dbPassword,
@@ -21,6 +25,9 @@ public record LocalSubmitActionRuntimeConfig(
         Objects.requireNonNull(apiKeyHeaderName, "apiKeyHeaderName is required");
         Objects.requireNonNull(apiKeyValue, "apiKeyValue is required");
         Objects.requireNonNull(requestIdHeaderName, "requestIdHeaderName is required");
+        Objects.requireNonNull(corsAllowedOrigins, "corsAllowedOrigins is required");
+        Objects.requireNonNull(corsAllowedMethods, "corsAllowedMethods is required");
+        Objects.requireNonNull(corsAllowedHeaders, "corsAllowedHeaders is required");
         Objects.requireNonNull(dbUrl, "dbUrl is required");
         Objects.requireNonNull(dbUser, "dbUser is required");
         Objects.requireNonNull(dbPassword, "dbPassword is required");
@@ -43,6 +50,18 @@ public record LocalSubmitActionRuntimeConfig(
         if (requestIdHeaderName.isBlank()) {
             throw new IllegalArgumentException("requestIdHeaderName must not be blank");
         }
+        if (corsAllowedOrigins.isBlank()) {
+            throw new IllegalArgumentException("corsAllowedOrigins must not be blank");
+        }
+        if (corsAllowedMethods.isBlank()) {
+            throw new IllegalArgumentException("corsAllowedMethods must not be blank");
+        }
+        if (corsAllowedHeaders.isBlank()) {
+            throw new IllegalArgumentException("corsAllowedHeaders must not be blank");
+        }
+        if (corsMaxAgeSeconds < 0) {
+            throw new IllegalArgumentException("corsMaxAgeSeconds must be >= 0");
+        }
         if (dbUrl.isBlank()) {
             throw new IllegalArgumentException("dbUrl must not be blank");
         }
@@ -62,6 +81,10 @@ public record LocalSubmitActionRuntimeConfig(
                 stringValue("submitAction.auth.apiKeyHeader", new String[]{"APP_API_KEY_HEADER", "SUBMIT_ACTION_API_KEY_HEADER"}, "X-API-Key"),
                 stringValue("submitAction.auth.apiKeyValue", new String[]{"APP_API_KEY", "SUBMIT_ACTION_API_KEY_VALUE"}, "dev-submit-action-key"),
                 stringValue("submitAction.observability.requestIdHeader", new String[]{"APP_REQUEST_ID_HEADER"}, "X-Request-Id"),
+                stringValue("submitAction.http.cors.allowedOrigins", new String[]{"APP_CORS_ALLOWED_ORIGINS", "SUBMIT_ACTION_CORS_ALLOWED_ORIGINS"}, "http://localhost:5173"),
+                stringValue("submitAction.http.cors.allowedMethods", new String[]{"APP_CORS_ALLOWED_METHODS", "SUBMIT_ACTION_CORS_ALLOWED_METHODS"}, "GET,POST,OPTIONS"),
+                stringValue("submitAction.http.cors.allowedHeaders", new String[]{"APP_CORS_ALLOWED_HEADERS", "SUBMIT_ACTION_CORS_ALLOWED_HEADERS"}, "Content-Type,X-API-Key,X-Request-Id"),
+                intValue("submitAction.http.cors.maxAgeSeconds", new String[]{"APP_CORS_MAX_AGE_SECONDS", "SUBMIT_ACTION_CORS_MAX_AGE_SECONDS"}, 600),
                 stringValue("submitAction.db.url", new String[]{"APP_DB_URL", "SUBMIT_ACTION_DB_URL"}, "jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require"),
                 stringValue("submitAction.db.user", new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER"}, "postgres"),
                 stringValue("submitAction.db.password", new String[]{"APP_DB_PASSWORD", "SUBMIT_ACTION_DB_PASSWORD"}, "change-me-db-password"),

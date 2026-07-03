@@ -29,9 +29,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private final HttpServer server;
@@ -40,6 +42,15 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private LocalSubmitActionHttpServer(HttpServer server, RuntimeMetrics metrics) {
         this.server = server;
         this.metrics = metrics;
+    }
+
+    private record CorsPolicy(
+            Set<String> allowedOrigins,
+            boolean wildcardOrigin,
+            String allowMethods,
+            String allowHeaders,
+            int maxAgeSeconds
+    ) {
     }
 
     public static LocalSubmitActionHttpServer create(LocalSubmitActionRuntimeConfig config) {
@@ -85,6 +96,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             );
             LocalSubmitActionEndpoint endpoint = new LocalSubmitActionEndpoint(new SubmitActionApplicationService(orchestrator));
                 LocalMatchStateEndpoint matchStateEndpoint = new LocalMatchStateEndpoint(stateStore);
+                CorsPolicy corsPolicy = createCorsPolicy(config);
 
             server.createContext(config.path(), exchange -> handleSubmitAction(
                     exchange,
@@ -93,18 +105,20 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     config.apiKeyHeaderName(),
                     config.apiKeyValue(),
                     config.requestIdHeaderName(),
+                    corsPolicy,
                     metrics
             ));
-                    server.createContext(LocalMatchStateEndpoint.PATH, exchange -> handleMatchState(
-                        exchange,
-                        matchStateEndpoint,
-                        objectMapper,
-                        config.apiKeyHeaderName(),
-                        config.apiKeyValue(),
-                        config.requestIdHeaderName(),
-                        metrics
-                    ));
-            server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), metrics));
+                server.createContext(LocalMatchStateEndpoint.PATH, exchange -> handleMatchState(
+                    exchange,
+                    matchStateEndpoint,
+                    objectMapper,
+                    config.apiKeyHeaderName(),
+                    config.apiKeyValue(),
+                    config.requestIdHeaderName(),
+                    corsPolicy,
+                    metrics
+                ));
+                server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
             return new LocalSubmitActionHttpServer(server, metrics);
         } catch (IOException e) {
@@ -119,6 +133,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             String apiKeyHeaderName,
             String apiKeyValue,
             String requestIdHeaderName,
+                CorsPolicy corsPolicy,
             RuntimeMetrics metrics
     ) throws IOException {
         long startNanos = System.nanoTime();
@@ -127,6 +142,15 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
+            if (!applyCors(exchange, corsPolicy, "POST,OPTIONS", apiKeyHeaderName + "," + requestIdHeaderName + ",Content-Type")) {
+                logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(403, elapsedMillis(startNanos)));
+                writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
+                return;
+            }
+            if ("OPTIONS".equalsIgnoreCase(method)) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
             if (!LocalSubmitActionEndpoint.METHOD.equalsIgnoreCase(exchange.getRequestMethod())) {
                 logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(405, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
@@ -174,6 +198,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             HttpExchange exchange,
             ObjectMapper objectMapper,
             String requestIdHeaderName,
+                CorsPolicy corsPolicy,
             RuntimeMetrics metrics
     ) throws IOException {
         long startNanos = System.nanoTime();
@@ -182,6 +207,16 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
+            if (!applyCors(exchange, corsPolicy, "GET,OPTIONS", "Content-Type")) {
+                long elapsedMillis = elapsedMillis(startNanos);
+                logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(403, elapsedMillis));
+                writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
+                return;
+            }
+            if ("OPTIONS".equalsIgnoreCase(method)) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                 long elapsedMillis = elapsedMillis(startNanos);
                 logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(405, elapsedMillis));
@@ -203,6 +238,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             String apiKeyHeaderName,
             String apiKeyValue,
             String requestIdHeaderName,
+                CorsPolicy corsPolicy,
             RuntimeMetrics metrics
     ) throws IOException {
         long startNanos = System.nanoTime();
@@ -211,6 +247,16 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
+            if (!applyCors(exchange, corsPolicy, "GET,OPTIONS", apiKeyHeaderName + "," + requestIdHeaderName + ",Content-Type")) {
+                long elapsedMillis = elapsedMillis(startNanos);
+                logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(403, elapsedMillis));
+                writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
+                return;
+            }
+            if ("OPTIONS".equalsIgnoreCase(method)) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
             if (!LocalMatchStateEndpoint.METHOD.equalsIgnoreCase(method)) {
                 long elapsedMillis = elapsedMillis(startNanos);
                 logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(405, elapsedMillis));
@@ -349,6 +395,45 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 expected.getBytes(StandardCharsets.UTF_8),
                 provided.getBytes(StandardCharsets.UTF_8)
         );
+    }
+
+    private static CorsPolicy createCorsPolicy(LocalSubmitActionRuntimeConfig config) {
+        String rawOrigins = config.corsAllowedOrigins();
+        boolean wildcard = rawOrigins.trim().equals("*");
+        Set<String> origins = wildcard
+                ? Set.of("*")
+                : Arrays.stream(rawOrigins.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(Collectors.toUnmodifiableSet());
+
+        return new CorsPolicy(
+                origins,
+                wildcard,
+                config.corsAllowedMethods(),
+                config.corsAllowedHeaders(),
+                config.corsMaxAgeSeconds()
+        );
+    }
+
+    private static boolean applyCors(HttpExchange exchange, CorsPolicy policy, String allowMethods, String allowHeaders) {
+        String requestOrigin = exchange.getRequestHeaders().getFirst("Origin");
+        if (requestOrigin == null || requestOrigin.isBlank()) {
+            return true;
+        }
+
+        boolean originAllowed = policy.wildcardOrigin() || policy.allowedOrigins().contains(requestOrigin);
+        if (!originAllowed) {
+            return false;
+        }
+
+        String responseOrigin = policy.wildcardOrigin() ? "*" : requestOrigin;
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", responseOrigin);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", Optional.ofNullable(allowMethods).orElse(policy.allowMethods()));
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", Optional.ofNullable(allowHeaders).orElse(policy.allowHeaders()));
+        exchange.getResponseHeaders().set("Access-Control-Max-Age", Integer.toString(policy.maxAgeSeconds()));
+        exchange.getResponseHeaders().add("Vary", "Origin");
+        return true;
     }
 
     private static Map<String, String> queryParams(String rawQuery) {
