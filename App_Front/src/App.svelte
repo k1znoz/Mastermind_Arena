@@ -34,6 +34,7 @@
 	let selectedGuessSlot = 0
 
 	let matchState = /** @type {MatchStateLike | null} */ (null)
+	let lastKnownVersion = 0
 	let syncStatus = 'idle'
 	let syncMessage = ''
 	let submitStatus = 'idle'
@@ -131,6 +132,9 @@
 
 		try {
 			const result = await matchClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+			if (typeof result.version === 'number' && Number.isFinite(result.version)) {
+				lastKnownVersion = result.version
+			}
 			matchState = result
 			syncStatus = 'ok'
 			syncMessage = 'Données backend reçues'
@@ -159,7 +163,7 @@
 			endpoint: `POST ${submitClient.endpoint}`,
 			matchId: runtimeConfig.matchId,
 			actorId: runtimeConfig.actorId,
-			expectedVersion: matchState?.version ?? 0,
+			expectedVersion: matchState?.version ?? lastKnownVersion,
 			actionPayload,
 			apiKeyHeaderName,
 			apiKeyValue
@@ -169,9 +173,19 @@
 			const response = await submitClient.submitAction({
 				matchId: runtimeConfig.matchId,
 				actorId: runtimeConfig.actorId,
-				expectedVersion: matchState?.version ?? 0,
+				expectedVersion: matchState?.version ?? lastKnownVersion,
 				actionPayload
 			})
+
+			if (typeof response.version === 'number' && Number.isFinite(response.version)) {
+				lastKnownVersion = response.version
+				if (matchState) {
+					matchState = {
+						...matchState,
+						version: response.version
+					}
+				}
+			}
 
 			submitStatus = 'success'
 			logDebug(request, response)

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -142,7 +141,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
-            if (!applyCors(exchange, corsPolicy, "POST,OPTIONS", apiKeyHeaderName + "," + requestIdHeaderName + ",Content-Type")) {
+            if (!applyCors(exchange, corsPolicy)) {
                 logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(403, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
                 return;
@@ -207,7 +206,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
-            if (!applyCors(exchange, corsPolicy, "GET,OPTIONS", "Content-Type")) {
+            if (!applyCors(exchange, corsPolicy)) {
                 long elapsedMillis = elapsedMillis(startNanos);
                 logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(403, elapsedMillis));
                 writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
@@ -247,7 +246,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
-            if (!applyCors(exchange, corsPolicy, "GET,OPTIONS", apiKeyHeaderName + "," + requestIdHeaderName + ",Content-Type")) {
+            if (!applyCors(exchange, corsPolicy)) {
                 long elapsedMillis = elapsedMillis(startNanos);
                 logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(403, elapsedMillis));
                 writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
@@ -416,7 +415,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         );
     }
 
-    private static boolean applyCors(HttpExchange exchange, CorsPolicy policy, String allowMethods, String allowHeaders) {
+    private static boolean applyCors(HttpExchange exchange, CorsPolicy policy) {
         String requestOrigin = exchange.getRequestHeaders().getFirst("Origin");
         if (requestOrigin == null || requestOrigin.isBlank()) {
             return true;
@@ -429,8 +428,8 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
 
         String responseOrigin = policy.wildcardOrigin() ? "*" : requestOrigin;
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", responseOrigin);
-        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", Optional.ofNullable(allowMethods).orElse(policy.allowMethods()));
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", Optional.ofNullable(allowHeaders).orElse(policy.allowHeaders()));
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", policy.allowMethods());
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", policy.allowHeaders());
         exchange.getResponseHeaders().set("Access-Control-Max-Age", Integer.toString(policy.maxAgeSeconds()));
         exchange.getResponseHeaders().add("Vary", "Origin");
         return true;

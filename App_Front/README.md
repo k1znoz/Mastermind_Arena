@@ -10,10 +10,15 @@ Svelte front-end for Mastermind Arena.
 
 ## Backend integration
 
-The front calls the deduction engine submit-action endpoint through the Vite proxy:
+Runtime endpoints used by the front:
 
-- front URL: `/api/local/submit-action`
-- proxied target: `http://localhost:8081/local/submit-action`
+- `GET /health`
+- `POST /local/submit-action`
+
+When `VITE_API_BASE_URL` is empty, local dev uses Vite proxy:
+
+- front URL: `/api/health` -> proxied target: `http://localhost:8080/health`
+- front URL: `/api/local/submit-action` -> proxied target: `http://localhost:8080/local/submit-action`
 
 Expected backend headers and auth are configured through env vars.
 
@@ -23,7 +28,7 @@ Create `.env.local` in this folder when needed:
 
 ```
 VITE_SUBMIT_ACTION_PATH=/api/local/submit-action
-VITE_MATCH_STATE_PATH=/api/local/match-state
+VITE_MATCH_STATE_PATH=/api/health
 VITE_API_BASE_URL=
 VITE_API_KEY_HEADER=X-API-Key
 VITE_API_KEY=dev-submit-action-key
@@ -32,7 +37,7 @@ VITE_MATCH_ID=local-match
 VITE_ACTOR_ID=p1
 ```
 
-If `VITE_API_BASE_URL` is empty, requests use the current origin and go through the Vite proxy.
+If `VITE_API_BASE_URL` is set (e.g. Render), do not prefix paths with `/api`.
 
 ## Recommended IDE Setup
 

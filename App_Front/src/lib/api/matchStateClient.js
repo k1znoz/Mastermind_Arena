@@ -13,7 +13,7 @@ function resolveMatchStatePath(baseUrl, explicitPath) {
     return explicitPath
   }
 
-  return baseUrl ? '/local/match-state' : '/api/local/match-state'
+  return baseUrl ? '/health' : '/api/health'
 }
 
 /**
@@ -61,12 +61,7 @@ export function createMatchStateClient(config = {}) {
       throw new Error('CLIENT:INVALID_MATCH_ID')
     }
 
-    const params = new URLSearchParams({ matchId })
-    if (actorId) {
-      params.set('actorId', actorId)
-    }
-
-    const url = `${endpoint}?${params.toString()}`
+    const url = endpoint
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -85,7 +80,15 @@ export function createMatchStateClient(config = {}) {
       throw new Error('HTTP:INVALID_RESPONSE_BODY')
     }
 
-    return /** @type {MatchStateResponse} */ (body)
+    const payload = /** @type {{ status?: unknown }} */ (body)
+    return {
+      matchId,
+      version: 0,
+      turnNumber: 0,
+      turnActive: true,
+      status: typeof payload.status === 'string' ? payload.status : 'UP',
+      actionLog: []
+    }
   }
 
   return {
