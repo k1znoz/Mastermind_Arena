@@ -47,6 +47,7 @@ public record LocalSubmitActionRuntimeConfig(
         if (apiKeyValue.isBlank()) {
             throw new IllegalArgumentException("apiKeyValue must not be blank");
         }
+        requireStrongApiKey(apiKeyValue);
         if (requestIdHeaderName.isBlank()) {
             throw new IllegalArgumentException("requestIdHeaderName must not be blank");
         }
@@ -129,6 +130,20 @@ public record LocalSubmitActionRuntimeConfig(
         String normalized = dbUrl.toLowerCase();
         if (normalized.contains(".supabase.co") && !normalized.matches(".*[?&]sslmode=require([&#].*)?$")) {
             throw new IllegalArgumentException("Supabase PostgreSQL URL must include sslmode=require");
+        }
+    }
+
+    private static void requireStrongApiKey(String apiKeyValue) {
+        String normalized = apiKeyValue.trim().toLowerCase();
+        if (normalized.length() < 16) {
+            throw new IllegalArgumentException("apiKeyValue must be at least 16 characters long");
+        }
+
+        if (normalized.equals("dev-submit-action-key")
+                || normalized.equals("dev-local-key-123")
+                || normalized.equals("change-me-dev-key")
+                || normalized.equals("change-me-api-key")) {
+            throw new IllegalArgumentException("apiKeyValue must not use known weak default values");
         }
     }
 }

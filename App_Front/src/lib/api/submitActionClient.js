@@ -58,14 +58,39 @@ function createIdempotencyKey() {
   return `idem-${Date.now()}-${random}`
 }
 
+/** @param {string} headerName @param {string} apiKeyValue */
+function assertAuthConfig(headerName, apiKeyValue) {
+  if (!headerName || !String(headerName).trim()) {
+    throw new Error('CLIENT:API_KEY_HEADER_MISSING')
+  }
+
+  const safeApiKey = String(apiKeyValue ?? '').trim()
+  if (!safeApiKey) {
+    throw new Error('CLIENT:API_KEY_MISSING')
+  }
+
+  const weakKeys = new Set([
+    'dev-submit-action-key',
+    'dev-local-key-123',
+    'change-me-dev-key',
+    'change-me-api-key'
+  ])
+
+  if (weakKeys.has(safeApiKey)) {
+    throw new Error('CLIENT:API_KEY_WEAK_DEFAULT')
+  }
+}
+
 /** @param {*} [config] */
 export function createSubmitActionClient(config = {}) {
   const safeConfig = /** @type {Record<string, any>} */ (config ?? {})
   const baseUrl = safeConfig.baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? ''
   const path = resolveSubmitPath(baseUrl, safeConfig.path ?? import.meta.env.VITE_SUBMIT_ACTION_PATH)
   const apiKeyHeaderName = safeConfig.apiKeyHeaderName ?? import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
-  const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key'
+  const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env.VITE_API_KEY ?? ''
   const requestIdHeaderName = safeConfig.requestIdHeaderName ?? import.meta.env.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
+
+  assertAuthConfig(apiKeyHeaderName, apiKeyValue)
 
   const endpoint = buildUrl(baseUrl, path)
 

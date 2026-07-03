@@ -31,13 +31,18 @@ VITE_SUBMIT_ACTION_PATH=/api/local/submit-action
 VITE_MATCH_STATE_PATH=/api/health
 VITE_API_BASE_URL=
 VITE_API_KEY_HEADER=X-API-Key
-VITE_API_KEY=dev-submit-action-key
+VITE_API_KEY=replace-with-strong-random-key-min-16-chars
 VITE_REQUEST_ID_HEADER=X-Request-Id
 VITE_MATCH_ID=local-match
 VITE_ACTOR_ID=p1
 ```
 
 If `VITE_API_BASE_URL` is set (e.g. Render), do not prefix paths with `/api`.
+
+Security note:
+
+- Never use weak demo keys (`dev-*`, `change-me-*`) in deployed environments.
+- Generate a random key (at least 16 characters) and use the same value in front deploy env and backend deploy env.
 
 ## Recommended IDE Setup
 

@@ -48,7 +48,7 @@
 
 	let apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 	let apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
-	let apiKeyValue = import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key'
+	let apiKeyValue = import.meta.env.VITE_API_KEY ?? ''
 
 	function currentClients() {
 		const config = {
