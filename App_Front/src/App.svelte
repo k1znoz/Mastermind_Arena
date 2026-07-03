@@ -19,6 +19,7 @@
 
 	/** @typedef {{ kind: 'success' | 'error', text: string } | null} ToastState */
 	/** @typedef {{ turnNumber?: number, version?: number, turnActive?: boolean, status?: string, matchOutcomeStatus?: string, actionLog?: Array<Record<string, unknown>> }} MatchStateLike */
+	/** @typedef {Error & { code?: string, rejectionOrigin?: string, version?: number, matchStatus?: string }} SubmitClientError */
 
 	let activeTab = 'session'
 	let showDebugDrawer = false
@@ -169,22 +170,31 @@
 			apiKeyValue
 		}
 
-		try {
-			const response = await submitClient.submitAction({
-				matchId: runtimeConfig.matchId,
-				actorId: runtimeConfig.actorId,
-				expectedVersion: matchState?.version ?? lastKnownVersion,
-				actionPayload
-			})
-
-			if (typeof response.version === 'number' && Number.isFinite(response.version)) {
-				lastKnownVersion = response.version
+		const syncVersionState = (version, status) => {
+			if (typeof version === 'number' && Number.isFinite(version)) {
+				lastKnownVersion = version
 				if (matchState) {
 					matchState = {
 						...matchState,
-						version: response.version
+						version,
+						status: typeof status === 'string' && status ? status : matchState.status
 					}
 				}
+			}
+		}
+
+		const submitOnce = (expectedVersion) => submitClient.submitAction({
+			matchId: runtimeConfig.matchId,
+			actorId: runtimeConfig.actorId,
+			expectedVersion,
+			actionPayload
+		})
+
+		try {
+			const response = await submitOnce(matchState?.version ?? lastKnownVersion)
+
+			if (typeof response.version === 'number' && Number.isFinite(response.version)) {
+				syncVersionState(response.version, response.status)
 			}
 
 			submitStatus = 'success'
@@ -192,6 +202,22 @@
 			openToast('success', 'Action envoyée')
 			await refreshMatchState()
 		} catch (error) {
+			const submitErrorDetails = /** @type {SubmitClientError} */ (error instanceof Error ? error : new Error(String(error)))
+			if (submitErrorDetails.code === 'VERSION_CONFLICT' && typeof submitErrorDetails.version === 'number') {
+				syncVersionState(submitErrorDetails.version, submitErrorDetails.matchStatus)
+				try {
+					const retryResponse = await submitOnce(submitErrorDetails.version)
+					syncVersionState(retryResponse.version, retryResponse.status)
+					submitStatus = 'success'
+					logDebug(request, { retriedAfterVersionConflict: true, body: retryResponse })
+					openToast('success', 'Action renvoyee apres resynchronisation')
+					await refreshMatchState()
+					return
+				} catch (retryError) {
+					error = retryError
+				}
+			}
+
 			const message = error instanceof Error ? error.message : String(error)
 			submitStatus = 'error'
 			submitError = message

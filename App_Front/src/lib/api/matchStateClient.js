@@ -108,7 +108,6 @@ export function createMatchStateClient(config = {}) {
     const payload = /** @type {{ status?: unknown }} */ (body)
     return {
       matchId,
-      version: 0,
       turnNumber: 0,
       turnActive: true,
       status: typeof payload.status === 'string' ? payload.status : 'UP',

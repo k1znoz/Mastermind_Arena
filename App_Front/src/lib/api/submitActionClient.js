@@ -37,6 +37,15 @@ function readErrorCode(body, fallbackCode) {
 }
 
 /**
+ * @typedef {{
+ *  code?: string,
+ *  rejectionOrigin?: string,
+ *  version?: number,
+ *  status?: string
+ * }} SubmitActionErrorBody
+ */
+
+/**
  * @param {string} baseUrl
  * @param {string | undefined} explicitPath
  * @returns {string}
@@ -134,14 +143,29 @@ export function createSubmitActionClient(config = {}) {
     })
 
     const rawText = await response.text()
-    const body = safeJsonParse(rawText)
+    const body = /** @type {SubmitActionErrorBody | null} */ (safeJsonParse(rawText))
 
     if (!response.ok) {
       const rejectionCode = readErrorCode(body, 'HTTP_ERROR')
       const rejectionOrigin = body && typeof body === 'object' && typeof body.rejectionOrigin === 'string'
         ? body.rejectionOrigin
         : 'HTTP'
-      throw new Error(`${rejectionOrigin}:${rejectionCode}`)
+      const error = new Error(`${rejectionOrigin}:${rejectionCode}`)
+      if (body && typeof body === 'object') {
+        if (typeof body.version === 'number' && Number.isFinite(body.version)) {
+          // @ts-ignore attach backend state for targeted recovery in the app layer
+          error.version = body.version
+        }
+        if (typeof body.status === 'string' && body.status) {
+          // @ts-ignore attach backend state for targeted recovery in the app layer
+          error.matchStatus = body.status
+        }
+      }
+      // @ts-ignore attach structured error metadata for targeted recovery in the app layer
+      error.code = rejectionCode
+      // @ts-ignore attach structured error metadata for targeted recovery in the app layer
+      error.rejectionOrigin = rejectionOrigin
+      throw error
     }
 
     if (!body || typeof body !== 'object') {
