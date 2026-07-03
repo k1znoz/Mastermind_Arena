@@ -1,6 +1,22 @@
 import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
 
 /**
+ * Selects a path default depending on access mode.
+ * If baseUrl is set, frontend calls backend directly and must not use '/api' prefix.
+ * If baseUrl is empty, Vite local proxy path is expected.
+ * @param {string} baseUrl
+ * @param {string | undefined} explicitPath
+ * @returns {string}
+ */
+function resolveMatchStatePath(baseUrl, explicitPath) {
+  if (explicitPath) {
+    return explicitPath
+  }
+
+  return baseUrl ? '/local/match-state' : '/api/local/match-state'
+}
+
+/**
  * @typedef {{
  *  baseUrl?: string,
  *  path?: string,
@@ -26,12 +42,14 @@ import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
 export function createMatchStateClient(config = {}) {
   const {
     baseUrl = import.meta.env.VITE_API_BASE_URL ?? '',
-    path = import.meta.env.VITE_MATCH_STATE_PATH ?? '/api/local/match-state',
+    path,
     apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key',
     apiKeyValue = import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key'
   } = config
 
-  const endpoint = buildUrl(baseUrl, path)
+  const resolvedPath = resolveMatchStatePath(baseUrl, path ?? import.meta.env.VITE_MATCH_STATE_PATH)
+
+  const endpoint = buildUrl(baseUrl, resolvedPath)
 
   /**
    * @param {string} matchId

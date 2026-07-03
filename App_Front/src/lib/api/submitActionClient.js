@@ -36,6 +36,19 @@ function readErrorCode(body, fallbackCode) {
   return fallbackCode
 }
 
+/**
+ * @param {string} baseUrl
+ * @param {string | undefined} explicitPath
+ * @returns {string}
+ */
+function resolveSubmitPath(baseUrl, explicitPath) {
+  if (explicitPath) {
+    return explicitPath
+  }
+
+  return baseUrl ? '/local/submit-action' : '/api/local/submit-action'
+}
+
 function createIdempotencyKey() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
@@ -49,7 +62,7 @@ function createIdempotencyKey() {
 export function createSubmitActionClient(config = {}) {
   const safeConfig = /** @type {Record<string, any>} */ (config ?? {})
   const baseUrl = safeConfig.baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? ''
-  const path = safeConfig.path ?? import.meta.env.VITE_SUBMIT_ACTION_PATH ?? '/api/local/submit-action'
+  const path = resolveSubmitPath(baseUrl, safeConfig.path ?? import.meta.env.VITE_SUBMIT_ACTION_PATH)
   const apiKeyHeaderName = safeConfig.apiKeyHeaderName ?? import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
   const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env.VITE_API_KEY ?? 'dev-submit-action-key'
   const requestIdHeaderName = safeConfig.requestIdHeaderName ?? import.meta.env.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
