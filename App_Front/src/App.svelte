@@ -51,6 +51,8 @@
 	let apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 	let apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
 	let apiKeyValue = import.meta.env.VITE_API_KEY ?? ''
+	let currentMatchId = runtimeConfig.matchId
+	let currentActorId = runtimeConfig.actorId
 
 	function resolveGameStatePath() {
 		return apiBaseUrl ? '/local/match-state' : '/api/local/match-state'
@@ -58,6 +60,35 @@
 
 	function resolveHealthPath() {
 		return apiBaseUrl ? '/health' : '/api/health'
+	}
+
+	function resolveSessionIdentity() {
+		const normalizedRoomCode = roomCode.trim()
+		return {
+			matchId: normalizedRoomCode || runtimeConfig.matchId,
+			actorId: normalizedRoomCode ? 'p2' : 'p1'
+		}
+	}
+
+	function applySessionIdentity() {
+		const next = resolveSessionIdentity()
+		const changed = next.matchId !== currentMatchId || next.actorId !== currentActorId
+
+		currentMatchId = next.matchId
+		currentActorId = next.actorId
+
+		if (changed) {
+			matchState = null
+			lastKnownVersion = 0
+			syncStatus = 'idle'
+			syncMessage = ''
+			setupSequence = []
+			draftGuess = ['', '', '', '']
+			selectedSetupSlot = 0
+			selectedGuessSlot = 0
+		}
+
+		return changed
 	}
 
 	function currentClients() {
@@ -145,14 +176,14 @@
 
 		const request = {
 			endpoint: `GET ${matchClient.endpoint}`,
-			matchId: runtimeConfig.matchId,
-			actorId: runtimeConfig.actorId,
+			matchId: currentMatchId,
+			actorId: currentActorId,
 			apiKeyHeaderName,
 			apiKeyValue
 		}
 
 		try {
-			const result = await matchClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+			const result = await matchClient.getMatchState(currentMatchId, currentActorId)
 			if (typeof result.version === 'number' && Number.isFinite(result.version)) {
 				lastKnownVersion = result.version
 			}
@@ -182,7 +213,7 @@
 			apiKeyValue
 		})
 
-		const preciseState = await preciseClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+		const preciseState = await preciseClient.getMatchState(currentMatchId, currentActorId)
 		if (typeof preciseState.version !== 'number' || !Number.isFinite(preciseState.version)) {
 			throw new Error('CLIENT:VERSION_UNAVAILABLE')
 		}
@@ -224,8 +255,8 @@
 		const { submitClient } = currentClients()
 		const request = {
 			endpoint: `POST ${submitClient.endpoint}`,
-			matchId: runtimeConfig.matchId,
-			actorId: runtimeConfig.actorId,
+			matchId: currentMatchId,
+			actorId: currentActorId,
 			expectedVersion,
 			actionPayload,
 			apiKeyHeaderName,
@@ -246,8 +277,8 @@
 		}
 
 		const submitOnce = (expectedVersion) => submitClient.submitAction({
-			matchId: runtimeConfig.matchId,
-			actorId: runtimeConfig.actorId,
+			matchId: currentMatchId,
+			actorId: currentActorId,
 			expectedVersion,
 			actionPayload
 		})
@@ -294,6 +325,11 @@
 	}
 
 	async function submitPlayerReady() {
+		const identityChanged = applySessionIdentity()
+		if (identityChanged) {
+			await refreshMatchState()
+		}
+
 		if (hasPlayerReady) {
 			openToast('success', 'Joueur deja pret pour cette partie')
 			activeTab = 'partie'
@@ -383,9 +419,10 @@
 	}
 
 	function testConnection() {
+		applySessionIdentity()
 		const { healthClient } = currentClients()
 		healthClient
-			.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+			.getMatchState(currentMatchId, currentActorId)
 			.then(() => {
 				openToast('success', 'Connexion backend valide')
 			})
@@ -455,7 +492,7 @@
 	$: ctaSessionLabel = roomCode.trim() ? 'REJOINDRE LE DUEL' : 'CRÉER UNE PARTIE'
 	$: guessSequence = draftGuess.filter(Boolean)
 	$: setupSlots = Array.from({ length: CODE_LENGTH }, (_, index) => setupSequence[index] ?? '_')
-	$: actorId = runtimeConfig.actorId
+	$: actorId = currentActorId
 	$: actorOrder = matchState?.actorOrder ?? []
 	$: opponentActorId = actorOrder.find((entry) => entry !== actorId) ?? null
 	$: turnActive = Boolean(matchState?.turnActive)
@@ -491,6 +528,7 @@
 	$: latestAction = historyRows[0] ?? null
 	$: latestOwnAction = historyRows.find((entry) => entry?.actorId === actorId) ?? null
 	$: latestOpponentAction = opponentActorId ? (historyRows.find((entry) => entry?.actorId === opponentActorId) ?? null) : null
+	$: displayedRuntimeConfig = { ...runtimeConfig, matchId: currentMatchId, actorId: currentActorId }
 
 	onMount(() => {
 		refreshMatchState()
@@ -567,7 +605,7 @@
 
 		{#if activeTab === 'historique'}
 			<HistoryScreen
-				{runtimeConfig}
+				runtimeConfig={displayedRuntimeConfig}
 				{isPrototype}
 				{historyRows}
 				{asSymbols}
