@@ -131,6 +131,15 @@ public final class SubmitActionOrchestrator {
             throw new IllegalStateException("INVALID_ENGINE_DIRECTIVE_COMBINATION");
         }
 
+        updated = updated.withRecordedAction(MatchActionRecord.fromPayload(
+            command.actorId(),
+            current.turnNumber(),
+            command.actionPayload(),
+            updated.status(),
+            List.copyOf(emitted),
+            System.currentTimeMillis()
+        ));
+
         stateStore.save(updated);
         SubmitActionResult result = new SubmitActionResult(updated, resolution, List.copyOf(emitted));
         idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));

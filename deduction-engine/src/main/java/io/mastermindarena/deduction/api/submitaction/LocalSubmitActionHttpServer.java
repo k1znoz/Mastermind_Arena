@@ -19,11 +19,15 @@ import io.mastermindarena.deduction.infrastructure.jdbc.JdbcWorkflowEventSink;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -80,6 +84,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     new JdbcIdempotencyStore(persistenceContext)
             );
             LocalSubmitActionEndpoint endpoint = new LocalSubmitActionEndpoint(new SubmitActionApplicationService(orchestrator));
+                LocalMatchStateEndpoint matchStateEndpoint = new LocalMatchStateEndpoint(stateStore);
 
             server.createContext(config.path(), exchange -> handleSubmitAction(
                     exchange,
@@ -90,6 +95,15 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     config.requestIdHeaderName(),
                     metrics
             ));
+                    server.createContext(LocalMatchStateEndpoint.PATH, exchange -> handleMatchState(
+                        exchange,
+                        matchStateEndpoint,
+                        objectMapper,
+                        config.apiKeyHeaderName(),
+                        config.apiKeyValue(),
+                        config.requestIdHeaderName(),
+                        metrics
+                    ));
             server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), metrics));
             server.setExecutor(null);
             return new LocalSubmitActionHttpServer(server, metrics);
@@ -179,6 +193,59 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             RuntimeMetricsSnapshot snapshot = metrics.record(200, elapsedMillis);
             logStructured("health", path, method, 200, "UP", requestId, elapsedMillis, snapshot);
             writeJson(exchange, objectMapper, 200, new HealthBody("UP", snapshot.requestsOk(), snapshot.requestsKo(), snapshot.averageLatencyMs()));
+        }
+    }
+
+    private static void handleMatchState(
+            HttpExchange exchange,
+            LocalMatchStateEndpoint endpoint,
+            ObjectMapper objectMapper,
+            String apiKeyHeaderName,
+            String apiKeyValue,
+            String requestIdHeaderName,
+            RuntimeMetrics metrics
+    ) throws IOException {
+        long startNanos = System.nanoTime();
+        String requestId = resolveRequestId(exchange, requestIdHeaderName);
+        setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
+        try (exchange) {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            if (!LocalMatchStateEndpoint.METHOD.equalsIgnoreCase(method)) {
+                long elapsedMillis = elapsedMillis(startNanos);
+                logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(405, elapsedMillis));
+                writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
+                return;
+            }
+
+            String providedApiKey = exchange.getRequestHeaders().getFirst(apiKeyHeaderName);
+            if (!secureEquals(apiKeyValue, providedApiKey)) {
+                long elapsedMillis = elapsedMillis(startNanos);
+                logStructured("request_rejected", path, method, 401, "UNAUTHORIZED", requestId, elapsedMillis, metrics.record(401, elapsedMillis));
+                writeJson(exchange, objectMapper, 401, new ErrorBody("UNAUTHORIZED"));
+                return;
+            }
+
+            Map<String, String> queryParams = queryParams(exchange.getRequestURI().getRawQuery());
+            String matchId = queryParams.get("matchId");
+            String actorId = queryParams.get("actorId");
+            MatchStateHttpResponse.Envelope response = endpoint.getMatchState(matchId, actorId);
+            long elapsedMillis = elapsedMillis(startNanos);
+
+            if (response.statusCode() == 200) {
+                logStructured("match_state", path, method, 200, "FOUND", requestId, elapsedMillis, metrics.record(200, elapsedMillis));
+                writeJson(exchange, objectMapper, 200, response.body());
+                return;
+            }
+
+            if (response.statusCode() == 404) {
+                logStructured("request_rejected", path, method, 404, "MATCH_NOT_FOUND", requestId, elapsedMillis, metrics.record(404, elapsedMillis));
+                writeJson(exchange, objectMapper, 404, new ErrorBody("MATCH_NOT_FOUND"));
+                return;
+            }
+
+            logStructured("request_rejected", path, method, 400, "INVALID_MATCH_ID", requestId, elapsedMillis, metrics.record(400, elapsedMillis));
+            writeJson(exchange, objectMapper, 400, new ErrorBody("INVALID_MATCH_ID"));
         }
     }
 
@@ -282,6 +349,26 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 expected.getBytes(StandardCharsets.UTF_8),
                 provided.getBytes(StandardCharsets.UTF_8)
         );
+    }
+
+    private static Map<String, String> queryParams(String rawQuery) {
+        if (rawQuery == null || rawQuery.isBlank()) {
+            return Map.of();
+        }
+
+        Map<String, String> params = new LinkedHashMap<>();
+        Arrays.stream(rawQuery.split("&"))
+                .filter(token -> !token.isBlank())
+                .forEach(token -> {
+                    String[] keyValue = token.split("=", 2);
+                    String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                    String value = keyValue.length > 1
+                            ? URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8)
+                            : "";
+                    params.put(key, value);
+                });
+
+        return Map.copyOf(params);
     }
 
     record RuntimeMetricsSnapshot(long requestsTotal, long requestsOk, long requestsKo, long averageLatencyMs) {

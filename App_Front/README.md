@@ -1,6 +1,38 @@
-# Svelte + Vite
+# Mastermind Arena Front
 
-This template should help get you started developing with Svelte in Vite.
+Svelte front-end for Mastermind Arena.
+
+## Run
+
+1. Install dependencies: `npm install`
+2. Start dev server: `npm run dev`
+3. Build production bundle: `npm run build`
+
+## Backend integration
+
+The front calls the deduction engine submit-action endpoint through the Vite proxy:
+
+- front URL: `/api/local/submit-action`
+- proxied target: `http://localhost:8081/local/submit-action`
+
+Expected backend headers and auth are configured through env vars.
+
+## Front runtime env vars
+
+Create `.env.local` in this folder when needed:
+
+```
+VITE_SUBMIT_ACTION_PATH=/api/local/submit-action
+VITE_MATCH_STATE_PATH=/api/local/match-state
+VITE_API_BASE_URL=
+VITE_API_KEY_HEADER=X-API-Key
+VITE_API_KEY=dev-submit-action-key
+VITE_REQUEST_ID_HEADER=X-Request-Id
+VITE_MATCH_ID=local-match
+VITE_ACTOR_ID=p1
+```
+
+If `VITE_API_BASE_URL` is empty, requests use the current origin and go through the Vite proxy.
 
 ## Recommended IDE Setup
 

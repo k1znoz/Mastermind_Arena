@@ -8,6 +8,7 @@ import io.mastermindarena.deduction.engine.contract.MatchOutcome;
 import io.mastermindarena.deduction.engine.contract.ParticipantResult;
 import io.mastermindarena.deduction.engine.contract.Rejection;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
+import io.mastermindarena.deduction.engine.workflow.MatchActionRecord;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionResult;
 
@@ -62,13 +63,14 @@ public final class FilePersistenceCodec {
                 Long.toString(state.version()),
                 encode(state.status()),
                 encode(cancellationCode),
-                encode(outcome)
+                encode(outcome),
+                encodeStringList(state.actionLog().stream().map(FilePersistenceCodec::serializeMatchActionRecord).toList())
         );
     }
 
     public static MatchRuntimeState deserializeMatchRuntimeState(String line) {
         String[] fields = line.split("\t", -1);
-        if (fields.length != 9) {
+        if (fields.length != 9 && fields.length != 10) {
             throw new IllegalArgumentException("Invalid MatchRuntimeState payload");
         }
 
@@ -86,6 +88,10 @@ public final class FilePersistenceCodec {
         String outcomeRaw = decode(fields[8]);
         MatchOutcome outcome = outcomeRaw.isBlank() ? null : deserializeMatchOutcome(outcomeRaw);
 
+        List<MatchActionRecord> actionLog = fields.length == 10
+            ? decodeStringList(fields[9]).stream().map(FilePersistenceCodec::deserializeMatchActionRecord).toList()
+            : List.of();
+
         return new MatchRuntimeState(
                 matchId,
                 turnNumber,
@@ -95,7 +101,8 @@ public final class FilePersistenceCodec {
                 version,
                 status,
                 outcome,
-                cancellationReason
+                cancellationReason,
+                actionLog
         );
     }
 
@@ -240,6 +247,37 @@ public final class FilePersistenceCodec {
         }
 
         return new MatchOutcome(status, completionReason, participants, completedAt);
+    }
+
+    private static String serializeMatchActionRecord(MatchActionRecord actionRecord) {
+        return String.join("|",
+                encode(actionRecord.actorId()),
+                Integer.toString(actionRecord.turnNumber()),
+                encode(actionRecord.actionType()),
+                encodeStringList(actionRecord.symbols()),
+                encode(actionRecord.payloadSummary()),
+                encodeStringList(actionRecord.emittedEvents()),
+                encode(actionRecord.resultingStatus()),
+                Long.toString(actionRecord.recordedAtEpochMs())
+        );
+    }
+
+    private static MatchActionRecord deserializeMatchActionRecord(String value) {
+        String[] parts = value.split("\\|", -1);
+        if (parts.length != 8) {
+            throw new IllegalArgumentException("Invalid MatchActionRecord payload");
+        }
+
+        return new MatchActionRecord(
+                decode(parts[0]),
+                Integer.parseInt(parts[1]),
+                decode(parts[2]),
+                decodeStringList(parts[3]),
+                decode(parts[4]),
+                decodeStringList(parts[5]),
+                decode(parts[6]),
+                Long.parseLong(parts[7])
+        );
     }
 
     private static final class ArraysUtil {

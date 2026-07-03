@@ -1,7 +1,10 @@
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalMatchStateEndpoint.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalSubmitActionEndpoint.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalSubmitActionHttpServer.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalSubmitActionHttpServerMain.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\LocalSubmitActionRuntimeConfig.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\MatchStateHttpMapper.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\MatchStateHttpResponse.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\SubmitActionHttpMapper.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\SubmitActionHttpRequest.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\api\submitaction\SubmitActionHttpResponse.java
@@ -25,6 +28,7 @@ C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermind
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryEventSink.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryIdempotencyStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryMatchStateStore.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchActionRecord.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchRuntimeState.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\MatchStateStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\SubmitActionCommand.java

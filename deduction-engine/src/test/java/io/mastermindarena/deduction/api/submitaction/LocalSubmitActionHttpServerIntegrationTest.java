@@ -11,6 +11,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -282,6 +284,90 @@ class LocalSubmitActionHttpServerIntegrationTest {
         }
     }
 
+    @Test
+    void p6d_matchStateEndpointReturns200ForExistingMatch() throws IOException {
+        LocalSubmitActionRuntimeConfig config = config("p6d_match_state", "secret-api-key", "state-match");
+
+        try (LocalSubmitActionHttpServer server = LocalSubmitActionHttpServer.create(config)) {
+            server.start();
+
+            HttpURLConnection connection = openMatchStateConnection(server.port(), "state-match", "secret-api-key");
+            assertEquals(200, connection.getResponseCode());
+
+            MatchStateHttpResponse response = objectMapper.readValue(connection.getInputStream(), MatchStateHttpResponse.class);
+            assertEquals("state-match", response.matchId());
+            assertEquals("IN_PROGRESS", response.status());
+            assertEquals(0L, response.version());
+            assertEquals("p1", response.currentActorId());
+        }
+    }
+
+    @Test
+    void p6d_matchStateEndpointReturns404WhenMatchIsUnknown() throws IOException {
+        LocalSubmitActionRuntimeConfig config = config("p6d_match_state_404", "secret-api-key", "known-match");
+
+        try (LocalSubmitActionHttpServer server = LocalSubmitActionHttpServer.create(config)) {
+            server.start();
+
+            HttpURLConnection connection = openMatchStateConnection(server.port(), "missing-match", "secret-api-key");
+            assertEquals(404, connection.getResponseCode());
+        }
+    }
+
+    @Test
+    void p6d_matchStateEndpointReturns401WhenApiKeyIsInvalid() throws IOException {
+        LocalSubmitActionRuntimeConfig config = config("p6d_match_state_401", "secret-api-key", "state-match");
+
+        try (LocalSubmitActionHttpServer server = LocalSubmitActionHttpServer.create(config)) {
+            server.start();
+
+            HttpURLConnection connection = openMatchStateConnection(server.port(), "state-match", "wrong-api-key");
+            assertEquals(401, connection.getResponseCode());
+        }
+    }
+
+            @Test
+            void p6d_matchStateEndpointReturnsActorAwareActionLogAndVisibleSecretCode() throws IOException {
+            LocalSubmitActionRuntimeConfig config = config("p6d_match_state_actor_view", "secret-api-key", "actor-view-match");
+
+            try (LocalSubmitActionHttpServer server = LocalSubmitActionHttpServer.create(config)) {
+                server.start();
+
+                postSubmitAction(server.port(), config.path(), "secret-api-key",
+                    new SubmitActionHttpRequest(
+                        "actor-view-match",
+                        "p1",
+                        0L,
+                        "actor-view-secret",
+                        Map.of("type", "SECRET_CODE_SET", "secretCode", List.of("7", "K", "9", "P"))
+                    ));
+
+                postSubmitAction(server.port(), config.path(), "secret-api-key",
+                    new SubmitActionHttpRequest(
+                        "actor-view-match",
+                        "p1",
+                        1L,
+                        "actor-view-guess",
+                        Map.of("type", "SUBMIT_GUESS", "guess", List.of("7", "K", "2", "X"))
+                    ));
+
+                HttpURLConnection ownerConnection = openMatchStateConnection(server.port(), "actor-view-match", "p1", "secret-api-key");
+                assertEquals(200, ownerConnection.getResponseCode());
+                MatchStateHttpResponse ownerResponse = objectMapper.readValue(ownerConnection.getInputStream(), MatchStateHttpResponse.class);
+                assertEquals(List.of("7", "K", "9", "P"), ownerResponse.visibleSecretCode());
+                assertEquals(2, ownerResponse.actionLog().size());
+                assertEquals("SECRET_CODE_SET", ownerResponse.actionLog().get(0).actionType());
+                assertEquals("SUBMIT_GUESS", ownerResponse.actionLog().get(1).actionType());
+
+                HttpURLConnection opponentConnection = openMatchStateConnection(server.port(), "actor-view-match", "p2", "secret-api-key");
+                assertEquals(200, opponentConnection.getResponseCode());
+                MatchStateHttpResponse opponentResponse = objectMapper.readValue(opponentConnection.getInputStream(), MatchStateHttpResponse.class);
+                assertTrue(opponentResponse.visibleSecretCode().isEmpty());
+                assertEquals(1, opponentResponse.actionLog().size());
+                assertEquals("SUBMIT_GUESS", opponentResponse.actionLog().get(0).actionType());
+            }
+            }
+
     private LocalSubmitActionRuntimeConfig config(String dbNamePrefix, String apiKey, String matchId) {
         String dbName = dbNamePrefix + "_" + UUID.randomUUID().toString().replace("-", "");
         return configForDb(dbName, apiKey, matchId);
@@ -312,6 +398,25 @@ class LocalSubmitActionHttpServerIntegrationTest {
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("X-API-Key", apiKey);
+        return connection;
+    }
+
+    private HttpURLConnection openMatchStateConnection(int port, String matchId, String apiKey) throws IOException {
+        return openMatchStateConnection(port, matchId, null, apiKey);
+    }
+
+    private HttpURLConnection openMatchStateConnection(int port, String matchId, String actorId, String apiKey) throws IOException {
+        String uri = "http://localhost:" + port + LocalMatchStateEndpoint.PATH + "?matchId=" + matchId;
+        if (actorId != null && !actorId.isBlank()) {
+            uri += "&actorId=" + actorId;
+        }
+
+        HttpURLConnection connection = (HttpURLConnection) URI
+                .create(uri)
+                .toURL()
+                .openConnection();
+        connection.setRequestMethod("GET");
         connection.setRequestProperty("X-API-Key", apiKey);
         return connection;
     }

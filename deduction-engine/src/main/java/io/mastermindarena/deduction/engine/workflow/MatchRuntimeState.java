@@ -11,18 +11,21 @@ public record MatchRuntimeState(
         String matchId,
         int turnNumber,
         int currentActorIndex,
-    boolean turnActive,
+        boolean turnActive,
         List<String> actorOrder,
         long version,
-    String status,
-    MatchOutcome matchOutcome,
-    CancellationReason cancellationReason
+        String status,
+        MatchOutcome matchOutcome,
+        CancellationReason cancellationReason,
+        List<MatchActionRecord> actionLog
 ) {
     public MatchRuntimeState {
         Objects.requireNonNull(matchId, "matchId is required");
         Objects.requireNonNull(actorOrder, "actorOrder is required");
         Objects.requireNonNull(status, "status is required");
+        Objects.requireNonNull(actionLog, "actionLog is required");
         actorOrder = List.copyOf(actorOrder);
+        actionLog = List.copyOf(actionLog);
         if (actorOrder.isEmpty()) {
             throw new IllegalArgumentException("actorOrder must not be empty");
         }
@@ -41,6 +44,20 @@ public record MatchRuntimeState(
         }
     }
 
+    public MatchRuntimeState(
+            String matchId,
+            int turnNumber,
+            int currentActorIndex,
+            boolean turnActive,
+            List<String> actorOrder,
+            long version,
+            String status,
+            MatchOutcome matchOutcome,
+            CancellationReason cancellationReason
+    ) {
+        this(matchId, turnNumber, currentActorIndex, turnActive, actorOrder, version, status, matchOutcome, cancellationReason, List.of());
+    }
+
     public String currentActorId() {
         return actorOrder.get(currentActorIndex);
     }
@@ -55,7 +72,8 @@ public record MatchRuntimeState(
                 version + 1,
                 status,
                 matchOutcome,
-                cancellationReason
+                cancellationReason,
+                actionLog
         );
     }
 
@@ -70,7 +88,8 @@ public record MatchRuntimeState(
                 version + 1,
                 status,
                 matchOutcome,
-                cancellationReason
+                cancellationReason,
+                actionLog
         );
     }
 
@@ -85,7 +104,8 @@ public record MatchRuntimeState(
                 version + 1,
                 "FINISHED",
                 outcome,
-                null
+                null,
+                actionLog
         );
     }
 
@@ -100,7 +120,30 @@ public record MatchRuntimeState(
                 version + 1,
                 "CANCELLED",
                 null,
-                reason
+                reason,
+                actionLog
+        );
+    }
+
+    public MatchRuntimeState withRecordedAction(MatchActionRecord actionRecord) {
+        Objects.requireNonNull(actionRecord, "actionRecord is required");
+        List<MatchActionRecord> updatedLog = new java.util.ArrayList<>(actionLog);
+        updatedLog.add(actionRecord);
+        if (updatedLog.size() > 50) {
+            updatedLog = updatedLog.subList(updatedLog.size() - 50, updatedLog.size());
+        }
+
+        return new MatchRuntimeState(
+                matchId,
+                turnNumber,
+                currentActorIndex,
+                turnActive,
+                actorOrder,
+                version,
+                status,
+                matchOutcome,
+                cancellationReason,
+                updatedLog
         );
     }
 
