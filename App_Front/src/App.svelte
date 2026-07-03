@@ -134,8 +134,12 @@
 	}
 
 	async function refreshMatchState() {
-		syncStatus = 'syncing'
-		syncMessage = 'Synchronisation en cours'
+		if (!matchState) {
+			syncStatus = 'syncing'
+			syncMessage = 'Synchronisation en cours'
+		} else {
+			syncMessage = 'Actualisation en cours'
+		}
 		const { matchClient } = currentClients()
 
 		const request = {
@@ -193,7 +197,7 @@
 
 	/** @param {Record<string, unknown>} actionPayload */
 	async function submitPayload(actionPayload) {
-		if (syncStatus !== 'ok' || !matchState) {
+		if (syncStatus === 'error' || !matchState) {
 			openToast('error', 'Backend non synchronisé')
 			await refreshMatchState()
 			return false
@@ -428,8 +432,8 @@
 		chooseGuessSymbol(event.detail.symbol)
 	}
 
-	$: isPrototype = syncStatus !== 'ok'
-	$: isBackendReady = syncStatus === 'ok' && Boolean(matchState)
+	$: isPrototype = syncStatus === 'error' || !matchState
+	$: isBackendReady = syncStatus !== 'error' && Boolean(matchState)
 	$: ctaSessionLabel = roomCode.trim() ? 'REJOINDRE LE DUEL' : 'CRÉER UNE PARTIE'
 	$: guessSequence = draftGuess.filter(Boolean)
 	$: setupSlots = Array.from({ length: CODE_LENGTH }, (_, index) => setupSequence[index] ?? '_')
