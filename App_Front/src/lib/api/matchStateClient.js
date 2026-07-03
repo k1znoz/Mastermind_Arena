@@ -16,6 +16,21 @@ function resolveMatchStatePath(baseUrl, explicitPath) {
   return baseUrl ? '/health' : '/api/health'
 }
 
+/** @param {string} path */
+function isHealthPath(path) {
+  const normalized = String(path ?? '').toLowerCase()
+  return normalized.endsWith('/health')
+}
+
+/** @param {string} endpoint @param {string} matchId @param {string} actorId */
+function buildMatchStateUrl(endpoint, matchId, actorId) {
+  const params = new URLSearchParams({ matchId })
+  if (actorId) {
+    params.set('actorId', actorId)
+  }
+  return `${endpoint}?${params.toString()}`
+}
+
 /** @param {string} headerName @param {string} apiKeyValue */
 function assertAuthConfig(headerName, apiKeyValue) {
   if (!headerName || !String(headerName).trim()) {
@@ -55,6 +70,7 @@ function assertAuthConfig(headerName, apiKeyValue) {
  *  turnNumber?: number,
  *  turnActive?: boolean,
  *  status?: string,
+ *  matchOutcomeStatus?: string,
  *  actionLog?: Array<Record<string, unknown>>
  * }} MatchStateResponse
  */
@@ -73,6 +89,7 @@ export function createMatchStateClient(config = {}) {
   assertAuthConfig(apiKeyHeaderName, apiKeyValue)
 
   const resolvedPath = resolveMatchStatePath(baseUrl, path ?? import.meta.env.VITE_MATCH_STATE_PATH)
+  const healthMode = isHealthPath(resolvedPath)
 
   const endpoint = buildUrl(baseUrl, resolvedPath)
 
@@ -86,7 +103,7 @@ export function createMatchStateClient(config = {}) {
       throw new Error('CLIENT:INVALID_MATCH_ID')
     }
 
-    const url = endpoint
+    const url = healthMode ? endpoint : buildMatchStateUrl(endpoint, matchId, actorId)
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -105,13 +122,35 @@ export function createMatchStateClient(config = {}) {
       throw new Error('HTTP:INVALID_RESPONSE_BODY')
     }
 
-    const payload = /** @type {{ status?: unknown }} */ (body)
+    if (healthMode) {
+      const payload = /** @type {{ status?: unknown }} */ (body)
+      return {
+        matchId,
+        turnNumber: 0,
+        turnActive: true,
+        status: typeof payload.status === 'string' ? payload.status : 'UP',
+        actionLog: []
+      }
+    }
+
+    const payload = /** @type {{
+     *  matchId?: unknown,
+     *  version?: unknown,
+     *  turnNumber?: unknown,
+     *  turnActive?: unknown,
+     *  status?: unknown,
+     *  matchOutcomeStatus?: unknown,
+     *  actionLog?: unknown
+     * }} */ (body)
+
     return {
-      matchId,
-      turnNumber: 0,
-      turnActive: true,
-      status: typeof payload.status === 'string' ? payload.status : 'UP',
-      actionLog: []
+      matchId: typeof payload.matchId === 'string' ? payload.matchId : matchId,
+      version: typeof payload.version === 'number' && Number.isFinite(payload.version) ? payload.version : undefined,
+      turnNumber: typeof payload.turnNumber === 'number' && Number.isFinite(payload.turnNumber) ? payload.turnNumber : 0,
+      turnActive: typeof payload.turnActive === 'boolean' ? payload.turnActive : true,
+      status: typeof payload.status === 'string' ? payload.status : 'IN_PROGRESS',
+      matchOutcomeStatus: typeof payload.matchOutcomeStatus === 'string' ? payload.matchOutcomeStatus : undefined,
+      actionLog: Array.isArray(payload.actionLog) ? /** @type {Array<Record<string, unknown>>} */ (payload.actionLog) : []
     }
   }
 

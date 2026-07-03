@@ -148,6 +148,34 @@
 		}
 	}
 
+	async function resolveExpectedVersion() {
+		const currentVersion = matchState?.version ?? lastKnownVersion
+		if (typeof currentVersion === 'number' && Number.isFinite(currentVersion) && currentVersion > 0) {
+			return currentVersion
+		}
+
+		const precisePath = apiBaseUrl ? '/local/match-state' : '/api/local/match-state'
+		const preciseClient = createMatchStateClient({
+			baseUrl: apiBaseUrl,
+			path: precisePath,
+			apiKeyHeaderName,
+			apiKeyValue
+		})
+
+		const preciseState = await preciseClient.getMatchState(runtimeConfig.matchId, runtimeConfig.actorId)
+		if (typeof preciseState.version !== 'number' || !Number.isFinite(preciseState.version)) {
+			throw new Error('CLIENT:VERSION_UNAVAILABLE')
+		}
+
+		lastKnownVersion = preciseState.version
+		matchState = {
+			...(matchState ?? {}),
+			...preciseState
+		}
+
+		return preciseState.version
+	}
+
 	/** @param {Record<string, unknown>} actionPayload */
 	async function submitPayload(actionPayload) {
 		if (syncStatus !== 'ok' || !matchState) {
@@ -159,12 +187,24 @@
 		submitStatus = 'loading'
 		submitError = ''
 
+		let expectedVersion = 0
+		try {
+			expectedVersion = await resolveExpectedVersion()
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			submitStatus = 'error'
+			submitError = message
+			openToast('error', `Version backend indisponible: ${message}`)
+			await refreshMatchState()
+			return
+		}
+
 		const { submitClient } = currentClients()
 		const request = {
 			endpoint: `POST ${submitClient.endpoint}`,
 			matchId: runtimeConfig.matchId,
 			actorId: runtimeConfig.actorId,
-			expectedVersion: matchState?.version ?? lastKnownVersion,
+			expectedVersion,
 			actionPayload,
 			apiKeyHeaderName,
 			apiKeyValue
@@ -191,7 +231,7 @@
 		})
 
 		try {
-			const response = await submitOnce(matchState?.version ?? lastKnownVersion)
+			const response = await submitOnce(expectedVersion)
 
 			if (typeof response.version === 'number' && Number.isFinite(response.version)) {
 				syncVersionState(response.version, response.status)
