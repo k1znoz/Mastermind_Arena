@@ -1,45 +1,23 @@
 package io.mastermindarena.deduction.engine.workflow;
 
-import io.mastermindarena.deduction.engine.contract.ActionResolution;
-import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
-import io.mastermindarena.deduction.engine.contract.EngineDirective;
-import io.mastermindarena.deduction.engine.contract.LogTarget;
 import io.mastermindarena.deduction.engine.contract.Rejection;
-import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
-import io.mastermindarena.deduction.engine.contract.RuleSet;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public final class SubmitActionOrchestrator {
     private final MatchStateStore stateStore;
     private final EventSink eventSink;
-    private final RuleSet ruleSet;
-    private final ActionResolutionContractValidator validator;
     private final IdempotencyStore idempotencyStore;
 
-    public SubmitActionOrchestrator(
-            MatchStateStore stateStore,
-            EventSink eventSink,
-            RuleSet ruleSet,
-            ActionResolutionContractValidator validator
-    ) {
-        this(stateStore, eventSink, ruleSet, validator, new InMemoryIdempotencyStore());
+    public SubmitActionOrchestrator(MatchStateStore stateStore, EventSink eventSink) {
+        this(stateStore, eventSink, new InMemoryIdempotencyStore());
     }
 
-    public SubmitActionOrchestrator(
-            MatchStateStore stateStore,
-            EventSink eventSink,
-            RuleSet ruleSet,
-            ActionResolutionContractValidator validator,
-            IdempotencyStore idempotencyStore
-    ) {
-        this.stateStore = stateStore;
-        this.eventSink = eventSink;
-        this.ruleSet = ruleSet;
-        this.validator = validator;
+    public SubmitActionOrchestrator(MatchStateStore stateStore, EventSink eventSink, IdempotencyStore idempotencyStore) {
+        this.stateStore = Objects.requireNonNull(stateStore, "stateStore is required");
+        this.eventSink = Objects.requireNonNull(eventSink, "eventSink is required");
         this.idempotencyStore = Objects.requireNonNull(idempotencyStore, "idempotencyStore is required");
     }
 
@@ -48,7 +26,7 @@ public final class SubmitActionOrchestrator {
                 .orElseThrow(() -> new IllegalStateException("MATCH_NOT_FOUND"));
 
         String idempotencyScopeKey = command.matchId() + "|" + command.actorId() + "|" + command.idempotencyKey();
-        String requestFingerprint = command.expectedVersion() + "|" + String.valueOf(command.actionPayload());
+        String requestFingerprint = command.expectedVersion() + "|" + command.actionType() + "|" + command.payload() + "|" + command.feedback();
         IdempotencyStore.Entry existing = idempotencyStore.find(idempotencyScopeKey).orElse(null);
         if (existing != null) {
             if (existing.fingerprint().equals(requestFingerprint)) {
@@ -61,78 +39,64 @@ public final class SubmitActionOrchestrator {
             throw new IllegalStateException("MATCH_ALREADY_TERMINAL");
         }
 
-        if (!"IN_PROGRESS".equals(current.status())) {
-            throw new IllegalStateException("MATCH_NOT_IN_PROGRESS");
-        }
-
-        if (!current.turnActive()) {
-            throw new IllegalStateException("TURN_NOT_ACTIVE");
-        }
-
-        if (!current.currentActorId().equals(command.actorId())) {
-            throw new IllegalStateException("ACTOR_NOT_AUTHORIZED");
+        if (!MatchRuntimeState.WAITING_GUESS.equals(current.status())
+                && !MatchRuntimeState.WAITING_FEEDBACK.equals(current.status())
+                && !MatchRuntimeState.PREPARATION.equals(current.status())) {
+            throw new IllegalStateException("INVALID_MATCH_STATE");
         }
 
         if (command.expectedVersion() != current.version()) {
             throw new IllegalStateException("VERSION_CONFLICT");
         }
 
+        if (!current.currentActorId().equals(command.actorId())) {
+            throw new IllegalStateException("ACTOR_NOT_AUTHORIZED");
+        }
+
         List<String> emitted = new ArrayList<>();
-
-        ActionResolution resolution = ruleSet.resolve(new RuleEvaluationContext(current, command));
-        Rejection validationRejection = validator.validate(resolution);
-        if (validationRejection != null) {
-            throw new IllegalStateException(validationRejection.code());
-        }
-
-        Set<EngineDirective> directives = resolution.engineDirectives();
-        if (directives.contains(EngineDirective.REJECT_ACTION)) {
-            Rejection rejection = resolution.rejection().orElseThrow(
-                    () -> new IllegalStateException(ActionResolutionContractValidator.RULESET_CONTRACT_VIOLATION)
-            );
-
-            if (rejection.origin() != RejectionOrigin.RULESET) {
-                throw new IllegalStateException("ENGINE_DIRECTIVE_NOT_ALLOWED");
-            }
-
-            SubmitActionResult result = new SubmitActionResult(current, resolution, List.copyOf(emitted));
-            idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
-            return result;
-        }
-
-        if (!directives.contains(EngineDirective.ACCEPT_ACTION)) {
-            throw new IllegalStateException("ENGINE_DIRECTIVE_NOT_ALLOWED");
-        }
-
-        emit(emitted, GameEvent.GUESS_PLAYED);
-
         MatchRuntimeState updated;
-        if (directives.contains(EngineDirective.CONTINUE_TURN)) {
-            updated = current.withVersionIncremented();
-        } else if (directives.contains(EngineDirective.END_TURN)
-                && directives.contains(EngineDirective.START_NEXT_TURN)) {
-            updated = current.nextTurn();
-            emit(emitted, GameEvent.TURN_CHANGED);
-        } else if (directives.contains(EngineDirective.FINISH_MATCH)) {
-            updated = current.finished(resolution.matchOutcome().orElseThrow());
-            emit(emitted, GameEvent.GAME_FINISHED);
-        } else if (directives.contains(EngineDirective.CANCEL_MATCH)) {
-            updated = current.cancelled(resolution.cancellationReason().orElseThrow());
-        } else {
-            throw new IllegalStateException("INVALID_ENGINE_DIRECTIVE_COMBINATION");
+        Rejection rejection = null;
+
+        switch (command.actionType()) {
+            case SubmitActionCommand.READY_SECRET -> {
+                if (!MatchRuntimeState.PREPARATION.equals(current.status())) {
+                    throw new IllegalStateException("INVALID_STATE_FOR_READY_SECRET");
+                }
+                updated = current.advanceToWaitingGuess();
+                emit(emitted, GameEvent.GUESS_PLAYED);
+            }
+            case SubmitActionCommand.PLAY_GUESS -> {
+                if (!MatchRuntimeState.WAITING_GUESS.equals(current.status())) {
+                    throw new IllegalStateException("INVALID_STATE_FOR_PLAY_GUESS");
+                }
+                updated = current.advanceToWaitingFeedback();
+                emit(emitted, GameEvent.GUESS_PLAYED);
+            }
+            case SubmitActionCommand.SEND_FEEDBACK -> {
+                if (!MatchRuntimeState.WAITING_FEEDBACK.equals(current.status())) {
+                    throw new IllegalStateException("INVALID_STATE_FOR_SEND_FEEDBACK");
+                }
+                updated = current.advanceToWaitingGuess();
+                emit(emitted, GameEvent.TURN_CHANGED);
+            }
+            case SubmitActionCommand.DECLARE_DISCOVERY -> {
+                updated = current.finish();
+                emit(emitted, GameEvent.GAME_FINISHED);
+            }
+            default -> throw new IllegalStateException("UNSUPPORTED_ACTION_TYPE");
         }
 
-        updated = updated.withRecordedAction(MatchActionRecord.fromPayload(
-            command.actorId(),
-            current.turnNumber(),
-            command.actionPayload(),
-            updated.status(),
-            List.copyOf(emitted),
-            System.currentTimeMillis()
+        updated = updated.withRecordedAction(new MatchActionRecord(
+                command.actorId(),
+                command.actionType(),
+                command.payload(),
+                command.feedback(),
+                System.currentTimeMillis(),
+                updated.version()
         ));
 
         stateStore.save(updated);
-        SubmitActionResult result = new SubmitActionResult(updated, resolution, List.copyOf(emitted));
+        SubmitActionResult result = new SubmitActionResult(updated, command, List.copyOf(emitted), rejection);
         idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
         return result;
     }
