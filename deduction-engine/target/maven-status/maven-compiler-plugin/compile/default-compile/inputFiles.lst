@@ -25,7 +25,13 @@ C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermind
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\Rejection.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RejectionOrigin.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\contract\RuleSet.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\plateau\Feedback.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\plateau\GameRoom.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\plateau\Guess.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\plateau\Player.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\plateau\Turn.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\EventSink.java
+C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\GameEvent.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\IdempotencyStore.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryEventSink.java
 C:\Users\alois\Dev\Mastermind_Arena\deduction-engine\src\main\java\io\mastermindarena\deduction\engine\workflow\InMemoryIdempotencyStore.java

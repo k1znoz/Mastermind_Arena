@@ -1,0 +1,9 @@
+io\mastermindarena\deduction\api\submitaction\LocalSubmitActionEndpointIntegrationTest.class
+io\mastermindarena\deduction\application\persistence\P1BFilePersistenceIntegrationTest.class
+io\mastermindarena\deduction\application\submitaction\SubmitActionApplicationIntegrationTest.class
+io\mastermindarena\deduction\engine\contract\ActionResolutionContractValidatorTest.class
+io\mastermindarena\deduction\api\submitaction\LocalSubmitActionHttpServerIntegrationTest.class
+io\mastermindarena\deduction\api\submitaction\SubmitActionHttpMapperContractTest.class
+io\mastermindarena\deduction\engine\workflow\SubmitActionWorkflowTest.class
+io\mastermindarena\deduction\api\submitaction\LocalMastermindRuleSetTest.class
+io\mastermindarena\deduction\application\persistence\P1BFilePersistenceIntegrationTest$PersistenceContext.class

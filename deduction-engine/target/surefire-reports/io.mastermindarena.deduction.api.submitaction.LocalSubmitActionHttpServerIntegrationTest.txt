@@ -1,0 +1,146 @@
+-------------------------------------------------------------------------------
+Test set: io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 14, Failures: 0, Errors: 13, Skipped: 0, Time elapsed: 0.193 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5b_submitActionUnauthorizedReturns401 -- Time elapsed: 0.036 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5b_submitActionUnauthorizedReturns401(LocalSubmitActionHttpServerIntegrationTest.java:88)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6c_requestCorrelationAndBasicMetricsAreAvailable -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6c_requestCorrelationAndBasicMetricsAreAvailable(LocalSubmitActionHttpServerIntegrationTest.java:259)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5a_serverBootsWithExternalizedConfig -- Time elapsed: 0.006 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5a_serverBootsWithExternalizedConfig(LocalSubmitActionHttpServerIntegrationTest.java:27)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5c_healthEndpointReturns200 -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5c_healthEndpointReturns200(LocalSubmitActionHttpServerIntegrationTest.java:71)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturnsActorAwareActionLogAndVisibleSecretCode -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturnsActorAwareActionLogAndVisibleSecretCode(LocalSubmitActionHttpServerIntegrationTest.java:331)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturns404WhenMatchIsUnknown -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturns404WhenMatchIsUnknown(LocalSubmitActionHttpServerIntegrationTest.java:307)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturns401WhenApiKeyIsInvalid -- Time elapsed: 0.006 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturns401WhenApiKeyIsInvalid(LocalSubmitActionHttpServerIntegrationTest.java:319)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6b_submitActionAuthorizedPersistsStateInJdbcStore -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6b_submitActionAuthorizedPersistsStateInJdbcStore(LocalSubmitActionHttpServerIntegrationTest.java:131)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturns200ForExistingMatch -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6d_matchStateEndpointReturns200ForExistingMatch(LocalSubmitActionHttpServerIntegrationTest.java:289)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6b_restartReloadsStateAndIdempotency -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6b_restartReloadsStateAndIdempotency(LocalSubmitActionHttpServerIntegrationTest.java:163)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6b_httpFlowNonRegressionWithJdbcPersistence -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6b_httpFlowNonRegressionWithJdbcPersistence(LocalSubmitActionHttpServerIntegrationTest.java:189)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5a_submitActionNominalOverHttpReturns200 -- Time elapsed: 0.006 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p5a_submitActionNominalOverHttpReturns200(LocalSubmitActionHttpServerIntegrationTest.java:37)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6a_submitActionUnauthorizedWhenApiKeyMissingReturns401 -- Time elapsed: 0 s <<< ERROR!
+java.lang.IllegalArgumentException: apiKeyValue must be at least 16 characters long
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.requireStrongApiKey(LocalSubmitActionRuntimeConfig.java:139)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionRuntimeConfig.<init>(LocalSubmitActionRuntimeConfig.java:50)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.configForDb(LocalSubmitActionHttpServerIntegrationTest.java:377)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.config(LocalSubmitActionHttpServerIntegrationTest.java:373)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerIntegrationTest.p6a_submitActionUnauthorizedWhenApiKeyMissingReturns401(LocalSubmitActionHttpServerIntegrationTest.java:110)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

@@ -78,7 +78,6 @@ public final class SubmitActionOrchestrator {
         }
 
         List<String> emitted = new ArrayList<>();
-        emit(emitted, "ActionSubmitted");
 
         ActionResolution resolution = ruleSet.resolve(new RuleEvaluationContext(current, command));
         Rejection validationRejection = validator.validate(resolution);
@@ -96,11 +95,6 @@ public final class SubmitActionOrchestrator {
                 throw new IllegalStateException("ENGINE_DIRECTIVE_NOT_ALLOWED");
             }
 
-            if (rejection.targetLogs().contains(LogTarget.MATCH_HISTORY)
-                    || rejection.targetLogs().contains(LogTarget.DOMAIN_EVENT_LOG)) {
-                emit(emitted, "ActionRejected");
-            }
-
             SubmitActionResult result = new SubmitActionResult(current, resolution, List.copyOf(emitted));
             idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
             return result;
@@ -110,22 +104,19 @@ public final class SubmitActionOrchestrator {
             throw new IllegalStateException("ENGINE_DIRECTIVE_NOT_ALLOWED");
         }
 
-        emit(emitted, "ActionAccepted");
-        emit(emitted, "ActionResolved");
+        emit(emitted, GameEvent.GUESS_PLAYED);
 
         MatchRuntimeState updated;
         if (directives.contains(EngineDirective.CONTINUE_TURN)) {
             updated = current.withVersionIncremented();
         } else if (directives.contains(EngineDirective.END_TURN)
                 && directives.contains(EngineDirective.START_NEXT_TURN)) {
-            emit(emitted, "TurnEnded");
             updated = current.nextTurn();
-            emit(emitted, "TurnStarted");
+            emit(emitted, GameEvent.TURN_CHANGED);
         } else if (directives.contains(EngineDirective.FINISH_MATCH)) {
-            emit(emitted, "MatchFinished");
             updated = current.finished(resolution.matchOutcome().orElseThrow());
+            emit(emitted, GameEvent.GAME_FINISHED);
         } else if (directives.contains(EngineDirective.CANCEL_MATCH)) {
-            emit(emitted, "MatchCancelled");
             updated = current.cancelled(resolution.cancellationReason().orElseThrow());
         } else {
             throw new IllegalStateException("INVALID_ENGINE_DIRECTIVE_COMBINATION");
@@ -146,8 +137,8 @@ public final class SubmitActionOrchestrator {
         return result;
     }
 
-    private void emit(List<String> emitted, String event) {
-        emitted.add(event);
-        eventSink.publish(event);
+    private void emit(List<String> emitted, GameEvent event) {
+        emitted.add(event.name());
+        eventSink.publish(event.name());
     }
 }
