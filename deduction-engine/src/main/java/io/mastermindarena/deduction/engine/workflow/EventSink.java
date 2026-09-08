@@ -3,7 +3,7 @@ package io.mastermindarena.deduction.engine.workflow;
 import java.util.List;
 
 public interface EventSink {
-    void publish(String event);
+    void publish(GameEvent event);
 
-    List<String> allEvents();
+    List<GameEvent> allEvents();
 }

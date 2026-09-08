@@ -5,15 +5,15 @@ import java.util.Collections;
 import java.util.List;
 
 public final class InMemoryEventSink implements EventSink {
-    private final List<String> events = new ArrayList<>();
+    private final List<GameEvent> events = new ArrayList<>();
 
     @Override
-    public void publish(String event) {
+    public void publish(GameEvent event) {
         events.add(event);
     }
 
     @Override
-    public List<String> allEvents() {
+    public List<GameEvent> allEvents() {
         return Collections.unmodifiableList(events);
     }
 }
