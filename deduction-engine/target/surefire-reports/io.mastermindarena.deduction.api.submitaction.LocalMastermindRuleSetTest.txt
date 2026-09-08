@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 0.059 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest
-io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecretResetAfterFirstValidation -- Time elapsed: 0.031 s <<< FAILURE!
+Tests run: 3, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 0.055 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest
+io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecretResetAfterFirstValidation -- Time elapsed: 0.030 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <SECRET_ALREADY_SET> but was: <UNSUPPORTED_ACTION_TYPE>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -15,7 +15,7 @@ org.opentest4j.AssertionFailedError: expected: <SECRET_ALREADY_SET> but was: <UN
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecondPlayerReadyForSameActor -- Time elapsed: 0.002 s <<< FAILURE!
+io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecondPlayerReadyForSameActor -- Time elapsed: 0.004 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <PLAYER_ALREADY_READY> but was: <UNSUPPORTED_ACTION_TYPE>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -28,7 +28,7 @@ org.opentest4j.AssertionFailedError: expected: <PLAYER_ALREADY_READY> but was: <
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.finishesOnlyWhenBothPlayersCrackOpponentSecret -- Time elapsed: 0.002 s <<< FAILURE!
+io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.finishesOnlyWhenBothPlayersCrackOpponentSecret -- Time elapsed: 0 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)

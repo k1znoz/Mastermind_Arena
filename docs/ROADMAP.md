@@ -22,16 +22,17 @@
   - le state est stable même en cas de rechargement ou de redémarrage.
 - message de commit : `feat: define match runtime state contract`
 
-## P-003 — Implémenter le moteur de règles Mastermind agnostique
+## P-003 — Orchestrer les transitions de plateau
 
-- objectif : Mettre en place le cœur de logique métier autour des actions, résolutions, directives moteur et résultats opaques, afin que le moteur reste générique tout en supportant Mastermind.
-- fichiers concernés : `deduction-engine/src/main/java/io/mastermindarena/deduction/engine/workflow/*`, `deduction-engine/src/main/java/io/mastermindarena/deduction/application/submitaction/*`, `deduction-engine/src/test/java/io/mastermindarena/deduction/engine/workflow/*`
+- objectif : Orchestrer uniquement les états du plateau (`PREPARATION`, `WAITING_GUESS`, `WAITING_FEEDBACK`, `FINISHED`) et les actions des deux joueurs. Le serveur ne calcule pas les indices, ne valide pas une combinaison trouvée et ne détermine pas automatiquement un vainqueur.
+- fichiers concernés : `deduction-engine/src/main/java/io/mastermindarena/deduction/engine/workflow/*`, `deduction-engine/src/main/java/io/mastermindarena/deduction/application/submitaction/*`, `deduction-engine/src/test/java/io/mastermindarena/deduction/engine/workflow/*`, `docs/GAME_RULES.md`, `docs/MIGRATION_PLATEAU.md`
 - critère de validation :
-  - les règles de validation d’action sont testées ;
-  - les `EngineDirective` sont appliquées sans interprétation du jeu ;
-  - les actions rejetées, acceptées et terminales sont bien distinguées ;
-  - une action ne peut pas modifier un match terminé.
-- message de commit : `feat: implement generic deduction engine workflow`
+  - les transitions de plateau sont correctement ordonnées entre préparation, attente de proposition, attente d’indices et fin de manche ;
+  - les actions des deux joueurs sont acceptées ou rejetées selon le bon état du tour ;
+  - le serveur ne calcule ni les pions noirs/blancs, ni la validité d’une combinaison annoncée ;
+  - le moteur n’attribue pas un vainqueur de manière automatique ;
+  - les tests de workflow confirment que la logique serveur reste structurale et non décisionnelle.
+- message de commit : `feat: orchestrate board state transitions without auto-scoring`
 
 ## P-004 — Créer la boucle de tour et les transitions de match
 
@@ -114,8 +115,9 @@
 
 ## Priorisation recommandée
 
-1. P-001 à P-006 : fondations backend et moteur de jeu.
-2. P-007 à P-009 : front, interaction et synchronisation temps réel.
-3. P-010 : validation finale, stabilisation et livraison.
+1. P-001 à P-003 : fondations de plateau et orchestration des états du jeu.
+2. P-004 à P-006 : robustesse du moteur, persistance et contrat de match.
+3. P-007 à P-009 : front, interaction utilisateur et synchronisation temps réel.
+4. P-010 : validation finale, stabilisation et livraison.
 
-Cette séquence permet de livrer d’abord la base de jeu cohérente, puis d’assembler l’expérience utilisateur sur un backend validé.
+Cette séquence respecte la philosophie du plateau : le serveur orchestrera le jeu et les transitions d’état, tandis que la décision de scoring, de validation et de vainqueur restera du ressort des joueurs et des règles de jeu métier explicitement documentées.

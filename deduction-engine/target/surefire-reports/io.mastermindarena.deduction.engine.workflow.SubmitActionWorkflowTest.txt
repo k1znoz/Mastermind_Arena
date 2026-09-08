@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest
 -------------------------------------------------------------------------------
-Tests run: 22, Failures: 13, Errors: 0, Skipped: 0, Time elapsed: 0.049 s <<< FAILURE! -- in io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP016_businessActionRejectedByRuleSetWithRejectAction -- Time elapsed: 0.002 s <<< FAILURE!
+Tests run: 22, Failures: 13, Errors: 0, Skipped: 0, Time elapsed: 0.055 s <<< FAILURE! -- in io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP016_businessActionRejectedByRuleSetWithRejectAction -- Time elapsed: 0.006 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -15,7 +15,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP003_finishMatchWithOutcome -- Time elapsed: 0.001 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP003_finishMatchWithOutcome -- Time elapsed: 0.003 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved, MatchFinished]> but was: <[GUESS_PLAYED, GAME_FINISHED]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -41,7 +41,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP002_acceptActionEndTurnAndStartNextTurn -- Time elapsed: 0 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP002_acceptActionEndTurnAndStartNextTurn -- Time elapsed: 0.001 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved, TurnEnded, TurnStarted]> but was: <[GUESS_PLAYED, TURN_CHANGED]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -67,7 +67,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation -- Time elapsed: 0.004 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation -- Time elapsed: 0 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -80,7 +80,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP019_rulesetRejectionDoesNotMutateState -- Time elapsed: 0 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP019_rulesetRejectionDoesNotMutateState -- Time elapsed: 0.002 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -93,7 +93,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget -- Time elapsed: 0.008 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget -- Time elapsed: 0.002 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -106,7 +106,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired -- Time elapsed: 0.001 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired -- Time elapsed: 0.002 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -132,7 +132,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP004_cancelMatchWithCancellationReason -- Time elapsed: 0 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP004_cancelMatchWithCancellationReason -- Time elapsed: 0.006 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved, MatchCancelled]> but was: <[GUESS_PLAYED]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -145,7 +145,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP001_acceptActionAndContinueTurn -- Time elapsed: 0.006 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP001_acceptActionAndContinueTurn -- Time elapsed: 0 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved]> but was: <[GUESS_PLAYED]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
@@ -158,7 +158,7 @@ org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict -- Time elapsed: 0.002 s <<< FAILURE!
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict -- Time elapsed: 0 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
