@@ -1,161 +1,198 @@
 package io.mastermindarena.deduction.engine.workflow;
 
-import io.mastermindarena.deduction.engine.contract.CancellationReason;
-import io.mastermindarena.deduction.engine.contract.MatchOutcome;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public record MatchRuntimeState(
         String matchId,
+        String status,
         int turnNumber,
         int currentActorIndex,
+        int currentFeedbackActorIndex,
         boolean turnActive,
         List<String> actorOrder,
+        String activePlayerId,
+        String feedbackPlayerId,
         long version,
-        String status,
-        MatchOutcome matchOutcome,
-        CancellationReason cancellationReason,
-        List<MatchActionRecord> actionLog
+        List<MatchActionRecord> actionLog,
+        MatchOutcome legacyMatchOutcome
 ) {
+    public static final String PREPARATION = "PREPARATION";
+    public static final String WAITING_GUESS = "WAITING_GUESS";
+    public static final String WAITING_FEEDBACK = "WAITING_FEEDBACK";
+    public static final String FINISHED = "FINISHED";
+
     public MatchRuntimeState {
         Objects.requireNonNull(matchId, "matchId is required");
-        Objects.requireNonNull(actorOrder, "actorOrder is required");
         Objects.requireNonNull(status, "status is required");
+        Objects.requireNonNull(actorOrder, "actorOrder is required");
         Objects.requireNonNull(actionLog, "actionLog is required");
         actorOrder = List.copyOf(actorOrder);
         actionLog = List.copyOf(actionLog);
+
         if (actorOrder.isEmpty()) {
             throw new IllegalArgumentException("actorOrder must not be empty");
         }
-        if (turnNumber < 1) {
-            throw new IllegalArgumentException("turnNumber must be >= 1");
+        if (turnNumber < 0) {
+            throw new IllegalArgumentException("turnNumber must be >= 0");
         }
         if (currentActorIndex < 0 || currentActorIndex >= actorOrder.size()) {
             throw new IllegalArgumentException("currentActorIndex is out of bounds");
         }
-
-        if ("FINISHED".equals(status) && matchOutcome == null) {
-            throw new IllegalArgumentException("FINISHED state requires matchOutcome");
+        if (currentFeedbackActorIndex < 0 || currentFeedbackActorIndex >= actorOrder.size()) {
+            throw new IllegalArgumentException("currentFeedbackActorIndex is out of bounds");
         }
-        if ("CANCELLED".equals(status) && cancellationReason == null) {
-            throw new IllegalArgumentException("CANCELLED state requires cancellationReason");
+        if (activePlayerId == null) {
+            activePlayerId = actorOrder.get(currentActorIndex);
+        }
+        if (feedbackPlayerId == null) {
+            feedbackPlayerId = actorOrder.get(currentFeedbackActorIndex);
+        }
+        if (version < 0) {
+            throw new IllegalArgumentException("version must be >= 0");
+        }
+        if (!List.of(PREPARATION, WAITING_GUESS, WAITING_FEEDBACK, FINISHED).contains(status)) {
+            throw new IllegalArgumentException("unsupported plateau status: " + status);
         }
     }
 
-    public MatchRuntimeState(
-            String matchId,
-            int turnNumber,
-            int currentActorIndex,
-            boolean turnActive,
-            List<String> actorOrder,
-            long version,
-            String status,
-            MatchOutcome matchOutcome,
-            CancellationReason cancellationReason
-    ) {
-        this(matchId, turnNumber, currentActorIndex, turnActive, actorOrder, version, status, matchOutcome, cancellationReason, List.of());
+    public MatchRuntimeState(String matchId, List<String> actorOrder, long version) {
+        this(
+                matchId,
+                PREPARATION,
+                0,
+                0,
+                1 % Math.max(actorOrder.size(), 1),
+                true,
+                actorOrder,
+                actorOrder.get(0),
+                actorOrder.get(1 % actorOrder.size()),
+                version,
+                List.of(),
+                null
+        );
+    }
+
+    public MatchRuntimeState(String matchId, List<String> actorOrder) {
+        this(matchId, actorOrder, 0L);
     }
 
     public String currentActorId() {
         return actorOrder.get(currentActorIndex);
     }
 
+    public String feedbackActorId() {
+        return actorOrder.get(currentFeedbackActorIndex);
+    }
+
+    public boolean isTerminal() {
+        return FINISHED.equals(status);
+    }
+
     public MatchRuntimeState withVersionIncremented() {
         return new MatchRuntimeState(
                 matchId,
-                turnNumber,
-                currentActorIndex,
-            turnActive,
-                actorOrder,
-                version + 1,
                 status,
-                matchOutcome,
-                cancellationReason,
-                actionLog
-        );
-    }
-
-    public MatchRuntimeState nextTurn() {
-        int nextIndex = (currentActorIndex + 1) % actorOrder.size();
-        return new MatchRuntimeState(
-                matchId,
-                turnNumber + 1,
-                nextIndex,
-            true,
-                actorOrder,
-                version + 1,
-                status,
-                matchOutcome,
-                cancellationReason,
-                actionLog
-        );
-    }
-
-    public MatchRuntimeState finished(MatchOutcome outcome) {
-        Objects.requireNonNull(outcome, "outcome is required");
-        return new MatchRuntimeState(
-                matchId,
                 turnNumber,
                 currentActorIndex,
-            turnActive,
+                currentFeedbackActorIndex,
+                turnActive,
                 actorOrder,
+                activePlayerId,
+                feedbackPlayerId,
                 version + 1,
-                "FINISHED",
-                outcome,
-                null,
-                actionLog
-        );
-    }
-
-    public MatchRuntimeState cancelled(CancellationReason reason) {
-        Objects.requireNonNull(reason, "reason is required");
-        return new MatchRuntimeState(
-                matchId,
-                turnNumber,
-                currentActorIndex,
-            turnActive,
-                actorOrder,
-                version + 1,
-                "CANCELLED",
-                null,
-                reason,
-                actionLog
+                actionLog,
+                legacyMatchOutcome
         );
     }
 
     public MatchRuntimeState withRecordedAction(MatchActionRecord actionRecord) {
         Objects.requireNonNull(actionRecord, "actionRecord is required");
-        List<MatchActionRecord> updatedLog = new java.util.ArrayList<>(actionLog);
+        List<MatchActionRecord> updatedLog = new ArrayList<>(actionLog);
         updatedLog.add(actionRecord);
         if (updatedLog.size() > 50) {
             updatedLog = updatedLog.subList(updatedLog.size() - 50, updatedLog.size());
         }
-
         return new MatchRuntimeState(
                 matchId,
+                status,
                 turnNumber,
                 currentActorIndex,
+                currentFeedbackActorIndex,
                 turnActive,
                 actorOrder,
+                activePlayerId,
+                feedbackPlayerId,
                 version,
-                status,
-                matchOutcome,
-                cancellationReason,
-                updatedLog
+                updatedLog,
+                legacyMatchOutcome
         );
     }
 
-    public boolean isTerminal() {
-        return "FINISHED".equals(status) || "CANCELLED".equals(status);
+    public MatchRuntimeState advanceToWaitingGuess() {
+        return new MatchRuntimeState(
+                matchId,
+                WAITING_GUESS,
+                turnNumber,
+                currentActorIndex,
+                currentFeedbackActorIndex,
+                true,
+                actorOrder,
+                activePlayerId,
+                feedbackPlayerId,
+                version + 1,
+                actionLog,
+                legacyMatchOutcome
+        );
     }
 
-    public Optional<MatchOutcome> matchOutcomeOptional() {
-        return Optional.ofNullable(matchOutcome);
+    public MatchRuntimeState advanceToWaitingFeedback() {
+        return new MatchRuntimeState(
+                matchId,
+                WAITING_FEEDBACK,
+                turnNumber,
+                currentActorIndex,
+                currentFeedbackActorIndex,
+                false,
+                actorOrder,
+                activePlayerId,
+                feedbackPlayerId,
+                version + 1,
+                actionLog,
+                legacyMatchOutcome
+        );
     }
 
-    public Optional<CancellationReason> cancellationReasonOptional() {
-        return Optional.ofNullable(cancellationReason);
+    public MatchRuntimeState finish() {
+        return new MatchRuntimeState(
+                matchId,
+                FINISHED,
+                turnNumber,
+                currentActorIndex,
+                currentFeedbackActorIndex,
+                false,
+                actorOrder,
+                activePlayerId,
+                feedbackPlayerId,
+                version + 1,
+                actionLog,
+                legacyMatchOutcome
+        );
+    }
+
+    public Optional<MatchOutcome> legacyMatchOutcomeOptional() {
+        return Optional.ofNullable(legacyMatchOutcome);
+    }
+
+    @Deprecated
+    public record MatchOutcome(
+            String status,
+            String reason
+    ) {
+        public MatchOutcome {
+            Objects.requireNonNull(status, "status is required");
+        }
     }
 }

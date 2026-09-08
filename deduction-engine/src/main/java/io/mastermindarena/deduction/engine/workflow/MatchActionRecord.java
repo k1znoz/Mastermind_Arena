@@ -5,44 +5,30 @@ import java.util.Objects;
 
 public record MatchActionRecord(
         String actorId,
-        int turnNumber,
         String actionType,
-        List<String> symbols,
-        String payloadSummary,
-        List<String> emittedEvents,
-        String resultingStatus,
-        long recordedAtEpochMs
+        String guess,
+        String feedback,
+        long timestamp,
+        long version
 ) {
     public MatchActionRecord {
         Objects.requireNonNull(actorId, "actorId is required");
         Objects.requireNonNull(actionType, "actionType is required");
-        Objects.requireNonNull(symbols, "symbols is required");
-        Objects.requireNonNull(payloadSummary, "payloadSummary is required");
-        Objects.requireNonNull(emittedEvents, "emittedEvents is required");
-        Objects.requireNonNull(resultingStatus, "resultingStatus is required");
-        symbols = List.copyOf(symbols);
-        emittedEvents = List.copyOf(emittedEvents);
+        guess = guess == null ? null : guess;
+        feedback = feedback == null ? null : feedback;
+        if (timestamp < 0) {
+            throw new IllegalArgumentException("timestamp must be >= 0");
+        }
+        if (version < 0) {
+            throw new IllegalArgumentException("version must be >= 0");
+        }
     }
 
-    public static MatchActionRecord fromPayload(
-            String actorId,
-            int turnNumber,
-            Object actionPayload,
-            String resultingStatus,
-            List<String> emittedEvents,
-            long recordedAtEpochMs
-    ) {
-        MatchActionPayloadView payloadView = MatchActionPayloadView.from(actionPayload);
+    public boolean hasGuess() {
+        return guess != null && !guess.isBlank();
+    }
 
-        return new MatchActionRecord(
-                actorId,
-                turnNumber,
-                payloadView.actionType(),
-                payloadView.symbols(),
-                payloadView.payloadSummary(),
-                emittedEvents,
-                resultingStatus,
-                recordedAtEpochMs
-        );
+    public boolean hasFeedback() {
+        return feedback != null && !feedback.isBlank();
     }
 }
