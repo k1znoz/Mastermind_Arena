@@ -4,39 +4,29 @@ import java.util.List;
 
 public record MatchStateHttpResponse(
         String matchId,
+        String state,
+        String activePlayer,
+        String feedbackGiver,
+        List<String> players,
+        List<TurnEntry> turns,
         long version,
-        int turnNumber,
-        int currentActorIndex,
-        String currentActorId,
-        boolean turnActive,
-        List<String> actorOrder,
-        String status,
-        String matchOutcomeStatus,
-        String matchOutcomeReason,
-        String cancellationCode,
-        List<String> visibleSecretCode,
-        List<ActionLogEntry> actionLog
+        List<String> visibleSecretCode
 ) {
     public MatchStateHttpResponse {
-        actorOrder = actorOrder == null ? List.of() : List.copyOf(actorOrder);
+        players = players == null ? List.of() : List.copyOf(players);
+        turns = turns == null ? List.of() : List.copyOf(turns);
         visibleSecretCode = visibleSecretCode == null ? List.of() : List.copyOf(visibleSecretCode);
-        actionLog = actionLog == null ? List.of() : List.copyOf(actionLog);
     }
 
-    public record ActionLogEntry(
-            String actorId,
+    public record TurnEntry(
             int turnNumber,
+            String actorId,
             String actionType,
-            List<String> symbols,
-            String payloadSummary,
-            List<String> emittedEvents,
-            String resultingStatus,
-            long recordedAtEpochMs
+            String guess,
+            String feedback,
+            long timestamp,
+            long version
     ) {
-        public ActionLogEntry {
-            symbols = symbols == null ? List.of() : List.copyOf(symbols);
-            emittedEvents = emittedEvents == null ? List.of() : List.copyOf(emittedEvents);
-        }
     }
 
     public record Envelope(int statusCode, MatchStateHttpResponse body) {

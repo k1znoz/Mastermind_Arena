@@ -1,9 +1,9 @@
 package io.mastermindarena.deduction.api.submitaction;
 
-import io.mastermindarena.deduction.engine.contract.MatchOutcome;
 import io.mastermindarena.deduction.engine.workflow.MatchActionRecord;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class MatchStateHttpMapper {
@@ -19,26 +19,22 @@ public final class MatchStateHttpMapper {
     }
 
     public static MatchStateHttpResponse fromRuntimeState(MatchRuntimeState state, MatchStateViewActorContext actorContext) {
-        MatchOutcome outcome = state.matchOutcome();
-        List<MatchStateHttpResponse.ActionLogEntry> actionLog = state.actionLog().stream()
-                .filter(entry -> shouldExpose(entry, actorContext))
-                .map(entry -> toHttpEntry(entry, actorContext))
-                .toList();
+        List<MatchStateHttpResponse.TurnEntry> turns = new ArrayList<>();
+        for (MatchActionRecord action : state.actionLog()) {
+            if (shouldExpose(action, actorContext)) {
+                turns.add(toTurnEntry(action));
+            }
+        }
 
         return new MatchStateHttpResponse(
                 state.matchId(),
-                state.version(),
-                state.turnNumber(),
-                state.currentActorIndex(),
-                state.currentActorId(),
-                state.turnActive(),
-                state.actorOrder(),
                 state.status(),
-                outcome == null ? null : outcome.status(),
-                outcome == null ? null : outcome.completionReason(),
-                state.cancellationReason() == null ? null : state.cancellationReason().code(),
-                visibleSecretCode(state.actionLog(), actorContext),
-                actionLog
+                state.activePlayerId(),
+                state.feedbackPlayerId(),
+                state.actorOrder(),
+                turns,
+                state.version(),
+                visibleSecretCode(state.actionLog(), actorContext)
         );
     }
 
@@ -46,21 +42,15 @@ public final class MatchStateHttpMapper {
         return !"SECRET_CODE_SET".equals(entry.actionType()) || actorContext.isOwner(entry.actorId());
     }
 
-    private static MatchStateHttpResponse.ActionLogEntry toHttpEntry(MatchActionRecord entry, MatchStateViewActorContext actorContext) {
-        List<String> visibleSymbols = "SECRET_CODE_SET".equals(entry.actionType())
-                && !actorContext.isOwner(entry.actorId())
-                ? List.of()
-                : entry.symbols();
-
-        return new MatchStateHttpResponse.ActionLogEntry(
+    private static MatchStateHttpResponse.TurnEntry toTurnEntry(MatchActionRecord entry) {
+        return new MatchStateHttpResponse.TurnEntry(
+                entry.version(),
                 entry.actorId(),
-                entry.turnNumber(),
                 entry.actionType(),
-                visibleSymbols,
-                entry.payloadSummary(),
-                entry.emittedEvents(),
-                entry.resultingStatus(),
-                entry.recordedAtEpochMs()
+                entry.guess(),
+                entry.feedback(),
+                entry.timestamp(),
+                entry.version()
         );
     }
 
@@ -72,7 +62,7 @@ public final class MatchStateHttpMapper {
         for (int index = actionLog.size() - 1; index >= 0; index--) {
             MatchActionRecord entry = actionLog.get(index);
             if ("SECRET_CODE_SET".equals(entry.actionType()) && actorContext.isOwner(entry.actorId())) {
-                return entry.symbols();
+                return entry.guess() == null ? List.of() : List.of(entry.guess());
             }
         }
 
