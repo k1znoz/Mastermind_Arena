@@ -1,5 +1,6 @@
 package io.mastermindarena.deduction.engine.workflow;
 
+import java.util.List;
 import java.util.Objects;
 
 public record SubmitActionCommand(

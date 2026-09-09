@@ -1,6 +1,5 @@
 package io.mastermindarena.deduction.application.submitaction;
 
-import io.mastermindarena.deduction.engine.contract.ActionResolution;
 import io.mastermindarena.deduction.engine.contract.Rejection;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
@@ -12,7 +11,6 @@ import java.util.Objects;
 public record SubmitActionApplicationResponse(
         boolean accepted,
         MatchRuntimeState state,
-        ActionResolution resolution,
         SubmitActionApplicationRejection rejection,
         List<String> emittedEvents
 ) {
@@ -28,12 +26,11 @@ public record SubmitActionApplicationResponse(
 
     public static SubmitActionApplicationResponse fromEngineResult(SubmitActionResult result) {
         Objects.requireNonNull(result, "result is required");
-        Rejection rulesetRejection = result.resolution().rejection().orElse(null);
+        Rejection rulesetRejection = result.rejection();
         if (rulesetRejection != null && rulesetRejection.origin() == RejectionOrigin.RULESET) {
             return new SubmitActionApplicationResponse(
                     false,
                     result.state(),
-                    result.resolution(),
                     new SubmitActionApplicationRejection(
                             RejectionOrigin.RULESET,
                             rulesetRejection.code(),
@@ -46,7 +43,6 @@ public record SubmitActionApplicationResponse(
         return new SubmitActionApplicationResponse(
                 true,
                 result.state(),
-                result.resolution(),
                 null,
                 result.emittedEvents()
         );
@@ -55,7 +51,6 @@ public record SubmitActionApplicationResponse(
     public static SubmitActionApplicationResponse fromEngineError(String code) {
         return new SubmitActionApplicationResponse(
                 false,
-                null,
                 null,
                 new SubmitActionApplicationRejection(RejectionOrigin.ENGINE, code, null),
                 List.of()

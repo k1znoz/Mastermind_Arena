@@ -103,6 +103,6 @@ public final class SubmitActionOrchestrator {
 
     private void emit(List<String> emitted, GameEvent event) {
         emitted.add(event.name());
-        eventSink.publish(event.name());
+        eventSink.publish(event);
     }
 }

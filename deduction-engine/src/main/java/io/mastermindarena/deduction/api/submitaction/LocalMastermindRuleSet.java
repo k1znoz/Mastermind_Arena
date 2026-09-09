@@ -23,7 +23,7 @@ final class LocalMastermindRuleSet implements RuleSet {
             return reject("INVALID_ACTION_CONTEXT");
         }
 
-        Object payload = context.command().actionPayload();
+        Object payload = context.command().payload();
         if (!(payload instanceof Map<?, ?> rawMap)) {
             return reject("INVALID_ACTION_PAYLOAD");
         }
