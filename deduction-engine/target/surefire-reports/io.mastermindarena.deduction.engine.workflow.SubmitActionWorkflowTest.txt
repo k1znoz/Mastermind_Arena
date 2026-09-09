@@ -1,172 +1,157 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest
 -------------------------------------------------------------------------------
-Tests run: 22, Failures: 13, Errors: 0, Skipped: 0, Time elapsed: 0.055 s <<< FAILURE! -- in io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP016_businessActionRejectedByRuleSetWithRejectAction -- Time elapsed: 0.006 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP016_businessActionRejectedByRuleSetWithRejectAction(SubmitActionWorkflowTest.java:823)
+Tests run: 22, Failures: 0, Errors: 22, Skipped: 0, Time elapsed: 0.048 s <<< FAILURE! -- in io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP016_businessActionRejectedByRuleSetWithRejectAction -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP016_businessActionRejectedByRuleSetWithRejectAction(SubmitActionWorkflowTest.java:802)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP003_finishMatchWithOutcome -- Time elapsed: 0.003 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved, MatchFinished]> but was: <[GUESS_PLAYED, GAME_FINISHED]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP003_finishMatchWithOutcome(SubmitActionWorkflowTest.java:152)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP003_finishMatchWithOutcome -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP003_finishMatchWithOutcome(SubmitActionWorkflowTest.java:131)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP020_rulesetRejectionIsNotConfusedWithEngineRejection -- Time elapsed: 0.002 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP020_rulesetRejectionIsNotConfusedWithEngineRejection(SubmitActionWorkflowTest.java:1047)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP020_rulesetRejectionIsNotConfusedWithEngineRejection -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP020_rulesetRejectionIsNotConfusedWithEngineRejection(SubmitActionWorkflowTest.java:1026)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP002_acceptActionEndTurnAndStartNextTurn -- Time elapsed: 0.001 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved, TurnEnded, TurnStarted]> but was: <[GUESS_PLAYED, TURN_CHANGED]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP002_acceptActionEndTurnAndStartNextTurn(SubmitActionWorkflowTest.java:98)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP002_acceptActionEndTurnAndStartNextTurn -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP002_acceptActionEndTurnAndStartNextTurn(SubmitActionWorkflowTest.java:78)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP012_finishMatchWithoutOutcomeRejectedWithMatchOutcomeRequired -- Time elapsed: 0.003 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP012_finishMatchWithoutOutcomeRejectedWithMatchOutcomeRequired(SubmitActionWorkflowTest.java:621)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP012_finishMatchWithoutOutcomeRejectedWithMatchOutcomeRequired -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP012_finishMatchWithoutOutcomeRejectedWithMatchOutcomeRequired(SubmitActionWorkflowTest.java:598)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation -- Time elapsed: 0 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation(SubmitActionWorkflowTest.java:572)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP011_rulesetResolutionWithoutDirectiveIsRejectedAsEngineContractViolation(SubmitActionWorkflowTest.java:549)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP019_rulesetRejectionDoesNotMutateState -- Time elapsed: 0.002 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP019_rulesetRejectionDoesNotMutateState(SubmitActionWorkflowTest.java:992)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP008_actorNotAuthorized -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP008_actorNotAuthorized(SubmitActionWorkflowTest.java:379)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget -- Time elapsed: 0.002 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget(SubmitActionWorkflowTest.java:926)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP010a_idempotentReplayReturnsPreviousResponseWithoutNewEffects -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP010a_idempotentReplayReturnsPreviousResponseWithoutNewEffects(SubmitActionWorkflowTest.java:461)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired -- Time elapsed: 0.002 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired(SubmitActionWorkflowTest.java:670)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP017_rulesetOpaqueCodeIsPreservedAsIs -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP017_rulesetOpaqueCodeIsPreservedAsIs(SubmitActionWorkflowTest.java:859)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP021_invalidDirectiveCombinationRejectedWithInvalidEngineDirectiveCombination -- Time elapsed: 0.001 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP021_invalidDirectiveCombinationRejectedWithInvalidEngineDirectiveCombination(SubmitActionWorkflowTest.java:768)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP009_versionConflict -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP009_versionConflict(SubmitActionWorkflowTest.java:420)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP004_cancelMatchWithCancellationReason -- Time elapsed: 0.006 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved, MatchCancelled]> but was: <[GUESS_PLAYED]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP004_cancelMatchWithCancellationReason(SubmitActionWorkflowTest.java:200)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP015_terminalMatchRefusesSubmitActionAndDoesNotInvokeRuleSet -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP015_terminalMatchRefusesSubmitActionAndDoesNotInvokeRuleSet(SubmitActionWorkflowTest.java:224)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP001_acceptActionAndContinueTurn -- Time elapsed: 0 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved]> but was: <[GUESS_PLAYED]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP001_acceptActionAndContinueTurn(SubmitActionWorkflowTest.java:59)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP019_rulesetRejectionDoesNotMutateState -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP019_rulesetRejectionDoesNotMutateState(SubmitActionWorkflowTest.java:972)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict -- Time elapsed: 0 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict(SubmitActionWorkflowTest.java:719)
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP018_rulesetRejectionIsLoggedOnlyAccordingToLogTarget(SubmitActionWorkflowTest.java:888)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP005_matchNotFound -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP005_matchNotFound(SubmitActionWorkflowTest.java:265)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP010b_idempotencyConflict -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP010b_idempotencyConflict(SubmitActionWorkflowTest.java:503)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP013_cancelMatchWithoutReasonRejectedWithCancellationReasonRequired(SubmitActionWorkflowTest.java:647)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP007_turnNotActive -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP007_turnNotActive(SubmitActionWorkflowTest.java:338)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP021_invalidDirectiveCombinationRejectedWithInvalidEngineDirectiveCombination -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP021_invalidDirectiveCombinationRejectedWithInvalidEngineDirectiveCombination(SubmitActionWorkflowTest.java:745)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP004_cancelMatchWithCancellationReason -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP004_cancelMatchWithCancellationReason(SubmitActionWorkflowTest.java:179)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP001_acceptActionAndContinueTurn -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP001_acceptActionAndContinueTurn(SubmitActionWorkflowTest.java:39)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP014_finishAndCancelConflictRejectedWithTerminalDirectivesConflict(SubmitActionWorkflowTest.java:696)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP006_matchNotInProgress -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.engine.workflow.SubmitActionWorkflowTest.wfP006_matchNotInProgress(SubmitActionWorkflowTest.java:297)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)

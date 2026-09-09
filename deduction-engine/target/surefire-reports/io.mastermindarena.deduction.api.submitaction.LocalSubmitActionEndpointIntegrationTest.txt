@@ -1,4 +1,36 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest
 -------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest
+Tests run: 4, Failures: 0, Errors: 4, Skipped: 0, Time elapsed: 0.019 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionNominalReturns200 -- Time elapsed: 0.005 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.buildEndpoint(LocalSubmitActionEndpointIntegrationTest.java:122)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionNominalReturns200(LocalSubmitActionEndpointIntegrationTest.java:28)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionMissingMatchReturns404 -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator)'
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.buildEndpoint(LocalSubmitActionEndpointIntegrationTest.java:154)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionMissingMatchReturns404(LocalSubmitActionEndpointIntegrationTest.java:78)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionRulesetRejectionReturns422 -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.buildEndpoint(LocalSubmitActionEndpointIntegrationTest.java:122)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionRulesetRejectionReturns422(LocalSubmitActionEndpointIntegrationTest.java:53)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionVersionConflictReturns409 -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.buildEndpoint(LocalSubmitActionEndpointIntegrationTest.java:122)
+	at io.mastermindarena.deduction.api.submitaction.LocalSubmitActionEndpointIntegrationTest.p3b_submitActionVersionConflictReturns409(LocalSubmitActionEndpointIntegrationTest.java:96)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

@@ -1,29 +1,35 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest
 -------------------------------------------------------------------------------
-Tests run: 4, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 0.006 s <<< FAILURE! -- in io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest
-io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_nominalAccepted -- Time elapsed: 0 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved]> but was: <[GUESS_PLAYED]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_nominalAccepted(SubmitActionApplicationIntegrationTest.java:43)
+Tests run: 4, Failures: 0, Errors: 4, Skipped: 0, Time elapsed: 0.008 s <<< FAILURE! -- in io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest
+io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_nominalAccepted -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.buildService(SubmitActionApplicationIntegrationTest.java:136)
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_nominalAccepted(SubmitActionApplicationIntegrationTest.java:30)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_rulesetRejectionIsPreserved -- Time elapsed: 0 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionRejected]> but was: <[]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_rulesetRejectionIsPreserved(SubmitActionApplicationIntegrationTest.java:98)
+io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_idempotentReplayWhenSameRequestIsResubmitted -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.buildService(SubmitActionApplicationIntegrationTest.java:136)
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_idempotentReplayWhenSameRequestIsResubmitted(SubmitActionApplicationIntegrationTest.java:105)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_structuralRejectionMatchNotFound -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator)'
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.buildService(SubmitActionApplicationIntegrationTest.java:144)
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_structuralRejectionMatchNotFound(SubmitActionApplicationIntegrationTest.java:48)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_rulesetRejectionIsPreserved -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.buildService(SubmitActionApplicationIntegrationTest.java:136)
+	at io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationIntegrationTest.p1a_rulesetRejectionIsPreserved(SubmitActionApplicationIntegrationTest.java:76)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)

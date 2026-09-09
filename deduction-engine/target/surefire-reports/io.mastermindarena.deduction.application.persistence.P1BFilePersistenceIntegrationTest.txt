@@ -1,16 +1,71 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest
 -------------------------------------------------------------------------------
-Tests run: 9, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.133 s <<< FAILURE! -- in io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest
-io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_workflowEventsPersistedOnlyWhenExpected -- Time elapsed: 0.010 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <[ActionSubmitted, ActionAccepted, ActionResolved]> but was: <[GUESS_PLAYED]>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_workflowEventsPersistedOnlyWhenExpected(P1BFilePersistenceIntegrationTest.java:146)
+Tests run: 9, Failures: 0, Errors: 9, Skipped: 0, Time elapsed: 0.131 s <<< FAILURE! -- in io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_nominalSubmissionWithStateReloadedFromFileStore -- Time elapsed: 0.032 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator, io.mastermindarena.deduction.engine.workflow.IdempotencyStore)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.createContext(P1BFilePersistenceIntegrationTest.java:321)
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_nominalSubmissionWithStateReloadedFromFileStore(P1BFilePersistenceIntegrationTest.java:44)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1c_terminalFinishedStateRoundTripThroughFileMatchStateStore -- Time elapsed: 0.012 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1c_terminalFinishedStateRoundTripThroughFileMatchStateStore(P1BFilePersistenceIntegrationTest.java:197)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_workflowEventsPersistedOnlyWhenExpected -- Time elapsed: 0.048 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator, io.mastermindarena.deduction.engine.workflow.IdempotencyStore)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.createContext(P1BFilePersistenceIntegrationTest.java:321)
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_workflowEventsPersistedOnlyWhenExpected(P1BFilePersistenceIntegrationTest.java:135)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p2a_eventSinkPublishesEvenIfLogFileWasDeletedAfterInitialization -- Time elapsed: 0.004 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.infrastructure.file.FileWorkflowEventSink.publish(java.lang.String)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p2a_eventSinkPublishesEvenIfLogFileWasDeletedAfterInitialization(P1BFilePersistenceIntegrationTest.java:266)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p2a_fileStateRoundTripRemainsReadableWithTrailingNewlineNoise -- Time elapsed: 0.004 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p2a_fileStateRoundTripRemainsReadableWithTrailingNewlineNoise(P1BFilePersistenceIntegrationTest.java:238)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p2b_terminalCancelledStateRoundTripThroughFileMatchStateStore -- Time elapsed: 0.005 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p2b_terminalCancelledStateRoundTripThroughFileMatchStateStore(P1BFilePersistenceIntegrationTest.java:281)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_structuralRejectionDoesNotPersistMutation -- Time elapsed: 0.005 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator, io.mastermindarena.deduction.engine.workflow.IdempotencyStore)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.createContext(P1BFilePersistenceIntegrationTest.java:321)
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_structuralRejectionDoesNotPersistMutation(P1BFilePersistenceIntegrationTest.java:65)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_idempotentReplayAfterStoreReconstruction -- Time elapsed: 0.006 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator, io.mastermindarena.deduction.engine.workflow.IdempotencyStore)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.createContext(P1BFilePersistenceIntegrationTest.java:321)
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_idempotentReplayAfterStoreReconstruction(P1BFilePersistenceIntegrationTest.java:95)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_idempotencyConflictIsDetectedAfterReconstruction -- Time elapsed: 0.007 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator.<init>(io.mastermindarena.deduction.engine.workflow.MatchStateStore, io.mastermindarena.deduction.engine.workflow.EventSink, io.mastermindarena.deduction.engine.contract.RuleSet, io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator, io.mastermindarena.deduction.engine.workflow.IdempotencyStore)'
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.createContext(P1BFilePersistenceIntegrationTest.java:321)
+	at io.mastermindarena.deduction.application.persistence.P1BFilePersistenceIntegrationTest.p1b_idempotencyConflictIsDetectedAfterReconstruction(P1BFilePersistenceIntegrationTest.java:118)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)

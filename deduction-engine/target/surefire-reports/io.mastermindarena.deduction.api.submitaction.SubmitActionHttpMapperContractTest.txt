@@ -1,4 +1,20 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest
+Tests run: 5, Failures: 0, Errors: 2, Skipped: 0, Time elapsed: 0.016 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest
+io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest.p3a_mapsNominalSuccessTo200 -- Time elapsed: 0.001 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest.inProgressState(SubmitActionHttpMapperContractTest.java:114)
+	at io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest.p3a_mapsNominalSuccessTo200(SubmitActionHttpMapperContractTest.java:39)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest.p3a_mapsRulesetRejectionTo422WithoutCodeTransformation -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'void io.mastermindarena.deduction.engine.workflow.MatchRuntimeState.<init>(java.lang.String, int, int, boolean, java.util.List, long, java.lang.String, io.mastermindarena.deduction.engine.contract.MatchOutcome, io.mastermindarena.deduction.engine.contract.CancellationReason)'
+	at io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest.inProgressState(SubmitActionHttpMapperContractTest.java:114)
+	at io.mastermindarena.deduction.api.submitaction.SubmitActionHttpMapperContractTest.p3a_mapsRulesetRejectionTo422WithoutCodeTransformation(SubmitActionHttpMapperContractTest.java:59)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

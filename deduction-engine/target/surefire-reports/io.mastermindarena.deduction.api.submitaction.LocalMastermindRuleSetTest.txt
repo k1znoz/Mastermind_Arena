@@ -1,42 +1,27 @@
 -------------------------------------------------------------------------------
 Test set: io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 0.055 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest
-io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecretResetAfterFirstValidation -- Time elapsed: 0.030 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <SECRET_ALREADY_SET> but was: <UNSUPPORTED_ACTION_TYPE>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecretResetAfterFirstValidation(LocalMastermindRuleSetTest.java:48)
+Tests run: 3, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 0.057 s <<< FAILURE! -- in io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest
+io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecretResetAfterFirstValidation -- Time elapsed: 0.025 s <<< ERROR!
+java.lang.NoSuchMethodError: 'io.mastermindarena.deduction.engine.workflow.MatchActionRecord io.mastermindarena.deduction.engine.workflow.MatchActionRecord.fromPayload(java.lang.String, int, java.lang.Object, java.lang.String, java.util.List, long)'
+	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.record(LocalMastermindRuleSetTest.java:106)
+	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecretResetAfterFirstValidation(LocalMastermindRuleSetTest.java:36)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecondPlayerReadyForSameActor -- Time elapsed: 0.004 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <PLAYER_ALREADY_READY> but was: <UNSUPPORTED_ACTION_TYPE>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
-	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
-	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecondPlayerReadyForSameActor(LocalMastermindRuleSetTest.java:29)
+io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecondPlayerReadyForSameActor -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'io.mastermindarena.deduction.engine.workflow.MatchActionRecord io.mastermindarena.deduction.engine.workflow.MatchActionRecord.fromPayload(java.lang.String, int, java.lang.Object, java.lang.String, java.util.List, long)'
+	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.record(LocalMastermindRuleSetTest.java:106)
+	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.rejectsSecondPlayerReadyForSameActor(LocalMastermindRuleSetTest.java:23)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 
-io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.finishesOnlyWhenBothPlayersCrackOpponentSecret -- Time elapsed: 0 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
-	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
-	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
-	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)
-	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.finishesOnlyWhenBothPlayersCrackOpponentSecret(LocalMastermindRuleSetTest.java:68)
+io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.finishesOnlyWhenBothPlayersCrackOpponentSecret -- Time elapsed: 0.002 s <<< ERROR!
+java.lang.NoSuchMethodError: 'io.mastermindarena.deduction.engine.workflow.MatchActionRecord io.mastermindarena.deduction.engine.workflow.MatchActionRecord.fromPayload(java.lang.String, int, java.lang.Object, java.lang.String, java.util.List, long)'
+	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.record(LocalMastermindRuleSetTest.java:106)
+	at io.mastermindarena.deduction.api.submitaction.LocalMastermindRuleSetTest.finishesOnlyWhenBothPlayersCrackOpponentSecret(LocalMastermindRuleSetTest.java:55)
 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
