@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationService;
-import io.mastermindarena.deduction.engine.contract.ActionResolutionContractValidator;
-import io.mastermindarena.deduction.engine.contract.RuleSet;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcIdempotencyStore;
@@ -80,14 +78,8 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             stateStore.findById(config.seedMatchId()).orElseGet(() -> {
                 MatchRuntimeState seeded = new MatchRuntimeState(
                         config.seedMatchId(),
-                        1,
-                        0,
-                        true,
                         List.of(config.seedActorId(), config.seedOpponentId()),
-                        0,
-                        "IN_PROGRESS",
-                        null,
-                        null
+                        0L
                 );
                 stateStore.save(seeded);
                 return seeded;
@@ -96,12 +88,9 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
             WebSocketSessionRegistry webSocketSessionRegistry = new WebSocketSessionRegistry();
             WebSocketBroadcastService webSocketBroadcastService = new WebSocketBroadcastService(eventSink, webSocketSessionRegistry);
-            RuleSet ruleSet = new LocalMastermindRuleSet();
             SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
                     stateStore,
                     eventSink,
-                    ruleSet,
-                    new ActionResolutionContractValidator(),
                     new JdbcIdempotencyStore(persistenceContext)
             );
             LocalSubmitActionEndpoint endpoint = new LocalSubmitActionEndpoint(new SubmitActionApplicationService(orchestrator));

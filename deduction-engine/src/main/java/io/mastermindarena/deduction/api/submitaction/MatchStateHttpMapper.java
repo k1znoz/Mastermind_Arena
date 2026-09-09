@@ -44,7 +44,7 @@ public final class MatchStateHttpMapper {
 
     private static MatchStateHttpResponse.TurnEntry toTurnEntry(MatchActionRecord entry) {
         return new MatchStateHttpResponse.TurnEntry(
-                entry.version(),
+                (int) entry.version(),
                 entry.actorId(),
                 entry.actionType(),
                 entry.guess(),
