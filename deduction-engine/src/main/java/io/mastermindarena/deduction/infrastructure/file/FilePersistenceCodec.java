@@ -10,6 +10,7 @@ import io.mastermindarena.deduction.engine.contract.Rejection;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
 import io.mastermindarena.deduction.engine.workflow.MatchActionRecord;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
+import io.mastermindarena.deduction.engine.workflow.SubmitActionCommand;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionResult;
 
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class FilePersistenceCodec {
+    // separateur interne (non present en base64) pour combiner deux blobs deja encodes dans une seule ligne
+    private static final String FIELD_GROUP_SEPARATOR = "\u001F";
+
     private FilePersistenceCodec() {
     }
 
@@ -51,61 +55,83 @@ public final class FilePersistenceCodec {
     }
 
     public static String serializeMatchRuntimeState(MatchRuntimeState state) {
-        String cancellationCode = state.cancellationReasonOptional().map(CancellationReason::code).orElse("");
-        String outcome = state.matchOutcomeOptional().map(FilePersistenceCodec::serializeMatchOutcome).orElse("");
+        String legacyOutcome = state.legacyMatchOutcomeOptional()
+                .map(FilePersistenceCodec::serializeLegacyMatchOutcome)
+                .orElse("");
 
         return String.join("\t",
                 encode(state.matchId()),
+                encode(state.status()),
                 Integer.toString(state.turnNumber()),
                 Integer.toString(state.currentActorIndex()),
+                Integer.toString(state.currentFeedbackActorIndex()),
                 Boolean.toString(state.turnActive()),
                 encodeStringList(state.actorOrder()),
+                encode(state.activePlayerId()),
+                encode(state.feedbackPlayerId()),
                 Long.toString(state.version()),
-                encode(state.status()),
-                encode(cancellationCode),
-                encode(outcome),
-                encodeStringList(state.actionLog().stream().map(FilePersistenceCodec::serializeMatchActionRecord).toList())
+                encodeStringList(state.actionLog().stream().map(FilePersistenceCodec::serializeMatchActionRecord).toList()),
+                encode(legacyOutcome)
         );
     }
 
     public static MatchRuntimeState deserializeMatchRuntimeState(String line) {
         String[] fields = line.split("\t", -1);
-        if (fields.length != 9 && fields.length != 10) {
+        if (fields.length != 12) {
             throw new IllegalArgumentException("Invalid MatchRuntimeState payload");
         }
 
         String matchId = decode(fields[0]);
-        int turnNumber = Integer.parseInt(fields[1]);
-        int currentActorIndex = Integer.parseInt(fields[2]);
-        boolean turnActive = Boolean.parseBoolean(fields[3]);
-        List<String> actorOrder = decodeStringList(fields[4]);
-        long version = Long.parseLong(fields[5]);
-        String status = decode(fields[6]);
+        String status = decode(fields[1]);
+        int turnNumber = Integer.parseInt(fields[2]);
+        int currentActorIndex = Integer.parseInt(fields[3]);
+        int currentFeedbackActorIndex = Integer.parseInt(fields[4]);
+        boolean turnActive = Boolean.parseBoolean(fields[5]);
+        List<String> actorOrder = decodeStringList(fields[6]);
+        String activePlayerId = decode(fields[7]);
+        String feedbackPlayerId = decode(fields[8]);
+        long version = Long.parseLong(fields[9]);
+        List<MatchActionRecord> actionLog = decodeStringList(fields[10]).stream()
+                .map(FilePersistenceCodec::deserializeMatchActionRecord)
+                .toList();
 
-        String cancellationCode = decode(fields[7]);
-        CancellationReason cancellationReason = cancellationCode.isBlank() ? null : new CancellationReason(cancellationCode);
-
-        String outcomeRaw = decode(fields[8]);
-        MatchOutcome outcome = outcomeRaw.isBlank() ? null : deserializeMatchOutcome(outcomeRaw);
-
-        List<MatchActionRecord> actionLog = fields.length == 10
-            ? decodeStringList(fields[9]).stream().map(FilePersistenceCodec::deserializeMatchActionRecord).toList()
-            : List.of();
+        String legacyOutcomeRaw = decode(fields[11]);
+        MatchRuntimeState.MatchOutcome legacyOutcome = legacyOutcomeRaw.isBlank() ? null : deserializeLegacyMatchOutcome(legacyOutcomeRaw);
 
         return new MatchRuntimeState(
                 matchId,
+                status,
                 turnNumber,
                 currentActorIndex,
+                currentFeedbackActorIndex,
                 turnActive,
                 actorOrder,
+                activePlayerId,
+                feedbackPlayerId,
                 version,
-                status,
-                outcome,
-                cancellationReason,
-                actionLog
+                actionLog,
+                legacyOutcome
         );
     }
 
+    private static String serializeLegacyMatchOutcome(MatchRuntimeState.MatchOutcome outcome) {
+        return String.join("|",
+                encode(outcome.status()),
+                encode(outcome.reason() == null ? "" : outcome.reason())
+        );
+    }
+
+    private static MatchRuntimeState.MatchOutcome deserializeLegacyMatchOutcome(String value) {
+        String[] parts = value.split("\\|", -1);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid MatchOutcome payload");
+        }
+        String status = decode(parts[0]);
+        String reasonRaw = decode(parts[1]);
+        return new MatchRuntimeState.MatchOutcome(status, reasonRaw.isBlank() ? null : reasonRaw);
+    }
+
+    /** Conserve pour compatibilite locale : ActionResolution n'est plus produit par le workflow principal. */
     public static String serializeActionResolution(ActionResolution resolution) {
         String directives = resolution.engineDirectives().stream()
                 .map(Enum::name)
@@ -183,7 +209,7 @@ public final class FilePersistenceCodec {
     public static List<String> serializeSubmitActionResult(SubmitActionResult result) {
         return List.of(
                 encode(result.state() == null ? "" : serializeMatchRuntimeState(result.state())),
-                encode(result.resolution() == null ? "" : serializeActionResolution(result.resolution())),
+                encode(serializeActionAndRejection(result.action(), result.rejection())),
                 encode(encodeStringList(result.emittedEvents()))
         );
     }
@@ -196,12 +222,81 @@ public final class FilePersistenceCodec {
         String stateRaw = decode(lines.get(0));
         MatchRuntimeState state = stateRaw.isBlank() ? null : deserializeMatchRuntimeState(stateRaw);
 
-        String resolutionRaw = decode(lines.get(1));
-        ActionResolution resolution = resolutionRaw.isBlank() ? null : deserializeActionResolution(resolutionRaw);
+        String[] actionAndRejection = decode(lines.get(1)).split(FIELD_GROUP_SEPARATOR, -1);
+        if (actionAndRejection.length != 2) {
+            throw new IllegalArgumentException("Invalid SubmitActionResult action/rejection payload");
+        }
+        SubmitActionCommand action = deserializeSubmitActionCommand(actionAndRejection[0]);
+        Rejection rejection = actionAndRejection[1].isBlank() ? null : deserializeRejection(actionAndRejection[1]);
 
         List<String> emittedEvents = decodeStringList(decode(lines.get(2)));
 
-        return new SubmitActionResult(state, resolution, emittedEvents);
+        return new SubmitActionResult(state, action, emittedEvents, rejection);
+    }
+
+    private static String serializeActionAndRejection(SubmitActionCommand action, Rejection rejection) {
+        return String.join(FIELD_GROUP_SEPARATOR,
+                serializeSubmitActionCommand(action),
+                rejection == null ? "" : serializeRejection(rejection)
+        );
+    }
+
+    private static String serializeSubmitActionCommand(SubmitActionCommand action) {
+        return String.join("\t",
+                encode(action.matchId()),
+                encode(action.actorId()),
+                Long.toString(action.expectedVersion()),
+                encode(action.idempotencyKey()),
+                encode(action.actionType()),
+                encode(action.payload() == null ? "" : action.payload()),
+                encode(action.feedback() == null ? "" : action.feedback())
+        );
+    }
+
+    private static SubmitActionCommand deserializeSubmitActionCommand(String value) {
+        String[] fields = value.split("\t", -1);
+        if (fields.length != 7) {
+            throw new IllegalArgumentException("Invalid SubmitActionCommand payload");
+        }
+
+        String payload = decode(fields[5]);
+        String feedback = decode(fields[6]);
+        return new SubmitActionCommand(
+                decode(fields[0]),
+                decode(fields[1]),
+                Long.parseLong(fields[2]),
+                decode(fields[3]),
+                decode(fields[4]),
+                payload.isBlank() ? null : payload,
+                feedback.isBlank() ? null : feedback
+        );
+    }
+
+    private static String serializeRejection(Rejection rejection) {
+        String targets = rejection.targetLogs().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
+        return String.join("\t",
+                rejection.origin().name(),
+                encode(rejection.code()),
+                encode(rejection.messageKey() == null ? "" : rejection.messageKey()),
+                encode(targets)
+        );
+    }
+
+    private static Rejection deserializeRejection(String value) {
+        String[] fields = value.split("\t", -1);
+        if (fields.length != 4) {
+            throw new IllegalArgumentException("Invalid Rejection payload");
+        }
+
+        RejectionOrigin origin = RejectionOrigin.valueOf(fields[0]);
+        String code = decode(fields[1]);
+        String messageKey = decode(fields[2]);
+        String targetsRaw = decode(fields[3]);
+        Set<LogTarget> targetLogs = targetsRaw.isBlank()
+                ? Set.of(LogTarget.TECHNICAL_LOG)
+                : ArraysUtil.toEnumSet(targetsRaw.split(",", -1), LogTarget::valueOf);
+
+        return new Rejection(origin, code, messageKey.isBlank() ? null : messageKey, null, targetLogs);
     }
 
     private static String serializeMatchOutcome(MatchOutcome outcome) {
@@ -252,31 +347,29 @@ public final class FilePersistenceCodec {
     private static String serializeMatchActionRecord(MatchActionRecord actionRecord) {
         return String.join("|",
                 encode(actionRecord.actorId()),
-                Integer.toString(actionRecord.turnNumber()),
                 encode(actionRecord.actionType()),
-                encodeStringList(actionRecord.symbols()),
-                encode(actionRecord.payloadSummary()),
-                encodeStringList(actionRecord.emittedEvents()),
-                encode(actionRecord.resultingStatus()),
-                Long.toString(actionRecord.recordedAtEpochMs())
+                encode(actionRecord.guess() == null ? "" : actionRecord.guess()),
+                encode(actionRecord.feedback() == null ? "" : actionRecord.feedback()),
+                Long.toString(actionRecord.timestamp()),
+                Long.toString(actionRecord.version())
         );
     }
 
     private static MatchActionRecord deserializeMatchActionRecord(String value) {
         String[] parts = value.split("\\|", -1);
-        if (parts.length != 8) {
+        if (parts.length != 6) {
             throw new IllegalArgumentException("Invalid MatchActionRecord payload");
         }
 
+        String guess = decode(parts[2]);
+        String feedback = decode(parts[3]);
         return new MatchActionRecord(
                 decode(parts[0]),
-                Integer.parseInt(parts[1]),
-                decode(parts[2]),
-                decodeStringList(parts[3]),
-                decode(parts[4]),
-                decodeStringList(parts[5]),
-                decode(parts[6]),
-                Long.parseLong(parts[7])
+                decode(parts[1]),
+                guess.isBlank() ? null : guess,
+                feedback.isBlank() ? null : feedback,
+                Long.parseLong(parts[4]),
+                Long.parseLong(parts[5])
         );
     }
 
