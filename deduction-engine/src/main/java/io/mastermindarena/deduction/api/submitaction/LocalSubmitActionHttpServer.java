@@ -13,6 +13,8 @@ import io.mastermindarena.deduction.infrastructure.jdbc.JdbcMatchStateStore;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcPersistenceContext;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcSchemaMigrator;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcWorkflowEventSink;
+import io.mastermindarena.deduction.api.websocket.runtime.WebSocketBroadcastService;
+import io.mastermindarena.deduction.api.websocket.runtime.WebSocketSessionRegistry;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,10 +37,19 @@ import java.util.stream.Collectors;
 public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private final HttpServer server;
     private final RuntimeMetrics metrics;
+    private final WebSocketSessionRegistry webSocketSessionRegistry;
+    private final WebSocketBroadcastService webSocketBroadcastService;
 
-    private LocalSubmitActionHttpServer(HttpServer server, RuntimeMetrics metrics) {
+    private LocalSubmitActionHttpServer(
+            HttpServer server,
+            RuntimeMetrics metrics,
+            WebSocketSessionRegistry webSocketSessionRegistry,
+            WebSocketBroadcastService webSocketBroadcastService
+    ) {
         this.server = server;
         this.metrics = metrics;
+        this.webSocketSessionRegistry = webSocketSessionRegistry;
+        this.webSocketBroadcastService = webSocketBroadcastService;
     }
 
     private record CorsPolicy(
@@ -83,6 +94,8 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             });
 
             JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
+            WebSocketSessionRegistry webSocketSessionRegistry = new WebSocketSessionRegistry();
+            WebSocketBroadcastService webSocketBroadcastService = new WebSocketBroadcastService(eventSink, webSocketSessionRegistry);
             RuleSet ruleSet = new LocalMastermindRuleSet();
             SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
                     stateStore,
@@ -117,7 +130,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 ));
                 server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
-            return new LocalSubmitActionHttpServer(server, metrics);
+            return new LocalSubmitActionHttpServer(server, metrics, webSocketSessionRegistry, webSocketBroadcastService);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create local SubmitAction HTTP server", e);
         }
