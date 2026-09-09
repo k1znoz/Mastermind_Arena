@@ -16,4 +16,11 @@ public record SubmitActionResult(
         Objects.requireNonNull(action, "action is required");
         emittedEvents = emittedEvents == null ? List.of() : List.copyOf(emittedEvents);
     }
+
+    /** Reconstruit le contexte (matchId/version/payload) pour publier les emittedEvents en EventSink.PublishedEvent. */
+    public List<EventSink.PublishedEvent> enrichedEmittedEvents(long timestamp) {
+        return emittedEvents.stream()
+                .map(name -> new EventSink.PublishedEvent(GameEvent.valueOf(name), state.matchId(), state.version(), action.payload(), timestamp))
+                .toList();
+    }
 }
