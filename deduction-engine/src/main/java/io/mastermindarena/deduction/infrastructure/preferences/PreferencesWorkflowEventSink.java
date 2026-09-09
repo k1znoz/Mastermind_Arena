@@ -1,6 +1,7 @@
 package io.mastermindarena.deduction.infrastructure.preferences;
 
 import io.mastermindarena.deduction.engine.workflow.EventSink;
+import io.mastermindarena.deduction.engine.workflow.GameEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,17 +17,17 @@ public final class PreferencesWorkflowEventSink implements EventSink {
     }
 
     @Override
-    public void publish(String event) {
+    public void publish(GameEvent event) {
         int nextIndex = node.getInt("count", 0);
-        node.put(Integer.toString(nextIndex), event);
+        node.put(Integer.toString(nextIndex), event.name());
         node.putInt("count", nextIndex + 1);
         flush(node);
     }
 
     @Override
-    public List<String> allEvents() {
+    public List<GameEvent> allEvents() {
         try {
-            List<String> result = new ArrayList<>();
+            List<GameEvent> result = new ArrayList<>();
             List<String> keys = new ArrayList<>();
             for (String key : node.keys()) {
                 if (!"count".equals(key)) {
@@ -35,7 +36,7 @@ public final class PreferencesWorkflowEventSink implements EventSink {
             }
             keys.sort(Comparator.comparingInt(Integer::parseInt));
             for (String key : keys) {
-                result.add(node.get(key, ""));
+                result.add(GameEvent.valueOf(node.get(key, "")));
             }
             return List.copyOf(result);
         } catch (BackingStoreException e) {

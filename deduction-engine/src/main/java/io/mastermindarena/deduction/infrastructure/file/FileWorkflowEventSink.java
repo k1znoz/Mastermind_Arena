@@ -1,6 +1,7 @@
 package io.mastermindarena.deduction.infrastructure.file;
 
 import io.mastermindarena.deduction.engine.workflow.EventSink;
+import io.mastermindarena.deduction.engine.workflow.GameEvent;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,8 +30,8 @@ public final class FileWorkflowEventSink implements EventSink {
     }
 
     @Override
-    public void publish(String event) {
-        String encoded = FilePersistenceCodec.encode(event) + System.lineSeparator();
+    public void publish(GameEvent event) {
+        String encoded = FilePersistenceCodec.encode(event.name()) + System.lineSeparator();
         try {
             Path parent = filePath.getParent();
             if (parent != null) {
@@ -49,13 +50,13 @@ public final class FileWorkflowEventSink implements EventSink {
     }
 
     @Override
-    public List<String> allEvents() {
+    public List<GameEvent> allEvents() {
         try {
             List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
-            List<String> decoded = new ArrayList<>();
+            List<GameEvent> decoded = new ArrayList<>();
             for (String line : lines) {
                 if (!line.isBlank()) {
-                    decoded.add(FilePersistenceCodec.decode(line));
+                    decoded.add(GameEvent.valueOf(FilePersistenceCodec.decode(line)));
                 }
             }
             return List.copyOf(decoded);

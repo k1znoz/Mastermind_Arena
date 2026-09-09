@@ -1,6 +1,7 @@
 package io.mastermindarena.deduction.infrastructure.jdbc;
 
 import io.mastermindarena.deduction.engine.workflow.EventSink;
+import io.mastermindarena.deduction.engine.workflow.GameEvent;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,11 +18,11 @@ public final class JdbcWorkflowEventSink implements EventSink {
     }
 
     @Override
-    public void publish(String event) {
+    public void publish(GameEvent event) {
         String sql = "INSERT INTO " + context.table("workflow_event") + " (event_payload) VALUES (?)";
         try (Connection connection = context.openConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, event);
+            statement.setString(1, event.name());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to persist workflow event", e);
@@ -29,14 +30,14 @@ public final class JdbcWorkflowEventSink implements EventSink {
     }
 
     @Override
-    public List<String> allEvents() {
+    public List<GameEvent> allEvents() {
         String sql = "SELECT event_payload FROM " + context.table("workflow_event") + " ORDER BY event_id ASC";
         try (Connection connection = context.openConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
-            List<String> result = new ArrayList<>();
+            List<GameEvent> result = new ArrayList<>();
             while (resultSet.next()) {
-                result.add(resultSet.getString(1));
+                result.add(GameEvent.valueOf(resultSet.getString(1)));
             }
             return List.copyOf(result);
         } catch (SQLException e) {
