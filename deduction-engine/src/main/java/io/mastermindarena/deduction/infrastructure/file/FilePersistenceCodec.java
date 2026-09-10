@@ -77,6 +77,9 @@ public final class FilePersistenceCodec {
 
     public static MatchRuntimeState deserializeMatchRuntimeState(String line) {
         String[] fields = line.split("\t", -1);
+        if (fields.length == 9 || fields.length == 10) {
+            return deserializeLegacyMatchRuntimeState(fields);
+        }
         if (fields.length != 12) {
             throw new IllegalArgumentException("Invalid MatchRuntimeState payload");
         }
@@ -112,6 +115,45 @@ public final class FilePersistenceCodec {
                 actionLog,
                 legacyOutcome
         );
+    }
+
+    private static MatchRuntimeState deserializeLegacyMatchRuntimeState(String[] fields) {
+        String matchId = decode(fields[0]);
+        int turnNumber = Integer.parseInt(fields[1]);
+        int currentActorIndex = Integer.parseInt(fields[2]);
+        boolean turnActive = Boolean.parseBoolean(fields[3]);
+        List<String> actorOrder = decodeStringList(fields[4]);
+        long version = Long.parseLong(fields[5]);
+        String status = normalizeLegacyStatus(decode(fields[6]));
+        List<MatchActionRecord> actionLog = fields.length == 10
+                ? decodeStringList(fields[9]).stream().map(FilePersistenceCodec::deserializeMatchActionRecord).toList()
+                : List.of();
+        int currentFeedbackActorIndex = actorOrder.size() <= 1 ? 0 : (currentActorIndex + 1) % actorOrder.size();
+
+        return new MatchRuntimeState(
+                matchId,
+                status,
+                turnNumber,
+                currentActorIndex,
+                currentFeedbackActorIndex,
+                turnActive,
+                actorOrder,
+                actorOrder.get(currentActorIndex),
+                actorOrder.get(currentFeedbackActorIndex),
+                version,
+                actionLog,
+                null
+        );
+    }
+
+    private static String normalizeLegacyStatus(String status) {
+        return switch (status) {
+            case MatchRuntimeState.PREPARATION, MatchRuntimeState.WAITING_GUESS,
+                 MatchRuntimeState.WAITING_FEEDBACK, MatchRuntimeState.FINISHED -> status;
+            case "IN_PROGRESS" -> MatchRuntimeState.WAITING_GUESS;
+            case "CANCELLED" -> MatchRuntimeState.FINISHED;
+            default -> MatchRuntimeState.PREPARATION;
+        };
     }
 
     private static String serializeLegacyMatchOutcome(MatchRuntimeState.MatchOutcome outcome) {
@@ -357,6 +399,9 @@ public final class FilePersistenceCodec {
 
     private static MatchActionRecord deserializeMatchActionRecord(String value) {
         String[] parts = value.split("\\|", -1);
+        if (parts.length == 8) {
+            return deserializeLegacyMatchActionRecord(parts);
+        }
         if (parts.length != 6) {
             throw new IllegalArgumentException("Invalid MatchActionRecord payload");
         }
@@ -370,6 +415,20 @@ public final class FilePersistenceCodec {
                 feedback.isBlank() ? null : feedback,
                 Long.parseLong(parts[4]),
                 Long.parseLong(parts[5])
+        );
+    }
+
+    private static MatchActionRecord deserializeLegacyMatchActionRecord(String[] parts) {
+        List<String> symbols = decodeStringList(parts[3]);
+        String payloadSummary = decode(parts[4]);
+        String guess = !symbols.isEmpty() ? String.join(",", symbols) : (payloadSummary.isBlank() ? null : payloadSummary);
+        return new MatchActionRecord(
+                decode(parts[0]),
+                decode(parts[2]),
+                guess,
+                null,
+                Long.parseLong(parts[7]),
+                0L
         );
     }
 
