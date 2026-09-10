@@ -18,7 +18,7 @@
 	const POLL_MS = 6000
 
 	/** @typedef {{ kind: 'success' | 'error', text: string } | null} ToastState */
-	/** @typedef {{ turnNumber?: number, version?: number, currentActorIndex?: number, currentActorId?: string, turnActive?: boolean, actorOrder?: string[], status?: string, matchOutcomeStatus?: string, matchOutcomeReason?: string, cancellationCode?: string, visibleSecretCode?: string[], actionLog?: Array<Record<string, unknown>> }} MatchStateLike */
+	/** @typedef {{ matchId?: string, state?: string, activePlayer?: string, feedbackGiver?: string, players?: string[], turns?: Array<Record<string, unknown>>, version?: number, visibleSecretCode?: string[] }} MatchStateLike */
 	/** @typedef {Error & { code?: string, rejectionOrigin?: string, version?: number, matchStatus?: string }} SubmitClientError */
 
 	let activeTab = 'session'
@@ -440,10 +440,7 @@
 	}
 
 	function formatOutcome() {
-		if (!matchState?.matchOutcomeStatus) {
-			return 'EN COURS'
-		}
-		return matchState.matchOutcomeStatus
+		return matchState?.state ?? 'INCONNU'
 	}
 
 	/** @param {unknown} value @returns {string[]} */
@@ -493,14 +490,14 @@
 	$: guessSequence = draftGuess.filter(Boolean)
 	$: setupSlots = Array.from({ length: CODE_LENGTH }, (_, index) => setupSequence[index] ?? '_')
 	$: actorId = currentActorId
-	$: actorOrder = matchState?.actorOrder ?? []
+	$: actorOrder = matchState?.players ?? []
 	$: opponentActorId = actorOrder.find((entry) => entry !== actorId) ?? null
-	$: turnActive = Boolean(matchState?.turnActive)
-	$: isMatchTerminal = matchState?.status === 'FINISHED' || matchState?.status === 'CANCELLED'
-	$: isMyTurn = isBackendReady && turnActive && (matchState?.currentActorId ? matchState.currentActorId === actorId : true)
-	$: matchActions = matchState?.actionLog ?? []
-	$: hasPlayerReady = matchActions.some((entry) => entry?.actionType === 'PLAYER_READY' && entry?.actorId === actorId)
-	$: hasOpponentReady = opponentActorId ? matchActions.some((entry) => entry?.actionType === 'PLAYER_READY' && entry?.actorId === opponentActorId) : false
+	$: turnActive = matchState?.state === 'PREPARATION' || matchState?.state === 'WAITING_GUESS' || matchState?.state === 'WAITING_FEEDBACK'
+	$: isMatchTerminal = matchState?.state === 'FINISHED'
+	$: isMyTurn = isBackendReady && turnActive && matchState?.activePlayer === actorId
+	$: matchActions = matchState?.turns ?? []
+	$: hasPlayerReady = matchActions.some((entry) => (entry?.actionType === 'PLAYER_READY' || entry?.actionType === 'READY_SECRET') && entry?.actorId === actorId)
+	$: hasOpponentReady = opponentActorId ? matchActions.some((entry) => (entry?.actionType === 'PLAYER_READY' || entry?.actionType === 'READY_SECRET') && entry?.actorId === opponentActorId) : false
 	$: hasSecretSet = matchActions.some((entry) => entry?.actionType === 'SECRET_CODE_SET' && entry?.actorId === actorId)
 	$: hasOpponentSecretSet = opponentActorId ? matchActions.some((entry) => entry?.actionType === 'SECRET_CODE_SET' && entry?.actorId === opponentActorId) : false
 	$: isSecretSubmitting = submitStatus === 'loading' && pendingActionType === 'SECRET_CODE_SET'
@@ -524,7 +521,7 @@
 							? 'EN ATTENTE DU TOUR'
 							: (guessSequence.length !== CODE_LENGTH ? 'SÉQUENCE INCOMPLÈTE' : 'ENVOYER TENTATIVE'))))))
 
-	$: historyRows = (matchState?.actionLog ?? []).slice().reverse()
+	$: historyRows = (matchState?.turns ?? []).slice().reverse()
 	$: latestAction = historyRows[0] ?? null
 	$: latestOwnAction = historyRows.find((entry) => entry?.actorId === actorId) ?? null
 	$: latestOpponentAction = opponentActorId ? (historyRows.find((entry) => entry?.actorId === opponentActorId) ?? null) : null
@@ -549,6 +546,10 @@
 	<TopBar {syncStatus} on:opendebug={() => showDebugDrawer = true} />
 
 	<main class="screen">
+		<section aria-live="polite">
+			<strong>État du match</strong> : {syncStatus === 'error' ? syncMessage : (matchState ? `${matchState.matchId ?? currentMatchId} · ${matchState.state ?? '—'} · v${matchState.version ?? '—'} · actif : ${matchState.activePlayer ?? '—'}` : syncMessage || 'Synchronisation en cours')}
+		</section>
+
 		{#if activeTab === 'session'}
 			<SessionScreen
 				{isPrototype}
