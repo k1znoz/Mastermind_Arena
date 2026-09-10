@@ -2,10 +2,13 @@ version: "3.9"
 
 services:
   mastermind-back:
+    build:
+      context: .
+      dockerfile: dockerfile
     image: mastermind-arena-back:latest
     container_name: mastermind-back
     command: >
-      mvn -e -pl deduction-engine compile exec:java
+      mvn -e -pl deduction-engine clean compile exec:java
       -Dexec.mainClass=io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerMain
     ports:
       - "8081:8080"
