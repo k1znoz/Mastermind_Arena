@@ -65,25 +65,34 @@ function assertAuthConfig(headerName, apiKeyValue) {
 
 /**
  * @typedef {{
+ *  turnNumber: number,
+ *  actorId: string,
+ *  actionType: string,
+ *  guess?: string,
+ *  feedback?: string,
+ *  timestamp: number,
+ *  version: number
+ * }} MatchTurnEntry
+ */
+
+/**
+ * @typedef {{
  *  matchId?: string,
+ *  state?: string,
+ *  activePlayer?: string,
+ *  feedbackGiver?: string,
+ *  players?: string[],
+ *  turns?: MatchTurnEntry[],
  *  version?: number,
- *  turnNumber?: number,
- *  currentActorIndex?: number,
- *  currentActorId?: string,
- *  turnActive?: boolean,
- *  actorOrder?: string[],
- *  status?: string,
- *  matchOutcomeStatus?: string,
- *  matchOutcomeReason?: string,
- *  cancellationCode?: string,
- *  visibleSecretCode?: string[],
- *  actionLog?: Array<Record<string, unknown>>
+ *  visibleSecretCode?: string[]
  * }} MatchStateResponse
  */
 
 /**
  * @param {MatchStateClientConfig} [config]
  */
+// Client one-shot : chaque appel renvoie un instantane MatchStateHttpResponse.
+// Le rafraichissement (polling ou futur push WebSocket) reste a la charge de l'appelant.
 export function createMatchStateClient(config = {}) {
   const {
     baseUrl = import.meta.env.VITE_API_BASE_URL ?? '',
@@ -132,37 +141,33 @@ export function createMatchStateClient(config = {}) {
       const payload = /** @type {{ status?: unknown }} */ (body)
       return {
         matchId,
-        turnNumber: 0,
-        turnActive: true,
-        status: typeof payload.status === 'string' ? payload.status : 'UP',
-        actionLog: []
+        state: typeof payload.status === 'string' ? payload.status : 'UP',
+        players: [],
+        turns: [],
+        visibleSecretCode: []
       }
     }
 
     const payload = /** @type {{
      *  matchId?: unknown,
+     *  state?: unknown,
+     *  activePlayer?: unknown,
+     *  feedbackGiver?: unknown,
+     *  players?: unknown,
+     *  turns?: unknown,
      *  version?: unknown,
-     *  turnNumber?: unknown,
-     *  turnActive?: unknown,
-     *  status?: unknown,
-     *  matchOutcomeStatus?: unknown,
-     *  actionLog?: unknown
+     *  visibleSecretCode?: unknown
      * }} */ (body)
 
     return {
       matchId: typeof payload.matchId === 'string' ? payload.matchId : matchId,
+      state: typeof payload.state === 'string' ? payload.state : 'IN_PROGRESS',
+      activePlayer: typeof payload.activePlayer === 'string' ? payload.activePlayer : undefined,
+      feedbackGiver: typeof payload.feedbackGiver === 'string' ? payload.feedbackGiver : undefined,
+      players: Array.isArray(payload.players) ? payload.players.map((entry) => String(entry)) : [],
+      turns: Array.isArray(payload.turns) ? /** @type {MatchTurnEntry[]} */ (payload.turns) : [],
       version: typeof payload.version === 'number' && Number.isFinite(payload.version) ? payload.version : undefined,
-      turnNumber: typeof payload.turnNumber === 'number' && Number.isFinite(payload.turnNumber) ? payload.turnNumber : 0,
-      currentActorIndex: typeof payload.currentActorIndex === 'number' && Number.isFinite(payload.currentActorIndex) ? payload.currentActorIndex : undefined,
-      currentActorId: typeof payload.currentActorId === 'string' ? payload.currentActorId : undefined,
-      turnActive: typeof payload.turnActive === 'boolean' ? payload.turnActive : true,
-      actorOrder: Array.isArray(payload.actorOrder) ? payload.actorOrder.map((entry) => String(entry)) : [],
-      status: typeof payload.status === 'string' ? payload.status : 'IN_PROGRESS',
-      matchOutcomeStatus: typeof payload.matchOutcomeStatus === 'string' ? payload.matchOutcomeStatus : undefined,
-      matchOutcomeReason: typeof payload.matchOutcomeReason === 'string' ? payload.matchOutcomeReason : undefined,
-      cancellationCode: typeof payload.cancellationCode === 'string' ? payload.cancellationCode : undefined,
-      visibleSecretCode: Array.isArray(payload.visibleSecretCode) ? payload.visibleSecretCode.map((entry) => String(entry)) : [],
-      actionLog: Array.isArray(payload.actionLog) ? /** @type {Array<Record<string, unknown>>} */ (payload.actionLog) : []
+      visibleSecretCode: Array.isArray(payload.visibleSecretCode) ? payload.visibleSecretCode.map((entry) => String(entry)) : []
     }
   }
 

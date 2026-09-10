@@ -1,7 +1,7 @@
 <script>
   import { createEventDispatcher } from 'svelte'
 
-  /** @type {{ turnNumber?: number, actionLog?: Array<Record<string, unknown>> } | null} */
+  /** @type {{ turns?: Array<Record<string, unknown>>, players?: string[], state?: string, activePlayer?: string, feedbackGiver?: string } | null} */
   export let matchState = null
   export let isMyTurn = false
   export let turnActive = false
@@ -33,20 +33,21 @@
   let bienPlaces = 0
   let malPlaces = 0
 
+  // matchState est pilote de l'exterieur (fetch aujourd'hui, push WebSocket demain) : pas de polling ici.
   const emit = (name, detail) => dispatch(name, detail)
   const adjustFeedback = (field, change) => {
     if (field === 'bienPlaces') bienPlaces = Math.max(0, Math.min(4 - malPlaces, bienPlaces + change))
     else malPlaces = Math.max(0, Math.min(4 - bienPlaces, malPlaces + change))
   }
 
-  $: actionLog = matchState?.actionLog ?? []
-  $: playedGuesses = actionLog.filter((entry) => entry?.actionType === 'SUBMIT_GUESS')
-  $: feedbackEntries = actionLog.filter((entry) => entry?.actionType === 'FEEDBACK_SENT')
+  $: turns = matchState?.turns ?? []
+  $: playedGuesses = turns.filter((entry) => entry?.guess)
+  $: feedbackEntries = turns.filter((entry) => entry?.feedback)
   $: activeRowNumber = Math.min(playedGuesses.length + 1, boardRows)
   $: board = Array.from({ length: boardRows }, (_, index) => ({
     number: index + 1,
-    symbols: playedGuesses[index] ? asSymbols(playedGuesses[index].symbols) : [],
-    feedback: feedbackEntries[index] ? asSymbols(feedbackEntries[index].symbols) : [],
+    symbols: playedGuesses[index] ? asSymbols(playedGuesses[index].guess) : [],
+    feedback: feedbackEntries[index] ? asSymbols(feedbackEntries[index].feedback) : [],
     isActive: !playedGuesses[index] && index + 1 === activeRowNumber
   }))
   $: canRespond = isBackendReady && turnActive && !isMyTurn && hasOpponentSecretSet
@@ -54,11 +55,12 @@
 
 <section class="partie-screen board-layout">
   <header class="board-status">
-    <div class="turn-count"><span>TOUR</span><strong>{matchState?.turnNumber ?? 0}</strong></div>
+    <div class="turn-count"><span>TOUR</span><strong>{turns.length}</strong></div>
     <div>
       <p class="eyebrow">MASTER MIND / PLATEAU</p>
       <h2>{isMyTurn ? 'À VOTRE TOUR' : 'RÉPONSE ADVERSE'}</h2>
       <p class="status-copy">{isMyTurn ? 'Composez une tentative puis verrouillez la ligne.' : 'Attendez la proposition ou répondez avec les pions.'}</p>
+      <p class="status-copy">État : <strong>{matchState?.state ?? '—'}</strong> · Joueur actif : <strong>{matchState?.activePlayer ?? '—'}</strong> · Indices par : <strong>{matchState?.feedbackGiver ?? '—'}</strong></p>
     </div>
     <div class:online={isBackendReady} class="connection-state">{isBackendReady ? 'SYNCHRONISÉ' : 'HORS LIGNE'}</div>
   </header>
@@ -126,8 +128,8 @@
   <section class="history-strip">
     <div class="board-caption"><span>HISTORIQUE VISIBLE</span><small>{hasPlayerReady ? 'VOUS PRÊT' : 'EN ATTENTE'} · {hasOpponentReady ? 'ADVERSAIRE PRÊT' : 'ADVERSAIRE EN ATTENTE'}</small></div>
     <div class="history-events">
-      {#each actionLog.slice().reverse().slice(0, 6) as entry}
-        <div class="history-event"><span>{entry.actorId === opponentActorId ? 'ADVERSAIRE' : 'VOUS'}</span><strong>{entry.actionType ?? 'ACTION'}</strong></div>
+      {#each turns.slice().reverse().slice(0, 6) as entry}
+        <div class="history-event"><span>{entry.actorId === opponentActorId ? 'ADVERSAIRE' : 'VOUS'}</span><strong>{entry.feedback ? `INDICE ${entry.feedback}` : (entry.actionType ?? 'ACTION')}</strong></div>
       {:else}<p>Aucune action enregistrée sur ce plateau.</p>{/each}
     </div>
   </section>
