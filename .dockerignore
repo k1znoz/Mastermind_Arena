@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.vscode
+target
+**/target
+**/target/**
+.env
+.env.*
+.env.docker
+.designStitch

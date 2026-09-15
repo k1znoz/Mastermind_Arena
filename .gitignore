@@ -1,0 +1,29 @@
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build outputs and installed dependencies
+**/target/
+**/node_modules/
+**/dist/
+**/dist-ssr/
+
+# Logs and temporary files
+*.log
+logs/
+*.tmp
+*.swp
+*.swo
+
+# Local tooling and design exports
+.idea/
+.vscode/
+**/.vscode/
+.DS_Store
+Thumbs.db
+Supabase/
+designStitch/
