@@ -1,8 +1,8 @@
 FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
-COPY . .
 RUN apt-get update && apt-get install -y maven
+COPY . .
 
 EXPOSE 8080
 ENV APP_HTTP_HOST=0.0.0.0

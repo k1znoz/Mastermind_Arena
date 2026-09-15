@@ -59,7 +59,8 @@ function assertAuthConfig(headerName, apiKeyValue) {
  *  baseUrl?: string,
  *  path?: string,
  *  apiKeyHeaderName?: string,
- *  apiKeyValue?: string
+ *  apiKeyValue?: string,
+ *  roomToken?: string
  * }} MatchStateClientConfig
  */
 
@@ -157,7 +158,8 @@ export function createMatchStateClient(config = {}) {
     baseUrl = import.meta.env.VITE_API_BASE_URL ?? '',
     path,
     apiKeyHeaderName = import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key',
-    apiKeyValue = import.meta.env.VITE_API_KEY ?? ''
+    apiKeyValue = import.meta.env.VITE_API_KEY ?? '',
+    roomToken = ''
   } = config
 
   assertAuthConfig(apiKeyHeaderName, apiKeyValue)
@@ -181,7 +183,8 @@ export function createMatchStateClient(config = {}) {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        [apiKeyHeaderName]: apiKeyValue
+        [apiKeyHeaderName]: apiKeyValue,
+        ...(roomToken ? { 'X-Room-Token': roomToken } : {})
       }
     })
 

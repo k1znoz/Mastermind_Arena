@@ -8,6 +8,7 @@ import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcIdempotencyStore;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcMatchStateStore;
+import io.mastermindarena.deduction.infrastructure.jdbc.JdbcRoomDirectory;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcPersistenceContext;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcSchemaMigrator;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcWorkflowEventSink;
@@ -75,6 +76,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             new JdbcSchemaMigrator(persistenceContext).migrateToLatest();
 
             JdbcMatchStateStore stateStore = new JdbcMatchStateStore(persistenceContext);
+            JdbcRoomDirectory rooms = new JdbcRoomDirectory(persistenceContext);
             stateStore.findById(config.seedMatchId()).orElseGet(() -> {
                 MatchRuntimeState seeded = new MatchRuntimeState(
                         config.seedMatchId(),
@@ -100,6 +102,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             server.createContext(config.path(), exchange -> handleSubmitAction(
                     exchange,
                     endpoint,
+                    rooms,
                     objectMapper,
                     config.apiKeyHeaderName(),
                     config.apiKeyValue(),
@@ -110,6 +113,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 server.createContext(LocalMatchStateEndpoint.PATH, exchange -> handleMatchState(
                     exchange,
                     matchStateEndpoint,
+                    rooms,
                     objectMapper,
                     config.apiKeyHeaderName(),
                     config.apiKeyValue(),
@@ -117,6 +121,8 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     corsPolicy,
                     metrics
                 ));
+                server.createContext("/local/rooms", exchange -> handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy, metrics));
+                server.createContext("/local/rooms/join", exchange -> handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy, metrics));
                 server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
             return new LocalSubmitActionHttpServer(server, metrics, webSocketSessionRegistry, webSocketBroadcastService);
@@ -128,6 +134,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private static void handleSubmitAction(
             HttpExchange exchange,
             LocalSubmitActionEndpoint endpoint,
+            JdbcRoomDirectory rooms,
             ObjectMapper objectMapper,
             String apiKeyHeaderName,
             String apiKeyValue,
@@ -164,6 +171,14 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             }
 
             SubmitActionHttpRequest request = objectMapper.readValue(exchange.getRequestBody(), SubmitActionHttpRequest.class);
+            if (!rooms.authorize(request.matchId(), request.actorId(), exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
+                writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
+                return;
+            }
+            if (rooms.waitingForGuest(request.matchId())) {
+                writeJson(exchange, objectMapper, 409, new ErrorBody("ROOM_WAITING_FOR_PLAYER"));
+                return;
+            }
             SubmitActionHttpResponse.Envelope response = endpoint.postSubmitAction(request);
             long elapsedMillis = elapsedMillis(startNanos);
             logStructured(
@@ -233,6 +248,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private static void handleMatchState(
             HttpExchange exchange,
             LocalMatchStateEndpoint endpoint,
+            JdbcRoomDirectory rooms,
             ObjectMapper objectMapper,
             String apiKeyHeaderName,
             String apiKeyValue,
@@ -274,6 +290,10 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             Map<String, String> queryParams = queryParams(exchange.getRequestURI().getRawQuery());
             String matchId = queryParams.get("matchId");
             String actorId = queryParams.get("actorId");
+            if (!rooms.authorize(matchId, actorId, exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
+                writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
+                return;
+            }
             MatchStateHttpResponse.Envelope response = endpoint.getMatchState(matchId, actorId);
             long elapsedMillis = elapsedMillis(startNanos);
 
@@ -294,6 +314,83 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         }
     }
 
+    private record CreateRoomBody(String name, String pseudo, String accessCode) {}
+    private record JoinRoomBody(String roomId, String pseudo, String accessCode) {}
+    private record RoomListBody(List<JdbcRoomDirectory.RoomInfo> rooms) {}
+
+    private static void handleRooms(
+            HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
+            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors, RuntimeMetrics metrics
+    ) throws IOException {
+        String requestId = resolveRequestId(exchange, requestHeader);
+        setResponseRequestIdHeader(exchange, requestHeader, requestId);
+        try (exchange) {
+            if (!applyCors(exchange, cors)) { writeJson(exchange, json, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED")); return; }
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) { exchange.sendResponseHeaders(204, -1); return; }
+            if (!secureEquals(apiKey, exchange.getRequestHeaders().getFirst(apiHeader))) {
+                writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
+            }
+            try {
+                if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    String roomId = queryParams(exchange.getRequestURI().getRawQuery()).get("roomId");
+                    if (roomId == null || roomId.isBlank()) {
+                        writeJson(exchange, json, 200, new RoomListBody(rooms.waitingRooms()));
+                    } else {
+                        var info = rooms.findInfo(roomId);
+                        writeJson(exchange, json, info.isPresent() ? 200 : 404,
+                                info.<Object>map(value -> value).orElse(new ErrorBody("ROOM_NOT_FOUND")));
+                    }
+                } else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    CreateRoomBody body = json.readValue(exchange.getRequestBody(), CreateRoomBody.class);
+                    writeJson(exchange, json, 201, rooms.create(body.name(), body.pseudo(), body.accessCode()));
+                } else {
+                    writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
+                }
+            } catch (IllegalStateException e) {
+                writeRoomError(exchange, json, e);
+            } catch (RuntimeException e) {
+                writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
+            }
+        }
+    }
+
+    private static void handleRoomJoin(
+            HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
+            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors, RuntimeMetrics metrics
+    ) throws IOException {
+        String requestId = resolveRequestId(exchange, requestHeader);
+        setResponseRequestIdHeader(exchange, requestHeader, requestId);
+        try (exchange) {
+            if (!applyCors(exchange, cors)) { writeJson(exchange, json, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED")); return; }
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) { exchange.sendResponseHeaders(204, -1); return; }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED")); return;
+            }
+            if (!secureEquals(apiKey, exchange.getRequestHeaders().getFirst(apiHeader))) {
+                writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
+            }
+            try {
+                JoinRoomBody body = json.readValue(exchange.getRequestBody(), JoinRoomBody.class);
+                writeJson(exchange, json, 200, rooms.join(body.roomId(), body.pseudo(), body.accessCode()));
+            } catch (IllegalStateException e) {
+                writeRoomError(exchange, json, e);
+            } catch (RuntimeException e) {
+                writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
+            }
+        }
+    }
+
+    private static void writeRoomError(HttpExchange exchange, ObjectMapper json, IllegalStateException e) throws IOException {
+        String code = e.getMessage();
+        int status = switch (code) {
+            case "ROOM_NOT_FOUND" -> 404;
+            case "ROOM_FULL", "ROOM_WAITING_FOR_PLAYER" -> 409;
+            case "ROOM_CODE_INVALID" -> 403;
+            case "ROOM_NAME_REQUIRED", "PSEUDO_REQUIRED", "FIELD_TOO_LONG" -> 400;
+            default -> 500;
+        };
+        writeJson(exchange, json, status, new ErrorBody(status == 500 ? "ROOM_SERVER_ERROR" : code));
+    }
     private static void writeJson(HttpExchange exchange, ObjectMapper objectMapper, int statusCode, Object body) throws IOException {
         byte[] json = objectMapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json");

@@ -84,7 +84,7 @@ public record LocalSubmitActionRuntimeConfig(
                 stringValue("submitAction.observability.requestIdHeader", new String[]{"APP_REQUEST_ID_HEADER"}, "X-Request-Id"),
                 stringValue("submitAction.http.cors.allowedOrigins", new String[]{"APP_CORS_ALLOWED_ORIGINS", "SUBMIT_ACTION_CORS_ALLOWED_ORIGINS"}, "http://localhost:5173"),
                 stringValue("submitAction.http.cors.allowedMethods", new String[]{"APP_CORS_ALLOWED_METHODS", "SUBMIT_ACTION_CORS_ALLOWED_METHODS"}, "GET,POST,OPTIONS"),
-                stringValue("submitAction.http.cors.allowedHeaders", new String[]{"APP_CORS_ALLOWED_HEADERS", "SUBMIT_ACTION_CORS_ALLOWED_HEADERS"}, "Content-Type,X-API-Key,X-Request-Id"),
+                stringValue("submitAction.http.cors.allowedHeaders", new String[]{"APP_CORS_ALLOWED_HEADERS", "SUBMIT_ACTION_CORS_ALLOWED_HEADERS"}, "Content-Type,X-API-Key,X-Request-Id,X-Room-Token"),
                 intValue("submitAction.http.cors.maxAgeSeconds", new String[]{"APP_CORS_MAX_AGE_SECONDS", "SUBMIT_ACTION_CORS_MAX_AGE_SECONDS"}, 600),
                 stringValue("submitAction.db.url", new String[]{"APP_DB_URL", "SUBMIT_ACTION_DB_URL"}, "jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require"),
                 stringValue("submitAction.db.user", new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER"}, "postgres"),

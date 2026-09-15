@@ -98,6 +98,7 @@ export function createSubmitActionClient(config = {}) {
   const apiKeyHeaderName = safeConfig.apiKeyHeaderName ?? import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
   const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env.VITE_API_KEY ?? ''
   const requestIdHeaderName = safeConfig.requestIdHeaderName ?? import.meta.env.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
+  const roomToken = safeConfig.roomToken ?? ''
 
   assertAuthConfig(apiKeyHeaderName, apiKeyValue)
 
@@ -131,7 +132,8 @@ export function createSubmitActionClient(config = {}) {
       headers: {
         'Content-Type': 'application/json',
         [apiKeyHeaderName]: apiKeyValue,
-        [requestIdHeaderName]: requestId
+        [requestIdHeaderName]: requestId,
+        ...(roomToken ? { 'X-Room-Token': roomToken } : {})
       },
       body: JSON.stringify({
         matchId,

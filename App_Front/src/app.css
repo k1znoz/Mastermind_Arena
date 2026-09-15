@@ -789,3 +789,93 @@ input:focus {
 @media (min-width: 651px) {
   .app-root:has(.partie-screen) .screen { max-width: 1080px; }
 }
+
+/* Identité et action courante : visibles sans passer par un écran de session. */
+.match-overview, .identity-editor {
+  border: 1px solid var(--line);
+  background: rgba(19, 23, 31, .9);
+  padding: 16px;
+}
+.match-overview { display: grid; gap: 12px; }
+.overview-top, .overview-identity, .overview-match, .overview-foot { display: flex; align-items: center; gap: 12px; }
+.overview-top, .overview-match, .overview-foot { justify-content: space-between; }
+.overview-identity { min-width: 0; }
+.player-avatar { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 1px solid var(--primary); color: var(--primary-soft); font: 700 14px "JetBrains Mono", monospace; background: rgba(0,219,233,.08); }
+.overview-identity div { display: grid; gap: 2px; min-width: 0; }
+.overview-identity small, .overview-match span, .overview-phase span { color: var(--muted); font: 10px "JetBrains Mono", monospace; letter-spacing: .09em; }
+.overview-identity strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 18px "Space Grotesk", sans-serif; }
+.identity-toggle, .overview-foot button, .apply-identity { min-height: 36px; padding: 7px 10px; border: 1px solid var(--primary); background: rgba(0,219,233,.08); color: var(--primary-soft); cursor: pointer; font: 10px "JetBrains Mono",monospace; }
+.overview-match { flex-wrap: wrap; padding: 10px 0; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+.overview-match strong { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 700 15px "Space Grotesk",sans-serif; }
+.overview-match small { color: var(--primary-soft); font: 10px "JetBrains Mono",monospace; }
+.overview-phase h1 { margin: 4px 0; font: 700 clamp(21px, 3vw, 32px) "Space Grotesk",sans-serif; color: #f4fbfc; }
+.overview-phase p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.overview-foot { flex-wrap: wrap; color: var(--muted); font: 10px "JetBrains Mono",monospace; letter-spacing: .04em; }
+.overview-foot .done { color: var(--ok); }
+.identity-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.identity-editor label { display: grid; gap: 5px; min-width: 0; }
+.identity-editor label span { color: var(--primary); font: 10px "JetBrains Mono",monospace; letter-spacing: .08em; }
+.identity-editor input { width: 100%; min-height: 40px; padding: 8px; border: 1px solid var(--line-soft); background: #10161f; color: var(--text); font: 14px Inter,sans-serif; }
+.role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.role-picker button { border: 1px solid var(--line-soft); background: #10161f; color: var(--muted); cursor: pointer; }
+.role-picker button.selected { border-color: var(--primary); color: var(--primary-soft); background: rgba(0,219,233,.1); }
+.apply-identity { min-height: 40px; }
+.bottom-nav { grid-template-columns: repeat(2, 1fr); height: 62px; }
+.app-root { padding-bottom: 72px; }
+@media (max-width:650px) {
+  .match-overview, .identity-editor { padding: 10px; }
+  .match-overview { gap: 8px; }
+  .player-avatar { width: 34px; height: 34px; font-size: 11px; }
+  .overview-identity strong { font-size: 14px; }
+  .identity-toggle { min-height: 30px; font-size: 9px; }
+  .overview-match { padding: 7px 0; }
+  .overview-match strong { font-size: 12px; }
+  .overview-phase h1 { font-size: 19px; }
+  .overview-phase p { font-size: 11px; }
+  .overview-foot { gap: 6px; font-size: 9px; }
+  .identity-editor { grid-template-columns: 1fr; }
+}
+.identity-hint { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
+.app-root:has(.partie-screen) .screen { grid-template-columns: minmax(0,1fr); }
+@media (max-width:420px) { .overview-top { flex-wrap:wrap; } .identity-toggle { width:100%; } .overview-match small { width:100%; } }
+.waiting-room { display:grid; gap:14px; padding:clamp(20px,5vw,42px); border:1px solid var(--primary); background:rgba(0,219,233,.06); }
+.waiting-room > span { color:var(--primary); font:11px "JetBrains Mono",monospace; letter-spacing:.1em; }
+.waiting-room h1 { margin:0; font:700 clamp(28px,5vw,42px) "Space Grotesk",sans-serif; }
+.waiting-room p { margin:0; color:var(--muted); font-size:14px; line-height:1.45; }
+.waiting-room div { display:flex; gap:8px; flex-wrap:wrap; }
+.waiting-room button { min-height:40px; padding:8px 12px; border:1px solid var(--primary); background:rgba(0,219,233,.1); color:var(--primary-soft); cursor:pointer; font:10px "JetBrains Mono",monospace; }
+/* Statut compact : le plateau reste visible dès le haut de l'écran. */
+.brand-home { border: 0; padding: 6px 8px; margin-left: -8px; background: transparent; cursor: pointer; text-align: left; }
+.brand-home:hover, .brand-home:focus-visible { background: rgba(0,219,233,.09); outline: 1px solid var(--primary); }
+.brand-home-hint { color: var(--muted); font: 9px "JetBrains Mono",monospace; letter-spacing:.08em; white-space:nowrap; }
+.match-overview { padding: 10px 14px; gap: 5px; }
+.overview-top { min-height: 34px; }
+.player-avatar { width: 32px; height: 32px; font-size: 11px; }
+.overview-identity small { font-size: 8px; }
+.overview-identity strong { font-size: 14px; }
+.overview-match { padding: 5px 0; gap: 6px; }
+.overview-match strong { font-size: 13px; }
+.overview-phase { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 9px; }
+.overview-phase strong { font: 700 14px "Space Grotesk",sans-serif; color: var(--primary-soft); }
+.overview-phase p { font-size: 11px; }
+.overview-foot { gap: 7px; font-size: 9px; }
+@media (max-width:650px) {
+  .match-overview { padding: 7px 10px; gap: 4px; }
+  .overview-match { padding: 3px 0; }
+  .overview-phase strong { font-size: 12px; }
+  .overview-phase p { flex-basis: 100%; font-size: 10px; }
+  .brand-home-hint { font-size: 8px; }
+}
+
+.brand-home-hint { display:inline-flex; align-items:center; gap:4px; color:var(--primary-soft); }
+@media (max-width:420px) { .brand-home { gap:5px; } .brand-home-hint { font-size:8px; } }
+
+/* Résultat : deux scores lisibles dans la hauteur du statut précédent. */
+.overview-final-score { display:flex; align-items:center; justify-content:center; gap:10px; padding:5px 8px; border-top:1px solid var(--line-soft); background:linear-gradient(90deg,rgba(0,219,233,.06),rgba(255,171,243,.06)); }
+.score-player { display:inline-flex; align-items:baseline; gap:7px; min-width:0; color:var(--primary-soft); }
+.score-player:last-child { color:var(--secondary); }
+.score-player small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font:9px "JetBrains Mono",monospace; }
+.score-player strong { font:700 25px "Space Grotesk",sans-serif; line-height:1; }
+.score-player.winner strong { color:var(--ok); text-shadow:0 0 14px rgba(89,232,166,.35); }
+.score-separator { color:var(--muted); font:18px "Space Grotesk",sans-serif; }
+@media (max-width:650px) { .overview-final-score { gap:7px; padding:4px 5px; } .score-player { gap:4px; } .score-player small { max-width:95px; font-size:8px; } .score-player strong { font-size:21px; } }

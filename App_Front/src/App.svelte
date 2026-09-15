@@ -1,16 +1,19 @@
 <script>
-	import { onDestroy, onMount } from 'svelte'
+	import { onDestroy, onMount, tick } from 'svelte'
 	import { createMatchStateClient } from './lib/api/matchStateClient'
+	import { createRoomClient } from './lib/api/roomClient'
 	import { createSubmitActionClient } from './lib/api/submitActionClient'
 	import { runtimeConfig } from './lib/api/runtimeConfig'
 	import { ALLOWED_SYMBOLS, CODE_LENGTH, normalizeSymbolSequence } from './lib/utils/symbolSequence'
 	import { getSymbolVisual } from './lib/utils/symbolVisuals'
 	import TopBar from './lib/components/TopBar.svelte'
 	import BottomNav from './lib/components/BottomNav.svelte'
-	import SessionScreen from './lib/components/SessionScreen.svelte'
+
 	import PartieScreen from './lib/components/PartieScreen.svelte'
+	import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
+	import LobbyScreen from './lib/components/LobbyScreen.svelte'
 	import HistoryScreen from './lib/components/HistoryScreen.svelte'
-	import SettingsScreen from './lib/components/SettingsScreen.svelte'
+
 	import DebugDrawer from './lib/components/DebugDrawer.svelte'
 	import ToastMessage from './lib/components/ToastMessage.svelte'
 
@@ -21,12 +24,22 @@
 	/** @typedef {{ matchId?: string, state?: string, activePlayer?: string, feedbackGiver?: string, players?: string[], readyPlayers?: string[], turns?: Array<Record<string, unknown>>, version?: number, visibleSecretCode?: string[] }} MatchStateLike */
 	/** @typedef {Error & { code?: string, rejectionOrigin?: string, version?: number, matchStatus?: string }} SubmitClientError */
 
-	let activeTab = 'session'
+	let activeTab = 'partie'
+	let view = 'welcome'
+	let rooms = []
+	let roomBusy = false
+	let lobbyError = ''
+	let roomToken = ''
+	let roomName = ''
+	let roomInfo = null
+	let hasSavedRoom = false
+	let lastScrollFocusKey = ''
 	let showDebugDrawer = false
 	let maskSecrets = true
 
 	let playerName = ''
-	let roomCode = ''
+
+	const debugEnabled = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
 
 	let setupSequence = /** @type {string[]} */ ([])
 	let selectedSetupSlot = 0
@@ -58,54 +71,127 @@
 		return apiBaseUrl ? '/local/match-state' : '/api/local/match-state'
 	}
 
-	function resolveHealthPath() {
-		return apiBaseUrl ? '/health' : '/api/health'
+	function roomErrorText(error) {
+		const code = error instanceof Error ? error.message : String(error)
+		const messages = {
+			ROOM_CODE_INVALID: 'Code d’accès incorrect.',
+			ROOM_FULL: 'Cette partie a déjà deux joueurs.',
+			ROOM_NOT_FOUND: 'Cette partie n’existe plus.',
+			ROOM_NAME_REQUIRED: 'Choisissez un nom de partie.',
+			PSEUDO_REQUIRED: 'Choisissez un pseudo.',
+			FIELD_TOO_LONG: 'Le nom ou le code est trop long.',
+			ROOM_SERVER_ERROR: 'Le serveur n’a pas pu ouvrir cette partie.'
+		}
+		return messages[code] || (code === 'Failed to fetch' ? 'Le serveur est inaccessible.' : code)
+	}
+	function lobbyClient() {
+		return createRoomClient({ baseUrl: apiBaseUrl, apiKeyHeaderName, apiKeyValue })
 	}
 
-	function resolveSessionIdentity() {
-		const normalizedRoomCode = roomCode.trim()
-		return {
-			matchId: normalizedRoomCode || runtimeConfig.matchId,
-			actorId: normalizedRoomCode ? 'p2' : 'p1'
+	async function refreshRooms() {
+		try {
+			rooms = await lobbyClient().list()
+			lobbyError = ''
+		} catch (error) {
+			lobbyError = roomErrorText(error)
 		}
 	}
 
-	function applySessionIdentity() {
-		const next = resolveSessionIdentity()
-		const changed = next.matchId !== currentMatchId || next.actorId !== currentActorId
-
-		currentMatchId = next.matchId
-		currentActorId = next.actorId
-
-		if (changed) {
-			matchState = null
-			lastKnownVersion = 0
-			syncStatus = 'idle'
-			syncMessage = ''
-			setupSequence = []
-			draftGuess = ['', '', '', '']
-			selectedSetupSlot = 0
-			selectedGuessSlot = 0
+	async function refreshRoomStatus() {
+		if (!roomToken || currentActorId !== 'p1') return
+		try {
+			roomInfo = await lobbyClient().status(currentMatchId)
+			if (roomInfo.joined) {
+				view = 'game'
+				activeTab = 'partie'
+				await refreshMatchState()
+			}
+		} catch (error) {
+			lobbyError = roomErrorText(error)
 		}
-
-		return changed
 	}
 
+	function continueWelcome() {
+		if (!playerName.trim()) return
+		playerName = playerName.trim()
+		sessionStorage.setItem('arenaPlayerName', playerName)
+		view = 'lobby'
+		refreshRooms()
+	}
+
+	function enterRoom(admission) {
+		currentMatchId = admission.room.roomId
+		currentActorId = admission.actorId
+		roomName = admission.room.name
+		roomInfo = admission.room
+		roomToken = admission.token
+		matchState = null
+		lastScrollFocusKey = ''
+		lastKnownVersion = 0
+		setupSequence = []
+		draftGuess = ['', '', '', '']
+		hasSavedRoom = true
+		sessionStorage.setItem('arenaMatchId', currentMatchId)
+		sessionStorage.setItem('arenaActorId', currentActorId)
+		sessionStorage.setItem('arenaRoomName', roomName)
+		sessionStorage.setItem('arenaRoomToken', roomToken)
+		sessionStorage.setItem('arenaPlayerName', playerName)
+		view = currentActorId === 'p1' ? 'waiting' : 'game'
+		activeTab = 'partie'
+		if (view === 'game') refreshMatchState()
+	}
+
+	async function createRoom(event) {
+		roomBusy = true
+		lobbyError = ''
+		try {
+			const result = await lobbyClient().create(event.detail.name, playerName, event.detail.accessCode)
+			enterRoom(result)
+		} catch (error) {
+			lobbyError = roomErrorText(error)
+		} finally {
+			roomBusy = false
+		}
+	}
+
+	async function joinRoom(event) {
+		roomBusy = true
+		lobbyError = ''
+		try {
+			const result = await lobbyClient().join(event.detail.roomId, playerName, event.detail.accessCode)
+			enterRoom(result)
+		} catch (error) {
+			lobbyError = roomErrorText(error)
+		} finally {
+			roomBusy = false
+		}
+	}
+
+	function resumeRoom() {
+		if (!hasSavedRoom) return
+		view = roomToken && currentActorId === 'p1' && !roomInfo?.joined ? 'waiting' : 'game'
+		activeTab = 'partie'
+		if (view === 'waiting') refreshRoomStatus()
+		else refreshMatchState()
+	}
+
+	function returnToLobby() {
+		view = 'lobby'
+		activeTab = 'partie'
+		refreshRooms()
+	}
 	function currentClients() {
 		const config = {
 			baseUrl: apiBaseUrl,
 			apiKeyHeaderName,
-			apiKeyValue
+			apiKeyValue,
+			roomToken
 		}
 
 		return {
 			matchClient: createMatchStateClient({
 				...config,
 				path: resolveGameStatePath()
-			}),
-			healthClient: createMatchStateClient({
-				...config,
-				path: resolveHealthPath()
 			}),
 			submitClient: createSubmitActionClient(config)
 		}
@@ -165,6 +251,30 @@
 		return JSON.stringify(data ?? {}, null, 2)
 	}
 
+	async function focusActivePhase() {
+		if (view !== 'game' || activeTab !== 'partie' || typeof window === 'undefined') return
+		await tick()
+		if (document.documentElement.scrollHeight <= window.innerHeight + 16) return
+		const focus = matchState?.state === 'FINISHED'
+			? { key: 'result', selector: '.match-overview' }
+			: document.querySelector('.secretActionActive')
+				? { key: 'secret', selector: '.secretActionActive .secret-panel' }
+				: document.querySelector('.feedbackActionActive')
+					? { key: 'feedback', selector: '.feedbackActionActive .response-panel' }
+					: document.querySelector('.guessActionActive')
+						? { key: 'guess', selector: '.guessActionActive .own-board' }
+						: null
+		if (!focus) return
+		const key = `${currentMatchId}:${matchState?.gameNumber ?? 1}:${focus.key}`
+		if (key === lastScrollFocusKey) return
+		const target = document.querySelector(focus.selector)
+		if (!target) return
+		lastScrollFocusKey = key
+		const topbarHeight = document.querySelector('.topbar')?.getBoundingClientRect().height ?? 0
+		const top = window.scrollY + target.getBoundingClientRect().top - topbarHeight - 8
+		window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+	}
+
 	async function refreshMatchState() {
 		if (!matchState) {
 			syncStatus = 'syncing'
@@ -179,7 +289,8 @@
 			matchId: currentMatchId,
 			actorId: currentActorId,
 			apiKeyHeaderName,
-			apiKeyValue
+			apiKeyValue,
+			roomToken
 		}
 
 		try {
@@ -195,6 +306,7 @@
 			}
 			matchState = result
 			syncStatus = 'ok'
+			focusActivePhase()
 			syncMessage = 'Données backend reçues'
 			logDebug(request, { accepted: true, body: result })
 		} catch (error) {
@@ -216,7 +328,8 @@
 			baseUrl: apiBaseUrl,
 			path: precisePath,
 			apiKeyHeaderName,
-			apiKeyValue
+			apiKeyValue,
+			roomToken
 		})
 
 		const preciseState = await preciseClient.getMatchState(currentMatchId, currentActorId)
@@ -266,7 +379,8 @@
 			expectedVersion,
 			actionPayload,
 			apiKeyHeaderName,
-			apiKeyValue
+			apiKeyValue,
+			roomToken
 		}
 
 		const syncVersionState = (version, status) => {
@@ -328,15 +442,6 @@
 			openToast('error', `Échec envoi: ${submitError}`)
 			return false
 		}
-	}
-
-	async function submitPlayerReady() {
-		const identityChanged = applySessionIdentity()
-		if (identityChanged) {
-			await refreshMatchState()
-		}
-
-		activeTab = 'partie'
 	}
 
 	/** @param {string} actionType @param {unknown} [payload] @param {unknown} [feedback] */
@@ -441,34 +546,13 @@
 
 	function requestRematch() {
 		if (matchState?.state === "FINISHED") submitPayload(buildActionPayload("REQUEST_REMATCH"))
-	}
-
-	function testConnection() {
-		applySessionIdentity()
-		const { healthClient } = currentClients()
-		healthClient
-			.getMatchState(currentMatchId, currentActorId)
-			.then(() => {
-				openToast('success', 'Connexion backend valide')
-			})
-			.catch(() => {
-				openToast('error', 'Connexion backend indisponible')
-			})
-	}
-
-	/** @param {number | null | undefined} value */
+	}/** @param {number | null | undefined} value */
 	function formatTimestamp(value) {
 		if (!value) {
 			return '--:--:--'
 		}
 		return new Date(value).toLocaleTimeString('fr-FR')
-	}
-
-	function formatOutcome() {
-		return matchState?.state ?? 'INCONNU'
-	}
-
-	/** @param {unknown} value @returns {string[]} */
+	}/** @param {unknown} value @returns {string[]} */
 	function asSymbols(value) {
 		if (!Array.isArray(value)) {
 			return []
@@ -511,14 +595,11 @@
 
 	$: isPrototype = syncStatus === 'error' || !matchState
 	$: isBackendReady = syncStatus !== 'error' && Boolean(matchState)
-	$: ctaSessionLabel = roomCode.trim() ? 'REJOINDRE LE DUEL' : 'CRÉER UNE PARTIE'
 	$: guessSequence = draftGuess.filter(Boolean)
 	$: setupSlots = Array.from({ length: CODE_LENGTH }, (_, index) => (hasSecretSet && matchState?.visibleSecretCode?.length === CODE_LENGTH ? matchState.visibleSecretCode : setupSequence)[index] ?? '_')
 	$: actorId = currentActorId
 	$: actorOrder = matchState?.players ?? []
 	$: opponentActorId = actorOrder.find((entry) => entry !== actorId) ?? null
-	$: turnActive = matchState?.state === 'PREPARATION' || matchState?.state === 'WAITING_GUESS' || matchState?.state === 'WAITING_FEEDBACK'
-	$: isMatchTerminal = matchState?.state === 'FINISHED'
 	$: matchActions = matchState?.turns ?? []
 	$: roundNumber = Math.floor(matchActions.filter((entry) => entry?.actionType === 'SEND_FEEDBACK').length / Math.max(actorOrder.length, 1))
 	$: ownGuessSubmitted = matchActions.filter((entry) => entry?.actionType === 'PLAY_GUESS' && entry?.actorId === actorId).length > roundNumber
@@ -547,14 +628,48 @@
 	$: latestAction = historyRows[0] ?? null
 	$: latestOwnAction = historyRows.find((entry) => entry?.actorId === actorId) ?? null
 	$: latestOpponentAction = opponentActorId ? (historyRows.find((entry) => entry?.actorId === opponentActorId) ?? null) : null
+	$: opponentDisplayName = currentActorId === "p1" ? (roomInfo?.guestPseudo || "Adversaire") : (roomInfo?.hostPseudo || "Adversaire")
+	$: displayPlayerName = playerName.trim() || (currentActorId === 'p2' ? 'Joueur 2' : 'Joueur 1')
+	$: phaseStepDone = (matchState?.submittedPlayers ?? []).includes(currentActorId)
+	$: opponentStepDone = Boolean(opponentActorId && (matchState?.submittedPlayers ?? []).includes(opponentActorId))
+	$: phaseTitle = matchState?.state === 'PREPARATION' ? 'Choisissez votre code secret' :
+		matchState?.state === 'WAITING_GUESS' ? 'Trouvez le code adverse' :
+		matchState?.state === 'WAITING_FEEDBACK' ? 'Donnez les indices à votre adversaire' :
+		matchState?.state === 'FINISHED' ? 'Partie terminée' : 'Connexion à la partie'
+	$: phaseDetail = matchState?.state === 'PREPARATION'
+		? (phaseStepDone ? 'Votre code est validé. Attendez celui de votre adversaire.' : 'Composez quatre symboles et validez votre code.')
+		: matchState?.state === 'WAITING_GUESS'
+			? (phaseStepDone ? 'Votre tentative est envoyée. Attendez votre adversaire.' : 'Préparez puis envoyez votre tentative.')
+			: matchState?.state === 'WAITING_FEEDBACK'
+				? (phaseStepDone ? 'Vos indices sont envoyés. Attendez votre adversaire.' : 'Comparez sa tentative à votre code et donnez les indices.')
+				: matchState?.state === 'FINISHED' ? 'Consultez le résultat et proposez une revanche.' : syncMessage
+	$: feedbackCount = (matchState?.turns ?? []).filter((entry) => entry?.actionType === 'SEND_FEEDBACK').length
+	$: displayRound = matchState?.state === 'FINISHED' ? Math.max(1, Math.ceil(feedbackCount / 2)) : Math.floor(feedbackCount / 2) + 1
 	$: displayedRuntimeConfig = { ...runtimeConfig, matchId: currentMatchId, actorId: currentActorId }
 
 	onMount(() => {
-		refreshMatchState()
-		const timer = setInterval(refreshMatchState, POLL_MS)
+		playerName = sessionStorage.getItem('arenaPlayerName') || ''
+		const savedId = sessionStorage.getItem('arenaMatchId')
+		if (savedId) {
+			currentMatchId = savedId
+			currentActorId = sessionStorage.getItem('arenaActorId') || 'p1'
+			roomName = sessionStorage.getItem('arenaRoomName') || savedId
+			roomToken = sessionStorage.getItem('arenaRoomToken') || ''
+			hasSavedRoom = true
+			view = roomToken && currentActorId === 'p1' ? 'waiting' : 'game'
+			if (view === 'waiting') refreshRoomStatus()
+			else {
+				if (roomToken) lobbyClient().status(currentMatchId).then((status) => roomInfo = status).catch(() => {})
+				refreshMatchState()
+			}
+		}
+		const timer = setInterval(() => {
+			if (view === 'game') refreshMatchState()
+			else if (view === 'waiting') refreshRoomStatus()
+			else if (view === 'lobby') refreshRooms()
+		}, POLL_MS)
 		return () => clearInterval(timer)
 	})
-
 	onDestroy(() => {
 		if (toastTimer) {
 			clearTimeout(toastTimer)
@@ -565,28 +680,44 @@
 <div class="app-root">
 	<div class="bg-grid"></div>
 
-	<TopBar {syncStatus} on:opendebug={() => showDebugDrawer = true} />
+	<TopBar {debugEnabled} homeAvailable={view === 'game' || view === 'waiting'} on:home={returnToLobby} on:opendebug={() => showDebugDrawer = true} />
 
 	<main class="screen">
-		<section aria-live="polite">
-			<strong>Etat du match</strong> : {syncStatus === 'error' ? syncMessage : (matchState ? (matchState.matchId ?? currentMatchId) + ' | ' + (matchState.state ?? '-') + ' | v' + (matchState.version ?? '-') : syncMessage || 'Synchronisation en cours')}
+		{#if view === 'welcome'}
+			<WelcomeScreen bind:playerName canResume={hasSavedRoom} on:continue={continueWelcome} on:resume={resumeRoom} />
+		{/if}
+		{#if view === 'lobby'}
+			<LobbyScreen {playerName} {rooms} busy={roomBusy} error={lobbyError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={() => view = 'welcome'} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
+		{/if}
+		{#if view === 'waiting'}
+			<section class="waiting-room">
+				<span>PARTIE CRÉÉE</span><h1>{roomName}</h1>
+				<p>En attente d’un deuxième joueur. Votre partie apparaît dans la liste des parties en attente.</p>
+				<p>{roomInfo?.locked ? 'Un code d’accès est requis pour la rejoindre.' : 'Tout joueur peut la rejoindre.'}</p>
+				<div><button type="button" on:click={refreshRoomStatus}>ACTUALISER</button><button type="button" on:click={returnToLobby}>VOIR LES PARTIES</button></div>
+			</section>
+		{/if}
+		{#if view === 'game'}
+		<section class="match-overview" aria-live="polite">
+			<div class="overview-top">
+				<div class="overview-identity"><span class="player-avatar">{currentActorId === 'p2' ? 'P2' : 'P1'}</span><div><small>VOUS JOUEZ EN TANT QUE</small><strong>{displayPlayerName}</strong></div></div>
+			</div>
+			<div class="overview-match"><span>PARTIE</span><strong>{roomName || currentMatchId}</strong><small>Partie {matchState?.gameNumber ?? 1} · Manche {displayRound}</small></div>
+			{#if matchState?.state === 'FINISHED'}
+				<div class="overview-final-score" aria-label={'Score final : ' + displayPlayerName + ' ' + (matchState?.scores?.[currentActorId] ?? 0) + ', ' + opponentDisplayName + ' ' + (matchState?.scores?.[opponentActorId] ?? 0)}>
+					<span class="score-player" class:winner={matchState?.winnerId === currentActorId}><small>VOUS · {displayPlayerName}</small><strong>{matchState?.scores?.[currentActorId] ?? 0}</strong></span>
+					<span class="score-separator" aria-hidden="true">—</span>
+					<span class="score-player" class:winner={matchState?.winnerId === opponentActorId}><strong>{matchState?.scores?.[opponentActorId] ?? 0}</strong><small>{opponentDisplayName} · ADVERSAIRE</small></span>
+				</div>
+			{:else}
+				<div class="overview-phase"><span>À FAIRE</span><strong>{phaseTitle}</strong><p>{phaseDetail}</p></div>
+				<div class="overview-foot"><span>SCORE · {matchState?.scores?.[currentActorId] ?? 0} — {matchState?.scores?.[opponentActorId] ?? 0}</span></div>
+			{/if}
+			{#if syncStatus === 'error'}<div class="overview-foot"><button type="button" on:click={refreshMatchState}>RÉESSAYER LA CONNEXION</button></div>{/if}
 		</section>
-
-		{#if activeTab === 'session'}
-			<SessionScreen
-				{isPrototype}
-				{submitStatus}
-				{isBackendReady}
-				{hasPlayerReady}
-				{ctaSessionLabel}
-				bind:playerName
-				bind:roomCode
-				on:opendebug={() => showDebugDrawer = true}
-				on:submitready={submitPlayerReady}
-			/>
 		{/if}
 
-		{#if activeTab === 'partie'}
+		{#if view === 'game' && activeTab === 'partie'}
 			<PartieScreen
 				{matchState}
 				{isMyTurn}
@@ -595,6 +726,8 @@
 				{hasPlayerReady}
 				{hasOpponentReady}
 				{hasSecretSet}
+				opponentName={opponentDisplayName}
+				{opponentStepDone}
 
 				{setupSequence}
 				{setupSlots}
@@ -629,7 +762,7 @@
 			/>
 		{/if}
 
-		{#if activeTab === 'historique'}
+		{#if view === 'game' && activeTab === 'historique'}
 			<HistoryScreen
 				runtimeConfig={displayedRuntimeConfig}
 				{isPrototype}
@@ -641,21 +774,9 @@
 				onRefresh={refreshMatchState}
 			/>
 		{/if}
-
-		{#if activeTab === 'parametres'}
-			<SettingsScreen
-				bind:apiBaseUrl
-				bind:apiKeyHeaderName
-				bind:apiKeyValue
-				{syncStatus}
-				{matchState}
-				{formatOutcome}
-				onTestConnection={testConnection}
-			/>
-		{/if}
 	</main>
 
-	<BottomNav {activeTab} on:change={onNavChange} />
+	{#if view === "game"}<BottomNav {activeTab} on:change={onNavChange} />{/if}
 
 	<DebugDrawer
 		open={showDebugDrawer}
