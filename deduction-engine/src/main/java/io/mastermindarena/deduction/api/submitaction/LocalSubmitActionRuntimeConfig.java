@@ -128,16 +128,27 @@ public record LocalSubmitActionRuntimeConfig(
 
     static String normalizeJdbcUrl(String rawUrl) {
         String url = rawUrl.trim();
+        String jdbcUrl;
         if (url.startsWith("jdbc:postgresql://")) {
+            jdbcUrl = url;
+        } else if (url.startsWith("postgresql://")) {
+            jdbcUrl = "jdbc:" + url;
+        } else if (url.startsWith("postgres://")) {
+            jdbcUrl = "jdbc:postgresql://" + url.substring("postgres://".length());
+        } else {
             return url;
         }
-        if (url.startsWith("postgresql://")) {
-            return "jdbc:" + url;
+
+        int authorityStart = "jdbc:postgresql://".length();
+        int authorityEnd = jdbcUrl.indexOf('/', authorityStart);
+        if (authorityEnd < 0) {
+            authorityEnd = jdbcUrl.length();
         }
-        if (url.startsWith("postgres://")) {
-            return "jdbc:postgresql://" + url.substring("postgres://".length());
+        int credentialsEnd = jdbcUrl.lastIndexOf('@', authorityEnd);
+        if (credentialsEnd >= authorityStart) {
+            return jdbcUrl.substring(0, authorityStart) + jdbcUrl.substring(credentialsEnd + 1);
         }
-        return url;
+        return jdbcUrl;
     }
 
     private static void requireSupabaseSslMode(String dbUrl) {

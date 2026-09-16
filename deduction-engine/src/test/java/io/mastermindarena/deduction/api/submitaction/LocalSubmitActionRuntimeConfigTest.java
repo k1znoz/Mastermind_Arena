@@ -8,9 +8,19 @@ class LocalSubmitActionRuntimeConfigTest {
     @Test
     void convertsVercelPostgresUrlToJdbc() {
         assertEquals(
-                "jdbc:postgresql://user:password@host.example:6543/postgres?sslmode=require",
+                "jdbc:postgresql://host.example:6543/postgres?sslmode=require",
                 LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(
                         "postgres://user:password@host.example:6543/postgres?sslmode=require"
+                )
+        );
+    }
+
+    @Test
+    void removesEncodedCredentialsFromVercelPostgresUrl() {
+        assertEquals(
+                "jdbc:postgresql://pooler.example.com:6543/postgres?sslmode=require",
+                LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(
+                        "postgres://postgres.project:p%40ssword@pooler.example.com:6543/postgres?sslmode=require"
                 )
         );
     }
