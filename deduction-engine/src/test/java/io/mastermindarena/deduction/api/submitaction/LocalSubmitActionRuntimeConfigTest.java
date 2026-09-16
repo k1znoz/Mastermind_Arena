@@ -26,6 +26,16 @@ class LocalSubmitActionRuntimeConfigTest {
     }
 
     @Test
+    void extractsPoolerTenantUserFromVercelPostgresUrl() {
+        assertEquals(
+                "postgres.project-ref",
+                LocalSubmitActionRuntimeConfig.extractDatabaseUser(
+                        "postgres://postgres.project-ref:p%40ssword@pooler.example.com:6543/postgres"
+                )
+        );
+    }
+
+    @Test
     void preservesJdbcUrl() {
         String jdbcUrl = "jdbc:postgresql://host.example:5432/postgres?sslmode=require";
         assertEquals(jdbcUrl, LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(jdbcUrl));

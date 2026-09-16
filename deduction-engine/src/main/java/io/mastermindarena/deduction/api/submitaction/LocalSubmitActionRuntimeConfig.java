@@ -1,5 +1,7 @@
 package io.mastermindarena.deduction.api.submitaction;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public record LocalSubmitActionRuntimeConfig(
@@ -87,7 +89,7 @@ public record LocalSubmitActionRuntimeConfig(
                 stringValue("submitAction.http.cors.allowedHeaders", new String[]{"APP_CORS_ALLOWED_HEADERS", "SUBMIT_ACTION_CORS_ALLOWED_HEADERS"}, "Content-Type,X-API-Key,X-Request-Id,X-Room-Token"),
                 intValue("submitAction.http.cors.maxAgeSeconds", new String[]{"APP_CORS_MAX_AGE_SECONDS", "SUBMIT_ACTION_CORS_MAX_AGE_SECONDS"}, 600),
                 normalizeJdbcUrl(stringValue("submitAction.db.url", new String[]{"APP_DB_URL", "SUBMIT_ACTION_DB_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"}, "jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require")),
-                stringValue("submitAction.db.user", new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER", "POSTGRES_USER"}, "postgres"),
+                databaseUser(),
                 stringValue("submitAction.db.password", new String[]{"APP_DB_PASSWORD", "SUBMIT_ACTION_DB_PASSWORD", "POSTGRES_PASSWORD"}, "change-me-db-password"),
                 stringValue("submitAction.db.schema", new String[]{"APP_DB_SCHEMA", "SUBMIT_ACTION_DB_SCHEMA"}, "public"),
                 stringValue("submitAction.seed.matchId", new String[]{"SUBMIT_ACTION_SEED_MATCH_ID"}, "local-match"),
@@ -124,6 +126,40 @@ public record LocalSubmitActionRuntimeConfig(
             }
         }
         return null;
+    }
+
+    private static String databaseUser() {
+        String configured = System.getProperty("submitAction.db.user");
+        if (configured == null || configured.isBlank()) {
+            configured = firstEnvironmentValue(new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER"});
+        }
+        if (configured != null && !configured.isBlank()) {
+            return configured;
+        }
+
+        String vercelUrl = firstEnvironmentValue(new String[]{"POSTGRES_URL", "POSTGRES_URL_NON_POOLING"});
+        String embeddedUser = extractDatabaseUser(vercelUrl);
+        if (embeddedUser != null && !embeddedUser.isBlank()) {
+            return embeddedUser;
+        }
+
+        String vercelUser = firstEnvironmentValue(new String[]{"POSTGRES_USER"});
+        return vercelUser == null || vercelUser.isBlank() ? "postgres" : vercelUser;
+    }
+
+    static String extractDatabaseUser(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return null;
+        }
+        int schemeEnd = rawUrl.indexOf("://");
+        int credentialsEnd = rawUrl.lastIndexOf('@');
+        if (schemeEnd < 0 || credentialsEnd <= schemeEnd + 3) {
+            return null;
+        }
+        String userInfo = rawUrl.substring(schemeEnd + 3, credentialsEnd);
+        int passwordSeparator = userInfo.indexOf(':');
+        String encodedUser = passwordSeparator < 0 ? userInfo : userInfo.substring(0, passwordSeparator);
+        return URLDecoder.decode(encodedUser, StandardCharsets.UTF_8);
     }
 
     static String normalizeJdbcUrl(String rawUrl) {
