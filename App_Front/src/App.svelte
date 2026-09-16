@@ -54,6 +54,7 @@
 	let submitStatus = 'idle'
 	let pendingActionType = ''
 	let submitError = ''
+	let submitInFlight = false
 
 	let toast = /** @type {ToastState} */ (null)
 	let toastTimer = /** @type {ReturnType<typeof setTimeout> | null} */ (null)
@@ -348,6 +349,20 @@
 
 	/** @param {Record<string, unknown>} actionPayload */
 	async function submitPayload(actionPayload) {
+		if (submitInFlight) {
+			return false
+		}
+
+		submitInFlight = true
+		try {
+			return await performSubmitPayload(actionPayload)
+		} finally {
+			submitInFlight = false
+		}
+	}
+
+	/** @param {Record<string, unknown>} actionPayload */
+	async function performSubmitPayload(actionPayload) {
 		if (syncStatus === 'error' || !matchState) {
 			openToast('error', 'Backend non synchronisé')
 			await refreshMatchState()
