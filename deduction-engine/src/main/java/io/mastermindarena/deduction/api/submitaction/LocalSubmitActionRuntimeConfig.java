@@ -86,9 +86,9 @@ public record LocalSubmitActionRuntimeConfig(
                 stringValue("submitAction.http.cors.allowedMethods", new String[]{"APP_CORS_ALLOWED_METHODS", "SUBMIT_ACTION_CORS_ALLOWED_METHODS"}, "GET,POST,OPTIONS"),
                 stringValue("submitAction.http.cors.allowedHeaders", new String[]{"APP_CORS_ALLOWED_HEADERS", "SUBMIT_ACTION_CORS_ALLOWED_HEADERS"}, "Content-Type,X-API-Key,X-Request-Id,X-Room-Token"),
                 intValue("submitAction.http.cors.maxAgeSeconds", new String[]{"APP_CORS_MAX_AGE_SECONDS", "SUBMIT_ACTION_CORS_MAX_AGE_SECONDS"}, 600),
-                stringValue("submitAction.db.url", new String[]{"APP_DB_URL", "SUBMIT_ACTION_DB_URL"}, "jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require"),
-                stringValue("submitAction.db.user", new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER"}, "postgres"),
-                stringValue("submitAction.db.password", new String[]{"APP_DB_PASSWORD", "SUBMIT_ACTION_DB_PASSWORD"}, "change-me-db-password"),
+                normalizeJdbcUrl(stringValue("submitAction.db.url", new String[]{"APP_DB_URL", "SUBMIT_ACTION_DB_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"}, "jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require")),
+                stringValue("submitAction.db.user", new String[]{"APP_DB_USER", "SUBMIT_ACTION_DB_USER", "POSTGRES_USER"}, "postgres"),
+                stringValue("submitAction.db.password", new String[]{"APP_DB_PASSWORD", "SUBMIT_ACTION_DB_PASSWORD", "POSTGRES_PASSWORD"}, "change-me-db-password"),
                 stringValue("submitAction.db.schema", new String[]{"APP_DB_SCHEMA", "SUBMIT_ACTION_DB_SCHEMA"}, "public"),
                 stringValue("submitAction.seed.matchId", new String[]{"SUBMIT_ACTION_SEED_MATCH_ID"}, "local-match"),
                 stringValue("submitAction.seed.actorId", new String[]{"SUBMIT_ACTION_SEED_ACTOR_ID"}, "p1"),
@@ -124,6 +124,20 @@ public record LocalSubmitActionRuntimeConfig(
             }
         }
         return null;
+    }
+
+    static String normalizeJdbcUrl(String rawUrl) {
+        String url = rawUrl.trim();
+        if (url.startsWith("jdbc:postgresql://")) {
+            return url;
+        }
+        if (url.startsWith("postgresql://")) {
+            return "jdbc:" + url;
+        }
+        if (url.startsWith("postgres://")) {
+            return "jdbc:postgresql://" + url.substring("postgres://".length());
+        }
+        return url;
     }
 
     private static void requireSupabaseSslMode(String dbUrl) {
