@@ -138,7 +138,14 @@ public final class SubmitActionOrchestrator {
 
         stateStore.save(updated);
         SubmitActionResult result = new SubmitActionResult(updated, command, List.copyOf(emitted), rejection);
-        idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
+        try {
+            idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
+        } catch (IllegalStateException persistenceFailure) {
+            System.err.printf(
+                    "{\"event\":\"idempotency_persist_failed\",\"matchId\":\"%s\",\"actorId\":\"%s\",\"message\":\"%s\"}%n",
+                    safeLogValue(command.matchId()), safeLogValue(command.actorId()), safeLogValue(persistenceFailure.getMessage())
+            );
+        }
         return result;
     }
 
@@ -178,6 +185,9 @@ public final class SubmitActionOrchestrator {
         } catch (java.io.IOException e) {
             throw new IllegalStateException("INVALID_FEEDBACK", e);
         }
+    }
+    private static String safeLogValue(String value) {
+        return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
     private void emit(List<String> emitted, GameEvent event) {
         emitted.add(event.name());
