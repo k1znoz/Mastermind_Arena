@@ -2,6 +2,7 @@ package io.mastermindarena.deduction.api.submitaction;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Objects;
 
 public record LocalSubmitActionRuntimeConfig(
@@ -188,14 +189,14 @@ public record LocalSubmitActionRuntimeConfig(
     }
 
     private static void requireSupabaseSslMode(String dbUrl) {
-        String normalized = dbUrl.toLowerCase();
+        String normalized = dbUrl.toLowerCase(Locale.ROOT);
         if (normalized.contains(".supabase.co") && !normalized.matches(".*[?&]sslmode=require([&#].*)?$")) {
             throw new IllegalArgumentException("Supabase PostgreSQL URL must include sslmode=require");
         }
     }
 
     private static void requireStrongApiKey(String apiKeyValue) {
-        String normalized = apiKeyValue.trim().toLowerCase();
+        String normalized = apiKeyValue.trim().toLowerCase(Locale.ROOT);
         if (normalized.length() < 16) {
             throw new IllegalArgumentException("apiKeyValue must be at least 16 characters long");
         }

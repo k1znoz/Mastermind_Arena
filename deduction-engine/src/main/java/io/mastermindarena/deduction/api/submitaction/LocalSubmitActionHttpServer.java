@@ -36,19 +36,10 @@ import java.util.stream.Collectors;
 public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private final HttpServer server;
     private final RuntimeMetrics metrics;
-    private final WebSocketSessionRegistry webSocketSessionRegistry;
-    private final WebSocketBroadcastService webSocketBroadcastService;
 
-    private LocalSubmitActionHttpServer(
-            HttpServer server,
-            RuntimeMetrics metrics,
-            WebSocketSessionRegistry webSocketSessionRegistry,
-            WebSocketBroadcastService webSocketBroadcastService
-    ) {
+    private LocalSubmitActionHttpServer(HttpServer server, RuntimeMetrics metrics) {
         this.server = server;
         this.metrics = metrics;
-        this.webSocketSessionRegistry = webSocketSessionRegistry;
-        this.webSocketBroadcastService = webSocketBroadcastService;
     }
 
     private record CorsPolicy(
@@ -89,7 +80,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
 
             JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
             WebSocketSessionRegistry webSocketSessionRegistry = new WebSocketSessionRegistry();
-            WebSocketBroadcastService webSocketBroadcastService = new WebSocketBroadcastService(eventSink, webSocketSessionRegistry);
+            new WebSocketBroadcastService(eventSink, webSocketSessionRegistry);
             SubmitActionOrchestrator orchestrator = new SubmitActionOrchestrator(
                     stateStore,
                     eventSink,
@@ -121,11 +112,11 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     corsPolicy,
                     metrics
                 ));
-                server.createContext("/local/rooms", exchange -> handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy, metrics));
-                server.createContext("/local/rooms/join", exchange -> handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy, metrics));
+                server.createContext("/local/rooms", exchange -> handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
+                server.createContext("/local/rooms/join", exchange -> handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
                 server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
-            return new LocalSubmitActionHttpServer(server, metrics, webSocketSessionRegistry, webSocketBroadcastService);
+            return new LocalSubmitActionHttpServer(server, metrics);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create local SubmitAction HTTP server", e);
         }
@@ -320,7 +311,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
 
     private static void handleRooms(
             HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
-            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors, RuntimeMetrics metrics
+            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors
     ) throws IOException {
         String requestId = resolveRequestId(exchange, requestHeader);
         setResponseRequestIdHeader(exchange, requestHeader, requestId);
@@ -356,7 +347,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
 
     private static void handleRoomJoin(
             HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
-            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors, RuntimeMetrics metrics
+            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors
     ) throws IOException {
         String requestId = resolveRequestId(exchange, requestHeader);
         setResponseRequestIdHeader(exchange, requestHeader, requestId);

@@ -84,7 +84,7 @@ public final class MatchStateHttpMapper {
         boolean pendingFeedback = MatchRuntimeState.WAITING_FEEDBACK.equals(state.status())
                 && "SEND_FEEDBACK".equals(entry.actionType());
         if ((pendingGuess || pendingFeedback) && !actorContext.isOwner(entry.actorId())) {
-            return entry != state.actionLog().get(state.actionLog().size() - 1);
+            return !entry.equals(state.actionLog().get(state.actionLog().size() - 1));
         }
         return true;
     }

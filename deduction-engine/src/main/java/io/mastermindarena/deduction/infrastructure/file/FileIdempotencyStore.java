@@ -59,7 +59,10 @@ public final class FileIdempotencyStore implements IdempotencyStore {
         lines.addAll(FilePersistenceCodec.serializeSubmitActionResult(entry.result()));
 
         try {
-            Files.createDirectories(file.getParent());
+            Path parent = file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             Files.write(
                     file,
                     lines,

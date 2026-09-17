@@ -23,6 +23,7 @@ public final class WebSocketSessionRegistry {
     }
 
     /** Abstraction minimale d'une session, en attendant une implementation reseau concrete. */
+    @FunctionalInterface
     public interface WebSocketSession {
         void send(String payload);
     }

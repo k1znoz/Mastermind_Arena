@@ -22,7 +22,7 @@ public record MatchActionPayloadView(
             String actionType = stringValue(payloadMap.get("type"), "UNKNOWN_ACTION");
             List<String> symbols = extractSymbols(payloadMap);
             String payloadSummary = payloadMap.entrySet().stream()
-                    .map(entry -> String.valueOf(entry.getKey()) + "=" + String.valueOf(entry.getValue()))
+                    .map(entry -> entry.getKey() + "=" + entry.getValue())
                     .collect(Collectors.joining(", "));
             return new MatchActionPayloadView(actionType, symbols, payloadSummary);
         }

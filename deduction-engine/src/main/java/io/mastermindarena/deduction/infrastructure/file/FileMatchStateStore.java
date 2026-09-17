@@ -49,7 +49,10 @@ public final class FileMatchStateStore implements MatchStateStore {
         String payload = FilePersistenceCodec.serializeMatchRuntimeState(state);
 
         try {
-            Files.createDirectories(file.getParent());
+            Path parent = file.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             Files.writeString(
                     file,
                     payload,
