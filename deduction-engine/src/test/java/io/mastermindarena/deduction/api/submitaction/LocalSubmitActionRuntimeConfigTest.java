@@ -8,7 +8,7 @@ class LocalSubmitActionRuntimeConfigTest {
     @Test
     void convertsVercelPostgresUrlToJdbc() {
         assertEquals(
-                "jdbc:postgresql://host.example:6543/postgres?sslmode=require",
+                "jdbc:postgresql://host.example:6543/postgres?sslmode=require&prepareThreshold=0",
                 LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(
                         "postgres://user:password@host.example:6543/postgres?sslmode=require"
                 )
@@ -18,7 +18,7 @@ class LocalSubmitActionRuntimeConfigTest {
     @Test
     void removesEncodedCredentialsFromVercelPostgresUrl() {
         assertEquals(
-                "jdbc:postgresql://pooler.example.com:6543/postgres?sslmode=require",
+                "jdbc:postgresql://pooler.example.com:6543/postgres?sslmode=require&prepareThreshold=0",
                 LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(
                         "postgres://postgres.project:p%40ssword@pooler.example.com:6543/postgres?sslmode=require"
                 )
@@ -38,6 +38,11 @@ class LocalSubmitActionRuntimeConfigTest {
     @Test
     void preservesJdbcUrl() {
         String jdbcUrl = "jdbc:postgresql://host.example:5432/postgres?sslmode=require";
+        assertEquals(jdbcUrl + "&prepareThreshold=0", LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(jdbcUrl));
+    }
+    @Test
+    void preservesExplicitPrepareThreshold() {
+        String jdbcUrl = "jdbc:postgresql://host.example:5432/postgres?sslmode=require&prepareThreshold=5";
         assertEquals(jdbcUrl, LocalSubmitActionRuntimeConfig.normalizeJdbcUrl(jdbcUrl));
     }
 }

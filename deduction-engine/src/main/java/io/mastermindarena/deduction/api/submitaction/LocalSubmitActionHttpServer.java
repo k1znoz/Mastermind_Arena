@@ -534,7 +534,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         Set<String> origins = wildcard
                 ? Set.of("*")
                 : Arrays.stream(rawOrigins.split(","))
-                .map(String::trim)
+                .map(LocalSubmitActionHttpServer::normalizeOrigin)
                 .filter(value -> !value.isBlank())
                 .collect(Collectors.toUnmodifiableSet());
 
@@ -553,7 +553,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             return true;
         }
 
-        boolean originAllowed = policy.wildcardOrigin() || policy.allowedOrigins().contains(requestOrigin);
+        boolean originAllowed = policy.wildcardOrigin() || policy.allowedOrigins().contains(normalizeOrigin(requestOrigin));
         if (!originAllowed) {
             return false;
         }
@@ -565,6 +565,14 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         exchange.getResponseHeaders().set("Access-Control-Max-Age", Integer.toString(policy.maxAgeSeconds()));
         exchange.getResponseHeaders().add("Vary", "Origin");
         return true;
+    }
+
+    private static String normalizeOrigin(String origin) {
+        String normalized = origin.trim();
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private static Map<String, String> queryParams(String rawQuery) {

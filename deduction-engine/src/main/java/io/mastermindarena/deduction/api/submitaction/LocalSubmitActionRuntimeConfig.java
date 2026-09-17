@@ -182,10 +182,19 @@ public record LocalSubmitActionRuntimeConfig(
             authorityEnd = jdbcUrl.length();
         }
         int credentialsEnd = jdbcUrl.lastIndexOf('@', authorityEnd);
-        if (credentialsEnd >= authorityStart) {
-            return jdbcUrl.substring(0, authorityStart) + jdbcUrl.substring(credentialsEnd + 1);
+        String sanitizedUrl = credentialsEnd >= authorityStart
+                ? jdbcUrl.substring(0, authorityStart) + jdbcUrl.substring(credentialsEnd + 1)
+                : jdbcUrl;
+        return addJdbcParameter(sanitizedUrl, "prepareThreshold", "0");
+    }
+
+    private static String addJdbcParameter(String jdbcUrl, String name, String value) {
+        String normalized = jdbcUrl.toLowerCase(Locale.ROOT);
+        String parameter = name.toLowerCase(Locale.ROOT);
+        if (normalized.matches(".*[?&]" + parameter + "=[^&]*.*")) {
+            return jdbcUrl;
         }
-        return jdbcUrl;
+        return jdbcUrl + (jdbcUrl.contains("?") ? "&" : "?") + name + "=" + value;
     }
 
     private static void requireSupabaseSslMode(String dbUrl) {
