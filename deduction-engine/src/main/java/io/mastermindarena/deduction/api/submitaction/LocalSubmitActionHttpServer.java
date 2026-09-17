@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -365,7 +366,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
                 }
             } catch (IllegalStateException e) {
-                writeRoomError(exchange, json, e);
+                writeRoomError(exchange, json, e, requestId);
             } catch (RuntimeException e) {
                 writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
             }
@@ -391,14 +392,19 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 JoinRoomBody body = json.readValue(exchange.getRequestBody(), JoinRoomBody.class);
                 writeJson(exchange, json, 200, rooms.join(body.roomId(), body.pseudo(), body.accessCode()));
             } catch (IllegalStateException e) {
-                writeRoomError(exchange, json, e);
+                writeRoomError(exchange, json, e, requestId);
             } catch (RuntimeException e) {
                 writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
             }
         }
     }
 
-    private static void writeRoomError(HttpExchange exchange, ObjectMapper json, IllegalStateException e) throws IOException {
+    private static void writeRoomError(
+            HttpExchange exchange,
+            ObjectMapper json,
+            IllegalStateException e,
+            String requestId
+    ) throws IOException {
         String code = e.getMessage();
         int status = switch (code) {
             case "ROOM_NOT_FOUND" -> 404;
@@ -407,7 +413,18 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             case "ROOM_NAME_REQUIRED", "PSEUDO_REQUIRED", "FIELD_TOO_LONG" -> 400;
             default -> 500;
         };
+        if (status == 500) {
+            logRoomPersistenceFailure(code, requestId, e);
+        }
         writeJson(exchange, json, status, new ErrorBody(status == 500 ? "ROOM_SERVER_ERROR" : code));
+    }
+
+    private static void logRoomPersistenceFailure(String code, String requestId, IllegalStateException failure) {
+        Throwable cause = failure.getCause();
+        String sqlState = cause instanceof SQLException sqlFailure ? sqlFailure.getSQLState() : "n/a";
+        System.err.println(String.format(Locale.ROOT,
+                "{\"event\":\"room_persistence_failure\",\"code\":\"%s\",\"requestId\":\"%s\",\"sqlState\":\"%s\"}",
+                escapeJson(code), escapeJson(requestId), escapeJson(sqlState)));
     }
     private static void writeJson(HttpExchange exchange, ObjectMapper objectMapper, int statusCode, Object body) throws IOException {
         byte[] json = objectMapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8);

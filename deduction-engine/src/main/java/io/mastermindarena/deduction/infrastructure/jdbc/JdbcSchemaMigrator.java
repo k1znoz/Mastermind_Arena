@@ -10,6 +10,7 @@ import java.sql.Statement;
 public final class JdbcSchemaMigrator {
     private static final String V1_SCRIPT = "db/migration/V1__submit_action_init.sql";
     private static final String V2_SCRIPT = "db/migration/V2__rooms.sql";
+    private static final String V3_SCRIPT = "db/migration/V3__repair_rooms.sql";
 
     private final JdbcPersistenceContext context;
 
@@ -18,7 +19,8 @@ public final class JdbcSchemaMigrator {
     }
 
     public void migrateToLatest() {
-        String script = (loadScript(V1_SCRIPT) + "\n" + loadScript(V2_SCRIPT)).replace("${schema}", context.schema());
+        String script = (loadScript(V1_SCRIPT) + "\n" + loadScript(V2_SCRIPT) + "\n" + loadScript(V3_SCRIPT))
+                .replace("${schema}", context.schema());
         try (Connection connection = context.openConnection();
              Statement statement = connection.createStatement()) {
             connection.setAutoCommit(false);
