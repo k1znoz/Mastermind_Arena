@@ -386,6 +386,11 @@
 			return false
 		}
 
+		const actionType = String(actionPayload.actionType ?? '')
+		const actionCountBefore = (matchState?.turns ?? []).filter((entry) =>
+			entry?.actorId === currentActorId && entry?.actionType === actionType
+		).length
+		const gameNumberBefore = Number(matchState?.gameNumber ?? 1)
 		const { submitClient } = currentClients()
 		const request = {
 			endpoint: `POST ${submitClient.endpoint}`,
@@ -447,6 +452,21 @@
 				} catch (retryError) {
 					error = retryError
 				}
+			}
+
+			await refreshMatchState()
+			const actionCountAfter = (matchState?.turns ?? []).filter((entry) =>
+				entry?.actorId === currentActorId && entry?.actionType === actionType
+			).length
+			const rematchApplied = actionType === 'REQUEST_REMATCH'
+				&& Number(matchState?.gameNumber ?? 1) > gameNumberBefore
+			if (actionCountAfter > actionCountBefore || rematchApplied) {
+				submitStatus = 'success'
+				pendingActionType = ''
+				submitError = ''
+				logDebug(request, { accepted: true, recoveredFromResponseError: true })
+				openToast('success', 'Action confirmée après resynchronisation')
+				return true
 			}
 
 			const message = error instanceof Error ? error.message : String(error)

@@ -32,5 +32,12 @@ class IdempotencyPersistenceFailureTest {
 
         assertEquals(1L, result.state().version());
         assertEquals(1L, stateStore.findById("match").orElseThrow().version());
+
+        SubmitActionResult replay = orchestrator.submit(new SubmitActionCommand(
+                "match", "p1", 0L, "request-2", SubmitActionCommand.READY_SECRET,
+                "[\"A\",\"B\",\"C\",\"D\"]", null));
+
+        assertEquals(1L, replay.state().version());
+        assertEquals(1L, stateStore.findById("match").orElseThrow().version());
     }
 }

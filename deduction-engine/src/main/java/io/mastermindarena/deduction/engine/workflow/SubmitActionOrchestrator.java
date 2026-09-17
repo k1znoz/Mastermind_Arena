@@ -39,6 +39,11 @@ public final class SubmitActionOrchestrator {
             }
             throw new IllegalStateException("IDEMPOTENCY_CONFLICT");
         }
+        if (isReplayOfRecordedAction(current, command)) {
+            SubmitActionResult replay = new SubmitActionResult(current, command, List.of(), null);
+            saveIdempotencyBestEffort(idempotencyScopeKey, requestFingerprint, replay, command);
+            return replay;
+        }
 
         if (current.isTerminal() && !SubmitActionCommand.REQUEST_REMATCH.equals(command.actionType())) {
             throw new IllegalStateException("MATCH_ALREADY_TERMINAL");
@@ -138,17 +143,38 @@ public final class SubmitActionOrchestrator {
 
         stateStore.save(updated);
         SubmitActionResult result = new SubmitActionResult(updated, command, List.copyOf(emitted), rejection);
+        saveIdempotencyBestEffort(idempotencyScopeKey, requestFingerprint, result, command);
+
+        return result;
+    }
+
+    private void saveIdempotencyBestEffort(
+            String scopeKey,
+            String fingerprint,
+            SubmitActionResult result,
+            SubmitActionCommand command
+    ) {
         try {
-            idempotencyStore.save(idempotencyScopeKey, new IdempotencyStore.Entry(requestFingerprint, result));
+            idempotencyStore.save(scopeKey, new IdempotencyStore.Entry(fingerprint, result));
         } catch (IllegalStateException persistenceFailure) {
             System.err.printf(
                     "{\"event\":\"idempotency_persist_failed\",\"matchId\":\"%s\",\"actorId\":\"%s\",\"message\":\"%s\"}%n",
                     safeLogValue(command.matchId()), safeLogValue(command.actorId()), safeLogValue(persistenceFailure.getMessage())
             );
         }
-        return result;
     }
 
+    private static boolean isReplayOfRecordedAction(MatchRuntimeState state, SubmitActionCommand command) {
+        if (command.expectedVersion() >= state.version()) {
+            return false;
+        }
+        return state.actionLog().stream().anyMatch(record ->
+                record.version() > command.expectedVersion()
+                        && command.actorId().equals(record.actorId())
+                        && command.actionType().equals(record.actionType())
+                        && Objects.equals(command.payload(), record.guess())
+                        && Objects.equals(command.feedback(), record.feedback()));
+    }
     private static boolean hasRequestedRematch(MatchRuntimeState state, String actorId) {
         return state.actionLog().stream().anyMatch(record ->
                 SubmitActionCommand.REQUEST_REMATCH.equals(record.actionType()) && actorId.equals(record.actorId()));
