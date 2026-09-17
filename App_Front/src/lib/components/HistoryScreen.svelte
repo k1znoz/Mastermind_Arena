@@ -6,13 +6,13 @@
   export let historyRows = []
 
   /** @type {(value: unknown) => string[]} */
-  export let asSymbols = (value) => []
+  export let asSymbols = (_value) => []
   /** @type {(value: string | null | undefined) => { icon: string, token: string, toneClass: string }} */
-  export let getSymbolVisual = (value) => ({ icon: '·', token: '_', toneClass: 'symbol-tone-muted' })
+  export let getSymbolVisual = (_value) => ({ icon: '·', token: '_', toneClass: 'symbol-tone-muted' })
   /** @type {(value: number | null) => string} */
-  export let formatTimestamp = (value) => '--:--:--'
+  export let formatTimestamp = (_value) => '--:--:--'
   /** @type {(value: unknown) => number | null} */
-  export let asTimestamp = (value) => null
+  export let asTimestamp = (_value) => null
 
   export let onRefresh = () => {}
 </script>

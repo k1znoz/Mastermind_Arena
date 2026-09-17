@@ -9,7 +9,7 @@
   /** @type {unknown} */
   export let debugLastResponse = null
   /** @type {(value: unknown) => string} */
-  export let debugJson = (value) => '{}'
+  export let debugJson = (_value) => '{}'
   export let syncMessage = ''
   export let submitError = ''
 

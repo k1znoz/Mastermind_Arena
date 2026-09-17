@@ -75,6 +75,8 @@
   $: if (feedbackResetKey !== lastFeedbackResetKey) {
     bienPlaces = 0
     malPlaces = 0
+    // Reactive state remembers which round was reset.
+    // eslint-disable-next-line no-useless-assignment
     lastFeedbackResetKey = feedbackResetKey
   }
 

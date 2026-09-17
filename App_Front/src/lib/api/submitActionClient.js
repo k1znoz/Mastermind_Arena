@@ -1,40 +1,4 @@
-/** @param {*} baseUrl */
-function normalizeBaseUrl(baseUrl) {
-  if (!baseUrl) {
-    return ''
-  }
-
-  return String(baseUrl).endsWith('/') ? String(baseUrl).slice(0, -1) : String(baseUrl)
-}
-
-/** @param {*} baseUrl @param {*} path */
-function buildUrl(baseUrl, path) {
-  const textPath = String(path ?? '')
-  const normalizedPath = textPath.startsWith('/') ? textPath : `/${textPath}`
-  return `${normalizeBaseUrl(baseUrl)}${normalizedPath}`
-}
-
-/** @param {*} text */
-function safeJsonParse(text) {
-  try {
-    return text ? JSON.parse(String(text)) : null
-  } catch {
-    return null
-  }
-}
-
-/** @param {*} body @param {string} fallbackCode */
-function readErrorCode(body, fallbackCode) {
-  if (body && typeof body === 'object') {
-    if (typeof body.rejectionCode === 'string' && body.rejectionCode) {
-      return body.rejectionCode
-    }
-    if (typeof body.code === 'string' && body.code) {
-      return body.code
-    }
-  }
-  return fallbackCode
-}
+import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
 
 /**
  * @typedef {{

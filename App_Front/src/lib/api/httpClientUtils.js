@@ -6,7 +6,7 @@
  * @param {string | undefined | null} baseUrl
  * @returns {string}
  */
-export function normalizeBaseUrl(baseUrl) {
+function normalizeBaseUrl(baseUrl) {
   if (!baseUrl) {
     return ''
   }

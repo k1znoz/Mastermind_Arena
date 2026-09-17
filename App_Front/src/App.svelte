@@ -373,7 +373,7 @@
 		submitStatus = 'loading'
 		submitError = ''
 
-		let expectedVersion = 0
+		let expectedVersion
 		try {
 			expectedVersion = await resolveExpectedVersion()
 		} catch (error) {
@@ -436,8 +436,9 @@
 			openToast('success', 'Action envoyée')
 			await refreshMatchState()
 			return true
-		} catch (error) {
-			const submitErrorDetails = /** @type {SubmitClientError} */ (error instanceof Error ? error : new Error(String(error)))
+		} catch (caughtError) {
+			let submissionError = caughtError
+			const submitErrorDetails = /** @type {SubmitClientError} */ (submissionError instanceof Error ? submissionError : new Error(String(submissionError)))
 			if (submitErrorDetails.code === 'VERSION_CONFLICT') {
 				await refreshMatchState()
 				try {
@@ -450,7 +451,7 @@
 					await refreshMatchState()
 					return true
 				} catch (retryError) {
-					error = retryError
+					submissionError = retryError
 				}
 			}
 
@@ -469,7 +470,7 @@
 				return true
 			}
 
-			const message = error instanceof Error ? error.message : String(error)
+			const message = submissionError instanceof Error ? submissionError.message : String(submissionError)
 			submitStatus = 'error'
 			pendingActionType = ''
 			submitError = message

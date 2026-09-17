@@ -2,7 +2,7 @@ export const CODE_LENGTH = 4
 export const ALLOWED_SYMBOLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 
 /** @param {*} token */
-export function normalizeSymbolToken(token) {
+function normalizeSymbolToken(token) {
   return String(token ?? '').trim().toUpperCase()
 }
 
