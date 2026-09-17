@@ -29,5 +29,5 @@ CREATE TABLE IF NOT EXISTS ${schema}.workflow_event (
 );
 
 INSERT INTO ${schema}.schema_version (version, description)
-SELECT 1, 'P6-B initial submit action runtime schema'
-WHERE NOT EXISTS (SELECT 1 FROM ${schema}.schema_version WHERE version = 1);
+VALUES (1, 'P6-B initial submit action runtime schema')
+ON CONFLICT (version) DO NOTHING;

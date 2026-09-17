@@ -64,19 +64,9 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     config.dbPassword(),
                     config.dbSchema()
             );
-            new JdbcSchemaMigrator(persistenceContext).migrateToLatest();
-
             JdbcMatchStateStore stateStore = new JdbcMatchStateStore(persistenceContext);
+            initializeDatabase(persistenceContext, stateStore, config);
             JdbcRoomDirectory rooms = new JdbcRoomDirectory(persistenceContext);
-            stateStore.findById(config.seedMatchId()).orElseGet(() -> {
-                MatchRuntimeState seeded = new MatchRuntimeState(
-                        config.seedMatchId(),
-                        List.of(config.seedActorId(), config.seedOpponentId()),
-                        0L
-                );
-                stateStore.save(seeded);
-                return seeded;
-            });
 
             JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
             WebSocketSessionRegistry webSocketSessionRegistry = new WebSocketSessionRegistry();
@@ -305,6 +295,43 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         }
     }
 
+    private static void initializeDatabase(
+            JdbcPersistenceContext persistenceContext,
+            JdbcMatchStateStore stateStore,
+            LocalSubmitActionRuntimeConfig config
+    ) {
+        IllegalStateException lastFailure = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                new JdbcSchemaMigrator(persistenceContext).migrateToLatest();
+                stateStore.findById(config.seedMatchId()).orElseGet(() -> {
+                    MatchRuntimeState seeded = new MatchRuntimeState(
+                            config.seedMatchId(),
+                            List.of(config.seedActorId(), config.seedOpponentId()),
+                            0L
+                    );
+                    stateStore.save(seeded);
+                    return seeded;
+                });
+                return;
+            } catch (IllegalStateException failure) {
+                lastFailure = failure;
+                if (attempt < 3) {
+                    pauseBeforeDatabaseRetry(attempt);
+                }
+            }
+        }
+        throw new IllegalStateException("Unable to initialize JDBC persistence after retries", lastFailure);
+    }
+
+    private static void pauseBeforeDatabaseRetry(int attempt) {
+        try {
+            Thread.sleep(250L * attempt);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while initializing JDBC persistence", interrupted);
+        }
+    }
     private record CreateRoomBody(String name, String pseudo, String accessCode) {}
     private record JoinRoomBody(String roomId, String pseudo, String accessCode) {}
     private record RoomListBody(List<JdbcRoomDirectory.RoomInfo> rooms) {}

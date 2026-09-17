@@ -22,6 +22,9 @@ public final class JdbcSchemaMigrator {
         try (Connection connection = context.openConnection();
              Statement statement = connection.createStatement()) {
             connection.setAutoCommit(false);
+            if (context.isPostgresUrl()) {
+                statement.execute("SELECT pg_advisory_xact_lock(hashtext('mastermind_arena_schema_migration'))");
+            }
             for (String sql : splitStatements(script)) {
                 if (!sql.isBlank()) {
                     statement.execute(sql);

@@ -15,5 +15,5 @@ CREATE INDEX IF NOT EXISTS rooms_waiting_created_idx
     WHERE guest_pseudo IS NULL;
 
 INSERT INTO ${schema}.schema_version (version, description)
-SELECT 2, 'Rooms with optional access code and player tokens'
-WHERE NOT EXISTS (SELECT 1 FROM ${schema}.schema_version WHERE version = 2);
+VALUES (2, 'Rooms with optional access code and player tokens')
+ON CONFLICT (version) DO NOTHING;
