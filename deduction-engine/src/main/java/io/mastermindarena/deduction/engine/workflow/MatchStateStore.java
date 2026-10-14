@@ -7,4 +7,12 @@ public interface MatchStateStore {
     Optional<MatchRuntimeState> findById(String matchId);
 
     void save(MatchRuntimeState state);
+
+    default <T> T atomic(String matchId, java.util.function.Supplier<T> operation) {
+        return operation.get();
+    }
+
+    default boolean hasAtomicWrites() {
+        return false;
+    }
 }

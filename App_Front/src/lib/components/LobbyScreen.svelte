@@ -1,5 +1,8 @@
 <script>
   import { createEventDispatcher } from 'svelte'
+  import RecoveryForm from './RecoveryForm.svelte'
+  export let recoveryInput = ''
+  export let recoveryError = ''
   export let playerName = ''
   export let rooms = []
   export let busy = false
@@ -38,7 +41,7 @@
           <div class="room-code-entry"><label><span>CODE D’ACCÈS</span><input type="password" maxlength="64" autocomplete="off" bind:value={joinCode} /></label><button type="button" disabled={busy || !joinCode.trim()} on:click={() => dispatch('joinroom', { roomId: room.roomId, accessCode: joinCode })}>ENTRER</button></div>
         {/if}
       {:else}
-        <p class="empty-list">Aucune partie n’attend un deuxième joueur. Créez la vôtre.</p>
+        <p class="empty-list">{error ? 'La liste des parties n’a pas pu être chargée. Réessayez dans un instant.' : 'Aucune partie n’attend un deuxième joueur. Créez la vôtre.'}</p>
       {/each}
     </section>
 
@@ -51,17 +54,18 @@
     </section>
   </div>
   {#if canResume}<button type="button" class="resume-button" on:click={() => dispatch('resume')}>REPRENDRE MA PARTIE EN COURS</button>{/if}
+  <RecoveryForm bind:value={recoveryInput} {busy} error={recoveryError} on:recover={(event) => dispatch('recover', event.detail)} />
 </section>
 <style>
   .lobby-screen { display:grid; gap:14px; }
-  .lobby-header { display:flex; justify-content:space-between; align-items:start; gap:14px; padding:20px; border:1px solid var(--line); background:rgba(19,23,31,.9); }
+  .lobby-header { display:flex; justify-content:space-between; align-items:start; gap:14px; padding:20px; border:1px solid var(--line); background:var(--panel); }
   .lobby-header span, h2, label span, .room-table-head { font:11px "JetBrains Mono",monospace; letter-spacing:.08em; color:var(--primary); }
   h1 { margin:8px 0 4px; font:700 clamp(28px,5vw,40px) "Space Grotesk",sans-serif; }
   p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
   button { min-height:34px; padding:6px 10px; border:1px solid var(--line-soft); background:transparent; color:var(--text); cursor:pointer; font:10px "JetBrains Mono",monospace; }
   button:disabled { opacity:.4; cursor:default; }
   .lobby-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:12px; }
-  .room-list,.create-room { min-width:0; padding:16px; border:1px solid var(--line); background:rgba(19,23,31,.9); }
+  .room-list,.create-room { min-width:0; padding:16px; border:1px solid var(--line); background:var(--panel); }
   .section-title { display:flex; justify-content:space-between; gap:8px; align-items:center; }
   h2 { margin:0 0 12px; }
   .room-table-head,.room-table-row { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 56px 88px; gap:8px; align-items:center; }
@@ -75,7 +79,7 @@
   .create-room h2 { margin:0; }
   label { display:grid; gap:6px; }
   label span { color:var(--muted); font-size:10px; }
-  input { width:100%; min-height:40px; padding:8px; border:1px solid var(--line-soft); background:#10161f; color:var(--text); font-size:13px; }
+  input { width:100%; min-height:40px; padding:8px; border:1px solid var(--line-soft); background:var(--panel-strong); color:var(--text); font-size:13px; }
   .create-button { border-color:var(--primary); background:rgba(0,219,233,.12); color:var(--primary-soft); min-height:40px; }
   .room-code-entry { display:flex; gap:8px; align-items:end; padding:10px; background:rgba(255,171,243,.06); }
   .room-code-entry label { flex:1; }

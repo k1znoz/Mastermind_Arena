@@ -105,6 +105,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 ));
                 server.createContext("/local/rooms", exchange -> handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
                 server.createContext("/local/rooms/join", exchange -> handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
+                server.createContext("/local/rooms/resume", exchange -> handleRoomResume(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
                 server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
             return new LocalSubmitActionHttpServer(server, metrics);
@@ -128,6 +129,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         String requestId = resolveRequestId(exchange, requestIdHeaderName);
         setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
         try (exchange) {
+            try {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
             if (!applyCors(exchange, corsPolicy)) {
@@ -152,7 +154,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 return;
             }
 
-            SubmitActionHttpRequest request = objectMapper.readValue(exchange.getRequestBody(), SubmitActionHttpRequest.class);
+            SubmitActionHttpRequest request = readBody(exchange, objectMapper, SubmitActionHttpRequest.class);
             if (!rooms.authorize(request.matchId(), request.actorId(), exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
                 writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
                 return;
@@ -176,17 +178,20 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             writeJson(exchange, objectMapper, response.statusCode(), response.body());
         } catch (RuntimeException ex) {
             long elapsedMillis = elapsedMillis(startNanos);
+            int errorStatus = ex instanceof IllegalArgumentException ? 400 : 500;
+            String errorCode = ex instanceof IllegalArgumentException ? "INVALID_REQUEST" : "SERVER_ERROR";
             logStructured(
                     "request_rejected",
                     exchange.getRequestURI().getPath(),
                     exchange.getRequestMethod(),
-                    400,
-                    "INVALID_REQUEST",
+                    errorStatus,
+                    errorCode,
                     requestId,
                     elapsedMillis,
-                    metrics.record(400, elapsedMillis)
+                    metrics.record(errorStatus, elapsedMillis)
             );
-            writeJson(exchange, objectMapper, 400, new ErrorBody("INVALID_REQUEST"));
+            writeJson(exchange, objectMapper, errorStatus, new ErrorBody(errorCode));
+            }
         }
     }
 
@@ -335,6 +340,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
     }
     private record CreateRoomBody(String name, String pseudo, String accessCode) {}
     private record JoinRoomBody(String roomId, String pseudo, String accessCode) {}
+    private record ResumeRoomBody(String recoveryCode) {}
     private record RoomListBody(List<JdbcRoomDirectory.RoomInfo> rooms) {}
 
     private static void handleRooms(
@@ -360,7 +366,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                                 info.<Object>map(value -> value).orElse(new ErrorBody("ROOM_NOT_FOUND")));
                     }
                 } else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                    CreateRoomBody body = json.readValue(exchange.getRequestBody(), CreateRoomBody.class);
+                    CreateRoomBody body = readBody(exchange, json, CreateRoomBody.class);
                     writeJson(exchange, json, 201, rooms.create(body.name(), body.pseudo(), body.accessCode()));
                 } else {
                     writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
@@ -389,7 +395,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                 writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
             }
             try {
-                JoinRoomBody body = json.readValue(exchange.getRequestBody(), JoinRoomBody.class);
+                JoinRoomBody body = readBody(exchange, json, JoinRoomBody.class);
                 writeJson(exchange, json, 200, rooms.join(body.roomId(), body.pseudo(), body.accessCode()));
             } catch (IllegalStateException e) {
                 writeRoomError(exchange, json, e, requestId);
@@ -409,7 +415,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         int status = switch (code) {
             case "ROOM_NOT_FOUND" -> 404;
             case "ROOM_FULL", "ROOM_WAITING_FOR_PLAYER" -> 409;
-            case "ROOM_CODE_INVALID" -> 403;
+            case "ROOM_CODE_INVALID", "ROOM_RESUME_INVALID" -> 403;
             case "ROOM_NAME_REQUIRED", "PSEUDO_REQUIRED", "FIELD_TOO_LONG" -> 400;
             default -> 500;
         };
@@ -417,6 +423,38 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             logRoomPersistenceFailure(code, requestId, e);
         }
         writeJson(exchange, json, status, new ErrorBody(status == 500 ? "ROOM_SERVER_ERROR" : code));
+    }
+
+    private static void handleRoomResume(HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
+            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors) throws IOException {
+        String requestId = resolveRequestId(exchange, requestHeader);
+        setResponseRequestIdHeader(exchange, requestHeader, requestId);
+        try (exchange) {
+            if (!applyCors(exchange, cors)) { writeJson(exchange, json, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED")); return; }
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) { exchange.sendResponseHeaders(204, -1); return; }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) { writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED")); return; }
+            if (!secureEquals(apiKey, exchange.getRequestHeaders().getFirst(apiHeader))) {
+                writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
+            }
+            try {
+                ResumeRoomBody body = readBody(exchange, json, ResumeRoomBody.class);
+                writeJson(exchange, json, 200, rooms.resume(body.recoveryCode()));
+            } catch (IllegalStateException failure) {
+                writeRoomError(exchange, json, failure, requestId);
+            } catch (IllegalArgumentException failure) {
+                writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
+            }
+        }
+    }
+
+    private static <T> T readBody(HttpExchange exchange, ObjectMapper json, Class<T> type) {
+        try {
+            byte[] bytes = exchange.getRequestBody().readNBytes(65_537);
+            if (bytes.length > 65_536) throw new IllegalArgumentException("Request body too large");
+            return json.readValue(bytes, type);
+        } catch (IOException failure) {
+            throw new IllegalArgumentException("Invalid JSON request", failure);
+        }
     }
 
     private static void logRoomPersistenceFailure(String code, String requestId, IllegalStateException failure) {

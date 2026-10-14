@@ -1,8 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte'
-  import OpponentProgress from './OpponentProgress.svelte'
-
-  /** @type {{ matchId?: string, turns?: Array<Record<string, unknown>>, state?: string } | null} */
+  import CodePegs from './CodePegs.svelte'
   export let matchState = null
   export let isMyTurn = false
   export let actorId = 'p1'
@@ -11,14 +9,13 @@
   export let hasSecretSet = false
   export let opponentName = 'Adversaire'
   export let opponentStepDone = false
-
-  /** @type {string[]} */ export let setupSequence = []
-  /** @type {string[]} */ export let setupSlots = []
+  export let setupSequence = []
+  export let setupSlots = []
   export let selectedSetupSlot = 0
-  /** @type {string[]} */ export let draftGuess = []
+  export let draftGuess = []
   export let selectedGuessSlot = 0
-  /** @type {string[]} */ export let guessSequence = []
-  /** @type {string[]} */ export let symbolPalette = []
+  export let guessSequence = []
+  export let symbolPalette = []
   export let isSecretSubmitting = false
   export let isGuessSubmitting = false
   export let isBackendReady = false
@@ -27,273 +24,193 @@
   export let canSubmitGuess = false
   export let sendButtonLabel = ''
   export let opponentActorId = null
-  /** @type {(value: unknown) => string[]} */ export let asSymbols = () => []
-  /** @type {(value: string | null | undefined) => { icon: string, token: string, toneClass: string }} */
-  export let getSymbolVisual = () => ({ icon: '.', token: '_', toneClass: 'symbol-tone-muted' })
-
+  export let asSymbols = () => []
+  export let getSymbolVisual = () => ({ token:'Vide', toneClass:'symbol-tone-muted' })
+  export let busy = false
   const dispatch = createEventDispatcher()
-  const boardRows = 10
-  let bienPlaces = 0
-  let malPlaces = 0
-  $: paletteTarget = hasSecretSet ? 'guess' : 'secret'
-  let lastFeedbackResetKey = ''
-
-  const emit = (name, detail) => dispatch(name, detail)
-  const adjustFeedback = (field, change) => {
-    if (field === 'bienPlaces') bienPlaces = Math.max(0, Math.min(4 - malPlaces, bienPlaces + change))
-    else malPlaces = Math.max(0, Math.min(4 - bienPlaces, malPlaces + change))
-  }
-
+  let selectedBoard = 'own'
+  let lastPhase = ''
+  let black = 0
+  let white = 0
+  let resetKey = ''
+  let editing = null
+  let editBlack = 0
+  let editWhite = 0
+  let confirmAbandon = false
   $: turns = matchState?.turns ?? []
-  $: myRematchAsked = (matchState?.rematchRequestedPlayers ?? []).includes(actorId)
-  $: opponentRematchAsked = Boolean(opponentActorId && (matchState?.rematchRequestedPlayers ?? []).includes(opponentActorId))
-  $: resultLabel = matchState?.winnerId === "DRAW" ? "MATCH NUL" : matchState?.winnerId === actorId ? "VICTOIRE" : matchState?.winnerId ? "DEFAITE" : "PARTIE TERMINEE"
-  $: ownGuesses = turns.filter((entry) => entry?.actionType === 'PLAY_GUESS' && entry?.actorId === actorId)
-  $: opponentGuesses = turns.filter((entry) => entry?.actionType === 'PLAY_GUESS' && entry?.actorId === opponentActorId)
-  $: receivedFeedback = turns.filter((entry) => entry?.actionType === 'SEND_FEEDBACK' && entry?.actorId === opponentActorId)
-  $: givenFeedback = turns.filter((entry) => entry?.actionType === 'SEND_FEEDBACK' && entry?.actorId === actorId)
-  $: roundNumber = Math.floor((receivedFeedback.length + givenFeedback.length) / 2)
-  $: ownGuessSubmitted = ownGuesses.length > roundNumber
-  $: ownFeedbackSubmitted = givenFeedback.length > roundNumber
-  $: ownActiveRowNumber = Math.min(ownGuesses.length + 1, boardRows)
-  $: ownVisibleRow = Math.max(1, ownGuessSubmitted ? ownGuesses.length : ownActiveRowNumber)
-  $: opponentVisibleRow = Math.max(1, opponentGuesses.length)
-  $: ownBoard = Array.from({ length: boardRows }, (_, index) => ({
-    number: index + 1,
-    symbols: ownGuesses[index] ? asSymbols(ownGuesses[index].guess) : [],
-    feedback: receivedFeedback[index] ? asSymbols(receivedFeedback[index].feedback) : [],
-    isActive: isMyTurn && index + 1 === ownActiveRowNumber
-  }))
-  $: opponentBoard = Array.from({ length: boardRows }, (_, index) => ({
-    number: index + 1,
-    symbols: opponentGuesses[index] ? asSymbols(opponentGuesses[index].guess) : [],
-    feedback: givenFeedback[index] ? asSymbols(givenFeedback[index].feedback) : []
-  }))
-  $: canRespond = isBackendReady && matchState?.state === 'WAITING_FEEDBACK' &&
-    !ownFeedbackSubmitted && opponentGuesses.length > roundNumber
-  $: feedbackResetKey = (matchState?.matchId ?? '') + ':' + (matchState?.gameNumber ?? 1) + ':' + givenFeedback.length
-  $: if (feedbackResetKey !== lastFeedbackResetKey) {
-    bienPlaces = 0
-    malPlaces = 0
-    // Reactive state remembers which round was reset.
+  $: round = matchState?.roundNumber ?? 0
+  $: phaseKey = `${matchState?.matchId}:${matchState?.gameNumber}:${matchState?.state}`
+  $: if (phaseKey !== lastPhase) {
+    selectedBoard = matchState?.state === 'WAITING_FEEDBACK' ? 'opponent' : 'own'
     // eslint-disable-next-line no-useless-assignment
-    lastFeedbackResetKey = feedbackResetKey
+    lastPhase = phaseKey
   }
-
-  function selectSetupSlot(index) {
-    emit('selectsetupslot', { index })
+  $: feedbackKey = `${matchState?.matchId}:${matchState?.gameNumber}:${round}`
+  $: if (feedbackKey !== resetKey) {
+    black = 0; white = 0; editing = null
+    // eslint-disable-next-line no-useless-assignment
+    resetKey = feedbackKey
   }
+  $: preparation = matchState?.state === 'PREPARATION'
+  $: finished = matchState?.state === 'FINISHED'
+  $: ownGuesses = turns.filter(a => a.actionType === 'PLAY_GUESS' && a.actorId === actorId)
+  $: opponentGuesses = turns.filter(a => a.actionType === 'PLAY_GUESS' && a.actorId === opponentActorId)
+  $: given = turns.filter(a => a.actionType === 'SEND_FEEDBACK' && a.actorId === actorId)
+  $: received = turns.filter(a => a.actionType === 'SEND_FEEDBACK' && a.actorId === opponentActorId)
+  $: canRespond = isBackendReady && matchState?.state === 'WAITING_FEEDBACK' && (matchState?.requiredPlayers ?? []).includes(actorId) && !(matchState?.submittedPlayers ?? []).includes(actorId)
+  $: mySolved = (matchState?.solvedPlayers ?? []).includes(actorId)
+  $: theirSolved = (matchState?.solvedPlayers ?? []).includes(opponentActorId)
+  $: result = matchState?.winnerId === 'DRAW' ? 'Égalité dans le duel' : matchState?.winnerId === actorId ? 'Vous avez remporté le duel' : matchState?.winnerId ? `${opponentName} a remporté le duel` : ''
+  $: currentOpponentGuess = opponentGuesses.find(a => a.turnNumber === round + 1)
+  $: rows = (selectedBoard === 'own' ? ownGuesses : opponentGuesses).slice().reverse()
+  $: feedbackRows = selectedBoard === 'own' ? received : given
+  $: myRematchAsked = (matchState?.rematchRequestedPlayers ?? []).includes(actorId)
+  $: theirRematchAsked = (matchState?.rematchRequestedPlayers ?? []).includes(opponentActorId)
+  $: notices = turns.filter(a => ['CORRECT_FEEDBACK','CONTEST_FEEDBACK'].includes(a.actionType)).slice(-3).reverse()
 
-  function selectGuessSlot(index) {
-    emit('selectguessslot', { index })
+  function adjust(field, amount, edit = false) {
+    if (edit) {
+      if (field === 'black') editBlack = Math.max(0, Math.min(4 - editWhite, editBlack + amount))
+      else editWhite = Math.max(0, Math.min(4 - editBlack, editWhite + amount))
+    } else {
+      if (field === 'black') black = Math.max(0, Math.min(4 - white, black + amount))
+      else white = Math.max(0, Math.min(4 - black, white + amount))
+    }
   }
-
-  function choosePaletteSymbol(symbol) {
-    emit(paletteTarget === 'secret' ? 'choosesetupsymbol' : 'chooseguesssymbol', { symbol })
+  function editFeedback(entry) {
+    editing = entry.version
+    editBlack = entry.feedback.filter(peg => peg === 'BLACK').length
+    editWhite = entry.feedback.filter(peg => peg === 'WHITE').length
   }
 </script>
 
-<section class="partie-screen board-layout" class:preparation={matchState?.state === "PREPARATION"} class:secretActionActive={matchState?.state === "PREPARATION" && !hasSecretSet && isBackendReady} class:guessActionActive={isMyTurn} class:feedbackActionActive={canRespond}>
-
-  {#if matchState?.state === 'FINISHED'}
-    <section class="result-banner" class:won={matchState?.winnerId === actorId} aria-live="assertive">
-      <strong>{resultLabel}</strong>
-      <button type="button" disabled={myRematchAsked || !isBackendReady} on:click={() => emit('requestrematch')}>
-        {myRematchAsked ? 'REVANCHE DEMANDEE · ATTENTE ADVERSAIRE' : opponentRematchAsked ? 'ACCEPTER LA REVANCHE' : 'PROPOSER UNE REVANCHE'}
-      </button>
-    </section>
+<section class="partie-screen" class:secretActionActive={preparation && !hasSecretSet} class:guessActionActive={isMyTurn} class:feedbackActionActive={canRespond}>
+  {#if result}
+    <div class="duel-result" role="status"><strong>{result}</strong><p>{finished ? 'La manche est terminée.' : mySolved ? 'Votre adversaire continue sa recherche. Donnez-lui les indices à chaque essai.' : 'Continuez à chercher pour le plaisir, ou abandonnez pour découvrir le code. Le point du duel est déjà attribué.'}</p></div>
   {/if}
 
-  <div class="game-columns">
-    <div class="boards-column">
-      <section class="board-surface own-board" class:phase-panel={matchState?.state === 'WAITING_GUESS'} aria-label="Mes essais pour trouver le code adverse">
-        <div class="board-caption"><span class="caption-label own-label">MES ESSAIS POUR TROUVER SON CODE</span><span class="caption-meta"><small>{ownGuesses.length}/{boardRows}</small>{#if matchState?.state === 'WAITING_GUESS'}<OpponentProgress name={opponentName} done={opponentStepDone} />{/if}</span></div>
-        <div class="board-grid">
-          {#each ownBoard as row}
-            <div class:active-row={row.isActive} class:played-row={row.symbols.length} class:older-row={row.number < ownVisibleRow} class:future-row={row.number > ownVisibleRow} class="board-row">
-              <span class="row-number">{String(row.number).padStart(2, '0')}</span>
-              <div class="board-pegs" aria-label={"Ma tentative " + row.number}>
-                {#each Array(4) as _, slot}
-                  {@const symbol = row.isActive ? draftGuess[slot] : row.symbols[slot]}
-                  {@const visual = getSymbolVisual(symbol)}
-                  {#if row.isActive}
-                    <button type="button" class="peg {visual.toneClass} {selectedGuessSlot === slot ? 'selected' : ''}" on:click={() => selectGuessSlot(slot)} aria-label={"Case " + (slot + 1) + " de ma tentative"}><span>{visual.icon}</span></button>
-                  {:else}
-                    <span class="peg static {visual.toneClass}"><span>{visual.icon}</span></span>
-                  {/if}
-                {/each}
-              </div>
-              <div class="feedback-pegs" aria-label={"Indices recus pour la tentative " + row.number}>
-                {#each Array(4) as _, peg}<span class="feedback-peg" class:black={row.feedback[peg] === 'BLACK'} class:white={row.feedback[peg] === 'WHITE'}></span>{/each}
-              </div>
-            </div>
-          {/each}
+  {#if preparation}
+    <section class="action-card secret-panel">
+      <h2>{hasSecretSet ? 'Votre code est prêt' : 'Choisissez votre code secret'}</h2>
+      <p>Quatre couleurs, répétitions autorisées. Votre adversaire ne verra pas votre code.</p>
+      <div class="slot-picker">
+        {#each setupSlots as color, index}
+          <button type="button" class:selected={selectedSetupSlot === index && !hasSecretSet} disabled={hasSecretSet || busy} aria-pressed={!hasSecretSet && selectedSetupSlot === index} aria-label={`Case ${index + 1}, ${getSymbolVisual(color).token}`} on:click={() => dispatch('selectsetupslot',{index})}><span class="color-dot {getSymbolVisual(color).toneClass}"></span><small>{index + 1}</small></button>
+        {/each}
+      </div>
+      {#if !hasSecretSet}
+        <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={!isBackendReady || busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedSetupSlot + 1} du code secret`} on:click={() => dispatch('choosesetupsymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
+        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.length} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret || busy} on:click={() => dispatch('submitsecret')}>{isSecretSubmitting ? 'Envoi…' : secretButtonLabel}</button></div>
+      {:else}<p class="waiting-note">{hasOpponentReady ? 'Les deux codes sont prêts.' : `En attente du code de ${opponentName}.`}</p>{/if}
+    </section>
+  {:else}
+    {#if isMyTurn}
+      <section class="action-card own-board">
+        <h2>Votre essai · tour {round + 1}</h2><p>Choisissez une case, puis sa couleur.</p>
+        <div class="slot-picker">{#each Array(4) as _, index}<button type="button" class:selected={selectedGuessSlot === index} disabled={busy} aria-pressed={selectedGuessSlot === index} aria-label={`Case ${index + 1}, ${getSymbolVisual(draftGuess[index]).token}`} on:click={() => dispatch('selectguessslot',{index})}><span class="color-dot {getSymbolVisual(draftGuess[index]).toneClass}"></span><small>{index + 1}</small></button>{/each}</div>
+        <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedGuessSlot + 1} de l’essai`} on:click={() => dispatch('chooseguesssymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
+        <div class="action-buttons"><button type="button" disabled={busy || !guessSequence.length} on:click={() => dispatch('clearguess')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitGuess || busy} on:click={() => dispatch('submitguess')}>{isGuessSubmitting ? 'Envoi…' : sendButtonLabel}</button></div>
+      </section>
+    {:else if canRespond}
+      <section class="action-card response-panel">
+        <h2>Donnez les indices · tour {round + 1}</h2>
+        <p>Comparez cet essai à votre code. Les indices sont entièrement manuels.</p>
+        <div class="comparison"><div><small>Son essai</small><CodePegs colors={asSymbols(currentOpponentGuess?.guess)} label="Essai adverse" /></div><div><small>Votre code</small><CodePegs colors={setupSlots} label="Votre code secret" /></div></div>
+        <p class="hint">Noir : bonne couleur, bonne place. Blanc : bonne couleur, autre place.</p>
+        <div class="feedback-control"><span class="index-dot black"></span><span>Bien placés</span><button type="button" aria-label="Retirer un indice noir" disabled={busy || black === 0} on:click={() => adjust('black',-1)}>−</button><strong>{black}</strong><button type="button" aria-label="Ajouter un indice noir" disabled={busy || black + white === 4} on:click={() => adjust('black',1)}>+</button></div>
+        <div class="feedback-control"><span class="index-dot white"></span><span>Mal placés</span><button type="button" aria-label="Retirer un indice blanc" disabled={busy || white === 0} on:click={() => adjust('white',-1)}>−</button><strong>{white}</strong><button type="button" aria-label="Ajouter un indice blanc" disabled={busy || black + white === 4} on:click={() => adjust('white',1)}>+</button></div>
+        <button class="primary-action full" type="button" disabled={busy} on:click={() => dispatch('submitfeedback',{bienPlaces:black,malPlaces:white})}>{busy ? 'Envoi…' : 'Valider les indices'}</button>
+      </section>
+    {:else if !finished}
+      <div class="waiting-note" role="status">{!isBackendReady ? 'Connexion interrompue. Votre plateau est conservé.' : mySolved && !theirSolved ? `Vous avez trouvé. Attendez le prochain essai de ${opponentName}.` : 'Votre action est envoyée. En attente de votre adversaire.'}{#if opponentStepDone}<span> Son action est prête.</span>{/if}</div>
+    {/if}
+
+    <div class="board-tabs" role="group" aria-label="Choisir le plateau"><button type="button" aria-pressed={selectedBoard === 'own'} class:active={selectedBoard === 'own'} on:click={() => selectedBoard = 'own'}>Mes essais <small>{ownGuesses.length}</small></button><button type="button" aria-pressed={selectedBoard === 'opponent'} class:active={selectedBoard === 'opponent'} on:click={() => selectedBoard = 'opponent'}>Ses essais <small>{opponentGuesses.length}</small></button></div>
+    <section class="board-surface">
+      <h2>{selectedBoard === 'own' ? 'Mes essais pour trouver son code' : 'Ses essais pour trouver mon code'}</h2>
+      {#each rows as row (row.version)}
+        {@const feedback = feedbackRows.find(entry => entry.turnNumber === row.turnNumber)}
+        <div class="attempt-row"><div class="attempt-content"><span class="attempt-number">{row.turnNumber}</span><CodePegs colors={asSymbols(row.guess)} label={`Essai ${row.turnNumber}`} /><div class="indices" role="img" aria-label={feedback ? `${feedback.feedback.filter(p => p === 'BLACK').length} bien placés, ${feedback.feedback.filter(p => p === 'WHITE').length} mal placés` : 'Indices en attente'}>{#each Array(4) as _, peg}<span class="index-dot" class:black={feedback?.feedback[peg] === 'BLACK'} class:white={feedback?.feedback[peg] === 'WHITE'}></span>{/each}</div></div>
+          {#if feedback && feedback.turnNumber === round}
+            {#if selectedBoard === 'own'}
+              <details class="feedback-options"><summary>Indices reçus · confiance par défaut</summary><p>Un doute ? Demandez à votre adversaire de vérifier ses indices.</p><button type="button" disabled={busy || !isBackendReady || turns.some(a => a.actionType === 'CONTEST_FEEDBACK' && a.feedbackVersion === feedback.version && a.actorId === actorId)} on:click={() => dispatch('contestfeedback',{version:feedback.version})}>Demander une vérification</button></details>
+            {:else}
+              <button class="subtle" type="button" disabled={busy || !isBackendReady} on:click={() => editFeedback(feedback)}>Corriger mes indices</button>
+              {#if editing === feedback.version}
+                <form class="correction-form" on:submit|preventDefault={() => { dispatch('correctfeedback',{version:feedback.version,feedback:{bienPlaces:editBlack,malPlaces:editWhite}}); editing = null }}>
+                  <p>Votre adversaire sera averti. Le résultat et le score seront recalculés.</p>
+                  <div class="feedback-control"><span>Noirs</span><button type="button" aria-label="Retirer un indice noir de correction" disabled={editBlack === 0 || busy} on:click={() => adjust('black',-1,true)}>−</button><strong>{editBlack}</strong><button type="button" aria-label="Ajouter un indice noir de correction" disabled={editBlack + editWhite === 4 || busy} on:click={() => adjust('black',1,true)}>+</button></div>
+                  <div class="feedback-control"><span>Blancs</span><button type="button" aria-label="Retirer un indice blanc de correction" disabled={editWhite === 0 || busy} on:click={() => adjust('white',-1,true)}>−</button><strong>{editWhite}</strong><button type="button" aria-label="Ajouter un indice blanc de correction" disabled={editBlack + editWhite === 4 || busy} on:click={() => adjust('white',1,true)}>+</button></div>
+                  <div class="action-buttons"><button type="button" on:click={() => editing = null}>Annuler</button><button class="primary-action" type="submit" disabled={busy}>Enregistrer la correction</button></div>
+                </form>
+              {/if}
+            {/if}
+          {/if}
         </div>
-      </section>
+      {:else}<p class="empty-board">Aucun essai envoyé sur ce plateau.</p>{/each}
+    </section>
+    <details class="private-code"><summary>Consulter mon code secret</summary><CodePegs colors={setupSlots} label="Votre code secret" /></details>
+    {#if matchState?.opponentSecretCode?.length}<section class="action-card"><h2>Le code adverse</h2><CodePegs colors={matchState.opponentSecretCode} label="Code adverse révélé après abandon" /></section>{/if}
+  {/if}
 
-      <section class="board-surface opponent-board" aria-label="Essais adverses pour trouver mon code">
-        <div class="board-caption"><span class="caption-label opponent-label">SES ESSAIS POUR TROUVER MON CODE</span><small>{opponentGuesses.length}/{boardRows}</small></div>
-        <div class="board-grid">
-          {#each opponentBoard as row}
-            <div class:played-row={row.symbols.length} class:older-row={row.number < opponentVisibleRow} class:future-row={row.number > opponentVisibleRow} class="board-row">
-              <span class="row-number">{String(row.number).padStart(2, '0')}</span>
-              <div class="board-pegs" aria-label={"Tentative adverse " + row.number}>
-                {#each Array(4) as _, slot}
-                  {@const visual = getSymbolVisual(row.symbols[slot])}
-                  <span class="peg static {visual.toneClass}"><span>{visual.icon}</span></span>
-                {/each}
-              </div>
-              <div class="feedback-pegs" aria-label={"Mes indices pour la tentative adverse " + row.number}>
-                {#each Array(4) as _, peg}<span class="feedback-peg" class:black={row.feedback[peg] === 'BLACK'} class:white={row.feedback[peg] === 'WHITE'}></span>{/each}
-              </div>
-            </div>
-          {/each}
-        </div>
-      </section>
-    </div>
-
-    <aside class="control-rail">
-      <section class="control-panel secret-panel" class:locked={hasSecretSet} class:phase-panel={matchState?.state === 'PREPARATION'}>
-        <div class="panel-label"><span>VOTRE CODE</span><span class="caption-meta"><small>{hasSecretSet ? 'VERROUILLE' : setupSequence.length + '/4'}</small>{#if matchState?.state === 'PREPARATION'}<OpponentProgress name={opponentName} done={opponentStepDone} />{/if}</span></div>
-        <div class="secret-slots">
-          {#each setupSlots as symbol, index}
-            {@const visual = getSymbolVisual(symbol)}
-            <button type="button" class="mini-peg {visual.toneClass} {selectedSetupSlot === index ? 'selected' : ''}" on:click={() => selectSetupSlot(index)} disabled={hasSecretSet} aria-label={"Case " + (index + 1) + " de mon code"}>{visual.icon}</button>
-          {/each}
-        </div>
-        <div class="split-actions"><button type="button" class="text-button" on:click={() => emit('clearsetup')} disabled={hasSecretSet}>EFFACER</button><button type="button" class="text-button accent" disabled={!canSubmitSecret || setupSequence.length !== 4} on:click={() => emit('submitsecret')}>{isSecretSubmitting ? 'ENVOI...' : secretButtonLabel}</button></div>
-      </section>
-
-      <section class="control-panel palette-panel">
-        <div class="panel-label"><span>PALETTE</span><small>{paletteTarget === 'secret' ? 'POUR VOTRE CODE' : 'POUR LA TENTATIVE'}</small></div>
-        <div class="palette-grid">
-          {#each symbolPalette as symbol}
-            {@const visual = getSymbolVisual(symbol)}
-            <button type="button" class="palette-peg {visual.toneClass}" on:click={() => choosePaletteSymbol(symbol)} disabled={!isBackendReady || (paletteTarget === 'secret' ? !canSubmitSecret : !isMyTurn)} aria-label={"Placer " + visual.token + " dans " + (paletteTarget === 'secret' ? 'mon code' : 'ma tentative')}><span>{visual.icon}</span></button>
-          {/each}
-        </div>
-        <div class="active-line"><span>MA TENTATIVE</span><strong>{ownGuessSubmitted ? 'ENVOYEE' : guessSequence.length + '/4'}</strong></div>
-        <div class="split-actions"><button type="button" class="text-button" on:click={() => emit('clearguess')} disabled={!isMyTurn}>EFFACER</button><button type="button" class="validate-button" disabled={!canSubmitGuess} on:click={() => emit('submitguess')}>{isGuessSubmitting ? 'ENVOI...' : sendButtonLabel}</button></div>
-      </section>
-
-      <section class="control-panel response-panel" class:response-ready={canRespond} class:phase-panel={matchState?.state === 'WAITING_FEEDBACK'}>
-        <div class="panel-label"><span class="caption-label feedback-label">CORRIGER SON DERNIER ESSAI</span>{#if matchState?.state === 'WAITING_FEEDBACK'}<OpponentProgress name={opponentName} done={opponentStepDone} />{/if}</div>
-        <p>Vert : bon symbole à la bonne place. Blanc : bon symbole à une autre place. Aucun pion : symbole absent ou exemplaire en trop.</p>
-        <div class="feedback-control"><span class="black-dot"></span><span>VERTS · BONNE PLACE</span><button type="button" on:click={() => adjustFeedback('bienPlaces', -1)} disabled={!canRespond || bienPlaces === 0}>-</button><strong>{bienPlaces}</strong><button type="button" on:click={() => adjustFeedback('bienPlaces', 1)} disabled={!canRespond || bienPlaces + malPlaces === 4}>+</button></div>
-        <div class="feedback-control"><span class="white-dot"></span><span>BLANCS · MAUVAISE PLACE</span><button type="button" on:click={() => adjustFeedback('malPlaces', -1)} disabled={!canRespond || malPlaces === 0}>-</button><strong>{malPlaces}</strong><button type="button" on:click={() => adjustFeedback('malPlaces', 1)} disabled={!canRespond || bienPlaces + malPlaces === 4}>+</button></div>
-        <button type="button" class="response-button" disabled={!canRespond} on:click={() => emit('submitfeedback', { bienPlaces, malPlaces })}>{ownFeedbackSubmitted ? 'INDICES ENVOYES' : 'VALIDER LES INDICES'}</button>
-      </section>
-    </aside>
-  </div>
-
-  <section class="history-strip">
-    <div class="board-caption"><span>HISTORIQUE VISIBLE</span><small>{hasPlayerReady ? 'VOUS PRET' : 'EN ATTENTE'} / {hasOpponentReady ? 'ADVERSAIRE PRET' : 'ADVERSAIRE EN ATTENTE'}</small></div>
-    <div class="history-events">
-      {#each turns.slice().reverse().slice(0, 6) as entry}
-        <div class="history-event"><span>{entry.actorId === opponentActorId ? 'ADVERSAIRE' : 'VOUS'}</span><strong>{entry.actionType === 'SEND_FEEDBACK' ? 'INDICES' : (entry.actionType ?? 'ACTION')}</strong></div>
-      {:else}<p>Aucune action enregistree sur ce plateau.</p>{/each}
-    </div>
-  </section>
+  {#if notices.length}<details class="notifications"><summary>Vérifications et corrections ({notices.length})</summary>{#each notices as notice}<p>{notice.actorId === actorId ? 'Vous avez' : `${opponentName} a`} {notice.actionType === 'CORRECT_FEEDBACK' ? 'corrigé des indices. Le résultat a été actualisé.' : 'demandé une vérification des indices.'}</p>{/each}</details>{/if}
+  {#if finished}<button class="primary-action" type="button" disabled={busy || myRematchAsked || !isBackendReady} on:click={() => dispatch('requestrematch')}>{myRematchAsked ? 'Revanche proposée · en attente' : theirRematchAsked ? 'Accepter la revanche' : 'Proposer une revanche'}</button>
+  {:else if !preparation}<button class="subtle abandon" type="button" disabled={!isBackendReady || busy} on:click={() => confirmAbandon = true}>Abandonner la manche</button>{/if}
+  {#if confirmAbandon}<div class="abandon-confirm" role="alert"><strong>Abandonner cette manche ?</strong><p>La recherche s’arrêtera et les codes seront révélés. Le résultat du duel sera conservé s’il est déjà attribué.</p><div class="action-buttons"><button type="button" on:click={() => confirmAbandon = false}>Continuer à jouer</button><button type="button" disabled={busy} on:click={() => { dispatch('abandon'); confirmAbandon = false }}>Confirmer l’abandon</button></div></div>{/if}
+  <span class="sr-only">{hasPlayerReady ? 'Votre code est prêt.' : ''}</span>
 </section>
+
 <style>
-  .board-layout { gap: 12px; }
-  .caption-meta { display:inline-flex; align-items:center; gap:7px; min-width:0; }
-  .caption-label { display:inline-flex; align-items:center; gap:6px; font-size:10px; line-height:1.2; }
-  .caption-label::before { display:grid; place-items:center; flex:none; width:18px; height:18px; border:1px solid currentColor; border-radius:3px; font-size:13px; line-height:1; }
-  .own-label::before { content:'↗'; }
-  .opponent-label::before { content:'↘'; }
-  .feedback-label::before { content:'✓'; }
-  @media (max-width:420px) { .caption-label { font-size:9px; gap:4px; } .caption-label::before { width:15px; height:15px; font-size:11px; } }
-  .board-caption > span:first-child, .panel-label > span:first-child { min-width:0; }
-  .board-caption, .panel-label { align-items:center; }
-  .boards-column { display: grid; gap: 12px; min-width: 0; } .opponent-board { border-color: rgba(255, 171, 243, .45); } .opponent-board .board-caption { color: var(--secondary); }
-  .game-columns { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(250px, .85fr); gap: 16px; align-items: start; } .board-surface, .control-panel, .history-strip { border: 1px solid var(--line); background: rgba(19, 23, 31, .84); } .board-surface, .control-panel, .history-strip { padding: 12px; } .board-caption, .panel-label { display: flex; justify-content: space-between; gap: 10px; color: var(--primary); } .board-caption { padding: 0 3px 10px; border-bottom: 1px solid var(--line-soft); } .board-caption small, .panel-label small { color: var(--muted); font-size: 10px; } .board-grid { display: grid; } .board-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 61px; gap: 8px; min-height: 48px; align-items: center; border-bottom: 1px solid rgba(132, 148, 149, .16); padding: 4px 2px; } .board-row.active-row { background: rgba(0, 219, 233, .08); box-shadow: inset 3px 0 var(--primary); } .row-number { color: #6a7a7d; font: 11px "JetBrains Mono", monospace; } .active-row .row-number { color: var(--primary-soft); } .board-pegs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
-  .peg, .mini-peg, .palette-peg { display: grid; place-items: center; border: 1px solid var(--line-soft); background: #10161f; color: var(--muted); } .peg { aspect-ratio: 1; min-height: 34px; padding: 0; font-size: 15px; } .peg.static { pointer-events: none; } .peg.selected, .mini-peg.selected { outline: 2px solid var(--primary); outline-offset: 1px; } .feedback-pegs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; padding: 4px; border-left: 1px solid var(--line-soft); } .feedback-peg, .black-dot, .white-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #536064; background: transparent; } .feedback-peg.black, .black-dot { background: #5fdc95; border-color: #b5ffd0; box-shadow: 0 0 5px rgba(95,220,149,.4); } .feedback-peg.white, .white-dot { background: #edf7f7; border-color: #edf7f7; }
-  .control-rail { display: grid; gap: 12px; } .secret-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0; } .mini-peg { aspect-ratio: 1; padding: 0; font-size: 17px; } .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 12px 0; } .palette-peg { aspect-ratio: 1; padding: 0; font-size: 20px; cursor: pointer; transition: transform 140ms ease, border-color 140ms ease; } .palette-peg:hover { transform: translateY(-2px); border-color: currentColor; } .active-line { display: flex; justify-content: space-between; padding: 9px 0; border-top: 1px solid var(--line-soft); color: var(--muted); font: 10px "JetBrains Mono", monospace; letter-spacing: .08em; } .active-line strong { color: var(--primary-soft); } .split-actions { display: grid; grid-template-columns: 1fr 1.5fr; gap: 7px; margin-top: 8px; }
-  .text-button, .validate-button, .response-button, .feedback-control button { border: 1px solid var(--line-soft); border-radius: 3px; background: transparent; color: var(--text); cursor: pointer; font: 10px "JetBrains Mono", monospace; letter-spacing: .05em; } .text-button, .validate-button, .response-button { min-height: 36px; padding: 5px 8px; } .text-button.accent, .validate-button, .response-button { border-color: rgba(0, 240, 255, .6); color: var(--primary-soft); } .validate-button, .response-button { background: rgba(0, 219, 233, .11); } button:disabled { opacity: .4; cursor: not-allowed; } .response-panel { opacity: .62; } .response-panel.response-ready { opacity: 1; border-color: rgba(255, 171, 243, .48); } .control-panel p { margin: 10px 0 12px; font-size: 12px; line-height: 1.4; } .feedback-control { display: grid; grid-template-columns: 12px 1fr 26px 20px 26px; gap: 7px; align-items: center; margin: 7px 0; color: var(--muted); font: 10px "JetBrains Mono", monospace; } .feedback-control button { width: 26px; height: 26px; padding: 0; font-size: 16px; } .feedback-control strong { color: var(--text); text-align: center; font-size: 14px; } .response-button { width: 100%; margin-top: 8px; }
-  .history-events { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; } .history-event { min-width: 0; border-left: 2px solid var(--secondary); padding: 5px 8px; background: rgba(8, 13, 20, .52); } .history-event span, .history-event strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .history-event span { color: var(--muted); font: 9px "JetBrains Mono", monospace; } .history-event strong { margin-top: 3px; font: 11px "JetBrains Mono", monospace; color: var(--text); } .history-events p { grid-column: 1 / -1; margin: 4px 0; color: var(--muted); font-size: 12px; }
-  @media (max-width: 650px) {
-    .board-layout { gap: 7px; }
-    .game-columns { display: flex; flex-direction: column; gap: 7px; }
-    .control-rail, .boards-column { display: contents; }
-    .secret-panel { order: 1; }
-    .own-board { order: 2; }
-    .palette-panel { order: 3; }
-    .opponent-board { order: 4; }
-    .response-panel { order: 5; }
-    .board-surface, .control-panel { width: 100%; padding: 8px; }
-    .board-caption { padding-bottom: 5px; }
-    .board-row { min-height: 38px; padding: 2px; }
-    .board-row.older-row, .board-row.future-row { display: none; }
-    .peg { min-height: 30px; }
-    .secret-slots { margin: 6px 0; }
-    .secret-panel.locked .split-actions { display: none; }
-    .mini-peg { min-height: 34px; aspect-ratio: auto; }
-    .palette-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; margin: 7px 0; }
-    .palette-peg { min-height: 34px; aspect-ratio: auto; font-size: 16px; }
-    .split-actions { margin-top: 5px; }
-    .text-button, .validate-button, .response-button { min-height: 30px; }
-    .active-line { padding: 5px 0; }
-    .response-panel p { display: block; margin: 6px 0; font-size: 10px; }
-    .feedback-control { margin: 4px 0; }
-    .response-button { margin-top: 4px; }
-    .history-strip { display: none; }
-  }
-
-  .result-banner { display:grid; gap:8px; padding:16px; border:1px solid var(--secondary); background:rgba(255,171,243,.08); text-align:center; }
-  .result-banner.won { border-color:var(--ok); background:rgba(89,232,166,.1); }
-  .result-banner strong { font:700 32px "Space Grotesk",sans-serif; color:var(--secondary); }
-  .result-banner.won strong { color:var(--ok); }
-  .result-banner span { font:11px "JetBrains Mono",monospace; }
-  .result-banner button { min-height:40px; border:1px solid var(--primary); background:rgba(0,219,233,.12); color:var(--primary-soft); cursor:pointer; }
-  .result-banner button:disabled { opacity:.6; cursor:default; }
-  .board-grid { display:flex; flex-direction:column-reverse; max-height:220px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--primary) transparent; }
-  .board-row { flex:none; }
-  .board-row.future-row { display:none; }
-  @media (min-width:651px) {
-    .game-columns { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(250px,1fr); gap:12px; }
-    .boards-column,.control-rail { display:contents; }
-    .own-board { grid-column:1; grid-row:1; }
-    .palette-panel { grid-column:2; grid-row:1; }
-    .opponent-board { grid-column:1; grid-row:2 / span 2; align-self:start; }
-    .secret-panel { grid-column:2; grid-row:2; }
-    .response-panel { grid-column:2; grid-row:3; }
-    .preparation .secret-panel { grid-column:2; grid-row:1; }
-    .preparation .own-board { grid-column:1; grid-row:1; }
-    .preparation .palette-panel { grid-column:2; grid-row:2; }
-    .preparation .opponent-board { grid-column:1; grid-row:2; }
-  }
-  @media (max-width:650px) {
-    .own-board { order:1; }
-    .palette-panel { order:2; }
-    .opponent-board { order:3; }
-    .secret-panel { order:4; }
-    .response-panel { order:5; }
-    .board-grid { max-height:104px; }
-    .board-row.older-row { display:grid; }
-
-    .preparation .secret-panel { order:1; }
-    .preparation .palette-panel { order:2; }
-    .preparation .own-board { order:3; }
-    .preparation .opponent-board { order:4; }
-  }
-  .game-columns .board-surface, .game-columns .control-panel {
-    opacity: .45;
-    filter: saturate(.45);
-    transition: opacity .18s ease, filter .18s ease, border-color .18s ease, box-shadow .18s ease;
-  }
-  .game-columns .phase-panel { opacity:.72; filter:saturate(.8); }
-  .secretActionActive .secret-panel, .secretActionActive .palette-panel,
-  .guessActionActive .own-board, .guessActionActive .palette-panel,
-  .feedbackActionActive .opponent-board, .feedbackActionActive .secret-panel, .feedbackActionActive .response-panel {
-    opacity: 1;
-    filter: none;
-    border-color: var(--primary);
-    background: rgba(0,219,233,.09);
-    box-shadow: 0 0 0 1px rgba(0,219,233,.2), 0 0 24px rgba(0,219,233,.09);
-  }
-  .feedbackActionActive .opponent-board, .feedbackActionActive .response-panel {
-    border-color: var(--secondary);
-    background: rgba(255,171,243,.09);
-    box-shadow: 0 0 0 1px rgba(255,171,243,.2), 0 0 24px rgba(255,171,243,.09);
-  }</style>
+  .partie-screen { display:grid; gap:16px; max-width:760px; margin:auto; }
+  .action-card,.board-surface,.duel-result,.abandon-confirm { border:1px solid var(--line); background:var(--panel); border-radius:16px; padding:20px; }
+  h2 { margin:0 0 8px; font:600 19px 'Space Grotesk',sans-serif; line-height:1.3; }
+  p { margin:0 0 14px; font-size:14px; color:var(--muted); line-height:1.6; }
+  button { min-height:46px; padding:10px 14px; font:500 14px Inter,sans-serif; border:1px solid var(--line); border-radius:10px; color:var(--text); background:var(--panel-strong); cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .slot-picker { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0; }
+  .slot-picker button { display:grid; justify-items:center; gap:8px; padding:12px 4px 8px; }
+  .slot-picker small { color:var(--muted); font-size:11px; }
+  .slot-picker .selected { border:2px solid var(--primary); padding:11px 3px 7px; box-shadow:0 0 0 3px var(--accent-wash); }
+  .color-dot { display:block; width:32px; height:32px; border:2px solid var(--peg-border,var(--line)); border-radius:50%; background:var(--peg-color,var(--line-soft)); box-shadow:inset 0 2px 3px #0002; }
+  .palette-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px; }
+  .palette-grid button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:56px; padding:8px; font-size:13px; }
+  .palette-grid .color-dot { width:24px; height:24px; flex:none; }
+  .action-buttons { display:grid; grid-template-columns:1fr 2fr; gap:8px; }
+  .primary-action { background:var(--primary); color:var(--on-primary); border-color:var(--primary); font-weight:600; }
+  .full { width:100%; margin-top:18px; }
+  .comparison { display:flex; gap:24px; flex-wrap:wrap; margin:20px 0; }
+  .comparison>div { display:grid; gap:10px; }
+  .comparison small { color:var(--muted); }
+  .feedback-control { display:flex; align-items:center; gap:10px; margin:8px 0; }
+  .feedback-control>span:not(.index-dot) { flex:1; font-size:14px; }
+  .feedback-control button { min-width:46px; padding:8px; font-size:20px; }
+  .feedback-control strong { min-width:20px; text-align:center; }
+  .index-dot { width:12px; height:12px; border:1px solid var(--line-soft); border-radius:50%; display:block; background:var(--line-soft); }
+  .index-dot.black { background:#141414; border-color:#888; }
+  .index-dot.white { background:#fff; border-color:#888; }
+  .hint { font-size:13px; }
+  .board-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .board-tabs .active { border-color:var(--primary); background:var(--accent-wash); }
+  .board-tabs small { margin-left:6px; color:var(--muted); }
+  .board-surface { padding:16px; }
+  .board-surface h2 { font-size:15px; margin-bottom:16px; }
+  .attempt-row { padding:14px 0; border-top:1px solid var(--line); }
+  .attempt-content { display:flex; align-items:center; gap:12px; }
+  .attempt-number { width:22px; flex:none; color:var(--muted); font:12px 'JetBrains Mono',monospace; }
+  .indices { display:grid; grid-template-columns:repeat(2,12px); gap:5px; margin-left:auto; }
+  .feedback-options { margin-top:14px; }
+  summary { cursor:pointer; color:var(--muted); font-size:13px; padding:12px 0; min-height:44px; }
+  .feedback-options p { margin:8px 0; }
+  .subtle { font-size:13px; color:var(--muted); background:transparent; margin-top:8px; }
+  .correction-form { padding:12px; background:var(--panel-strong); border:1px solid var(--line); border-radius:12px; margin-top:12px; }
+  .private-code,.notifications { border-top:1px solid var(--line); padding:4px 8px; }
+  .private-code :global(.code-pegs) { margin:6px 0 16px; }
+  .waiting-note { padding:16px; color:var(--muted); border:1px dashed var(--line); border-radius:12px; font-size:14px; line-height:1.6; }
+  .duel-result strong { font:600 20px 'Space Grotesk',sans-serif; }
+  .duel-result p { margin:8px 0 0; }
+  .empty-board { margin:0; }
+  .abandon { justify-self:start; }
+  .abandon-confirm { border-color:var(--error); }
+  .abandon-confirm strong { display:block; margin-bottom:8px; }
+  @media(max-width:420px) { .action-card { padding:16px; } .palette-grid button { gap:6px; } .attempt-content { gap:8px; } .comparison { gap:18px; } }
+</style>

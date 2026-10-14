@@ -1,4 +1,4 @@
-import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
+import { buildUrl, readErrorCode, safeJsonParse, fetchWithTimeout } from './httpClientUtils'
 
 /**
  * @param {{ baseUrl?: string, apiKeyHeaderName?: string, apiKeyValue?: string }} config
@@ -12,7 +12,7 @@ export function createRoomClient(config = {}) {
 
   /** @param {string} url @param {RequestInit} [options] */
   async function request(url, options = {}) {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       ...options,
       headers: {
         [header]: key,
@@ -26,9 +26,13 @@ export function createRoomClient(config = {}) {
 
   return {
     endpoint,
+    async resume(recoveryCode) {
+      return request(endpoint + '/resume', { method: 'POST', body: JSON.stringify({ recoveryCode }) })
+    },
     async list() {
       const body = await request(endpoint)
-      return Array.isArray(body?.rooms) ? body.rooms : []
+      if (!Array.isArray(body?.rooms)) throw new Error('INVALID_RESPONSE_BODY')
+      return body.rooms
     },
     /** @param {string} roomId */
     async status(roomId) {

@@ -1,89 +1,59 @@
 # Mastermind Arena
 
-## Vue d'ensemble
+Jeu de déduction à deux plateaux simultanés : six couleurs, codes de quatre cases, propositions et indices manuels, essais sans limite. Le premier joueur à trouver gagne le duel ; l'autre peut poursuivre sans point supplémentaire. Corrections du dernier tour, abandon, revanche commune et reprise privée sont décrits dans [les règles](docs/GAME_RULES.md).
 
-Mastermind Arena est un projet full-stack composé d'un backend Java pour le moteur de jeu et d'un front Svelte pour l'expérience utilisateur.
+## Architecture et décisions
 
-## Prérequis
+- Front : Svelte 5 / Vite, JavaScript.
+- Backend : Java 21, serveur HTTP du JDK, Jackson, JDBC PostgreSQL.
+- Hébergement : deux projets Vercel (front et backend), PostgreSQL sur Supabase ; les deux projets suivent `main`.
+- Synchronisation : HTTP et polling toutes les six secondes. Aucun WebSocket réseau n'est actuellement livré.
 
-- Java 21
-- Maven 3.9+
-- Node.js 20+
-- npm
+Voir [les décisions actuelles](decision.md), [l'architecture](docs/ARCHITECTURE_V2.md), [la roadmap](docs/ROADMAP.md) et [les preuves CDA](docs/CDA_COVERAGE.md). Les documents dans `docs/archive` et les notes initiales d'architecture expliquent l'historique du projet, pas le comportement actuel.
 
-## Démarrage backend
+## Démarrer en local
 
-Depuis la racine du projet :
+Prérequis : Java 21, Maven 3.9+, Node.js 20+ et npm. Pour utiliser Docker Compose, Docker Desktop doit Être démarré.
 
-```bash
-mvn -q -pl deduction-engine test
-mvn -q -pl deduction-engine exec:java -Dexec.mainClass=io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerMain
+1. Copier `.env.example` vers `.env` ; renseigner la clé d'API et les accès à une base PostgreSQL de développement.
+2. Copier `App_Front/.env.example` vers `App_Front/.env.local`. Renseigner la même clé d'API ; laisser `VITE_API_BASE_URL` vide et `VITE_PROXY_TARGET=http://localhost:8081`.
+3. Depuis la racine : `docker compose up --build` (API sur le port 8081).
+4. Depuis `App_Front` : `npm ci`, puis `npm run dev`.
+5. Choisir un pseudo, créer une partie et la rejoindre depuis un deuxième navigateur. Pour retrouver une place dans un autre onglet, utiliser son **code privé de reprise**, accessible dans la partie.
+
+Pour lancer le backend sans Docker : fournir les variables d'environnement de `.env.example` au processus Java, puis exécuter :
+
+```powershell
+mvn -pl deduction-engine exec:java "-Dexec.mainClass=io.mastermindarena.deduction.api.submitaction.LocalSubmitActionHttpServerMain"
 ```
 
-Le backend lancé directement écoute par défaut sur :
+Le backend direct utilise le port 8080 ; régler `VITE_PROXY_TARGET` en conséquence. Le processus Java ne charge pas automatiquement un fichier `.env`.
 
-- http://localhost:8080/local/submit-action
-- http://localhost:8080/local/match-state
+## Vérifier
 
-Avec Docker Compose, il est exposé sur `http://localhost:8081`. Copiez `.env.example` vers `.env` et renseignez `APP_API_KEY` ainsi que les accès PostgreSQL avant `docker compose up --build`.
+Depuis la racine :
 
-## Démarrage frontend
-
-Depuis le dossier App_Front :
-
-```bash
-npm ci
-npm run dev -- --host 0.0.0.0
+```powershell
+mvn -pl deduction-engine clean test
+mvn -pl deduction-engine -Pquality verify
 ```
 
-Copiez aussi `App_Front/.env.example` vers `App_Front/.env.local` et donnez à `VITE_API_KEY` la même valeur que `APP_API_KEY`. Le front est servi par défaut sur :
+Depuis `App_Front` :
 
-- http://localhost:5173
-
-## Variables d'environnement
-
-Le backend utilise des variables comme :
-
-```bash
-APP_HTTP_PORT=8080
-APP_API_KEY_HEADER=X-API-Key
-APP_API_KEY=change-me-dev-key
-APP_DB_URL=jdbc:postgresql://db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require
-APP_DB_USER=postgres
-APP_DB_PASSWORD=change-me-db-password
-APP_DB_SCHEMA=public
-APP_CORS_ALLOWED_ORIGINS=http://localhost:5173
+```powershell
+npm run lint
+npm run check
+npm run build
 ```
 
-Le frontend peut utiliser un `.env.local` dans App_Front :
+Les tests métier mémoire et les contrôles statiques ne remplacent pas les tests PostgreSQL et le parcours à deux clients. Voir [le plan de validation](docs/VALIDATION.md).
 
-```bash
-VITE_API_BASE_URL=
-VITE_SUBMIT_ACTION_PATH=/api/local/submit-action
-VITE_MATCH_STATE_PATH=/api/local/match-state
-VITE_API_KEY_HEADER=X-API-Key
-VITE_API_KEY=change-me-dev-key
-```
+## Déployer et démontrer
 
-## Structure du dépôt
+Le front appelle `VITE_API_BASE_URL` (URL HTTPS du projet backend). `APP_CORS_ALLOWED_ORIGINS` doit inclure l'origine HTTPS du projet front. Une clé `VITE_API_KEY` est visible par le navigateur : l'autorisation d'une partie repose sur le jeton privé de chaque joueur.
 
-```text
-Mastermind_Arena/
-├── App_Front/
-├── deduction-engine/
-├── docs/
-├── docker-compose.yml
-├── dockerfile
-├── pom.xml
-├── README.md
-└── decision.md
-```
+Le front et le backend doivent Être publiés ensemble lorsque le contrat de jeu change. Aucun push, déploiement ou changement de base de production n'est effectué par les vérifications locales.
 
-## Validation du ticket P-001
+Avant une démonstration : vérifier les deux déploiements, l'État actif de Supabase, la création/jointure d'une partie et le code de reprise de chaque joueur. Prévoir une démonstration locale de secours. Cible de présentation : **23 novembre 2026**.
 
-Ce socle est considéré valide si :
-
-- le backend compile avec Java 21 ;
-- les tests Maven démarrent sans échec de compilation ;
-- le frontend peut se lancer localement avec Vite ;
-- le dossier de démarrage et les variables sont documentés.
+Les parties créées avec l'ancienne palette à huit symboles doivent Être terminées puis suivies d'une nouvelle manche ; les données historiques ne sont pas converties silencieusement.

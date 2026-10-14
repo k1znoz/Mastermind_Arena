@@ -4,5 +4,5 @@
 </script>
 
 {#if toast}
-  <div class="toast {toast.kind}">{toast.text}</div>
+  <div class="toast {toast.kind}" role="status" aria-live="polite">{toast.text}</div>
 {/if}

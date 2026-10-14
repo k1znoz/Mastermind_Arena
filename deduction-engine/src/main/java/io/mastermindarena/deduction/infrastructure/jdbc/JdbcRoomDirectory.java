@@ -132,7 +132,7 @@ public final class JdbcRoomDirectory {
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, roomId);
             try (ResultSet row = statement.executeQuery()) {
-                if (!row.next()) return true; // anciens matchs locaux sans room
+                if (!row.next()) return false;
                 return switch (actorId == null ? "" : actorId) {
                     case "p1" -> RoomCredentials.matchesToken(token, row.getString("host_token_hash"));
                     case "p2" -> RoomCredentials.matchesToken(token, row.getString("guest_token_hash"));
@@ -146,6 +146,16 @@ public final class JdbcRoomDirectory {
 
     public boolean waitingForGuest(String roomId) {
         return findInfo(roomId).map(info -> !info.joined()).orElse(false);
+    }
+
+    /** The private recovery code reuses the existing player credential, without exposing it in a URL. */
+    public Admission resume(String recoveryCode) {
+        String[] parts = recoveryCode == null ? new String[0] : recoveryCode.trim().split("\\.", -1);
+        if (parts.length != 3 || !authorize(parts[0], parts[1], parts[2])) {
+            throw new IllegalStateException("ROOM_RESUME_INVALID");
+        }
+        RoomInfo room = findInfo(parts[0]).orElseThrow(() -> new IllegalStateException("ROOM_NOT_FOUND"));
+        return new Admission(room, parts[1], parts[2]);
     }
 
     private static RoomInfo info(ResultSet row) throws SQLException {

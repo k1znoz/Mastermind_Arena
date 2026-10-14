@@ -1,5 +1,5 @@
 export const CODE_LENGTH = 4
-export const ALLOWED_SYMBOLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+export const ALLOWED_SYMBOLS = ['A', 'B', 'C', 'D', 'E', 'F']
 
 /** @param {*} token */
 function normalizeSymbolToken(token) {

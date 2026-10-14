@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte'
   export let debugEnabled = false
   export let homeAvailable = false
+  export let theme = 'dark'
   const dispatch = createEventDispatcher()
 </script>
 
@@ -17,4 +18,5 @@
   {#if debugEnabled}
     <button class="signal" type="button" on:click={() => dispatch('opendebug')} aria-label="Ouvrir les outils de développement">◉</button>
   {/if}
+  <button class="theme-toggle" type="button" on:click={() => dispatch('theme')} aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'}>{theme === 'dark' ? '☀ Clair' : '☾ Sombre'}</button>
 </header>

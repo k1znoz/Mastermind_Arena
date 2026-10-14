@@ -9,8 +9,12 @@ public record MatchActionRecord(
         String guess,
         String feedback,
         long timestamp,
-        long version
+        long version,
+        int roundNumber
 ) {
+    public MatchActionRecord(String actorId, String actionType, String guess, String feedback, long timestamp, long version) {
+        this(actorId, actionType, guess, feedback, timestamp, version, -1);
+    }
     public MatchActionRecord {
         Objects.requireNonNull(actorId, "actorId is required");
         Objects.requireNonNull(actionType, "actionType is required");

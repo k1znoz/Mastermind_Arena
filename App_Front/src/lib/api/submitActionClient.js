@@ -1,4 +1,4 @@
-import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
+import { buildUrl, readErrorCode, safeJsonParse, fetchWithTimeout } from './httpClientUtils'
 
 /**
  * @typedef {{
@@ -91,7 +91,7 @@ export function createSubmitActionClient(config = {}) {
     const requestId = createIdempotencyKey()
     const idempotencyKey = createIdempotencyKey()
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

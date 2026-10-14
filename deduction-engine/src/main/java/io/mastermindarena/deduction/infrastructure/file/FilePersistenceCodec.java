@@ -411,7 +411,8 @@ public final class FilePersistenceCodec {
                 encode(actionRecord.guess() == null ? "" : actionRecord.guess()),
                 encode(actionRecord.feedback() == null ? "" : actionRecord.feedback()),
                 Long.toString(actionRecord.timestamp()),
-                Long.toString(actionRecord.version())
+                Long.toString(actionRecord.version()),
+                Integer.toString(actionRecord.roundNumber())
         );
     }
 
@@ -420,7 +421,7 @@ public final class FilePersistenceCodec {
         if (parts.length == 8) {
             return deserializeLegacyMatchActionRecord(parts);
         }
-        if (parts.length != 6) {
+        if (parts.length != 6 && parts.length != 7) {
             throw new IllegalArgumentException("Invalid MatchActionRecord payload");
         }
 
@@ -432,7 +433,8 @@ public final class FilePersistenceCodec {
                 guess.isBlank() ? null : guess,
                 feedback.isBlank() ? null : feedback,
                 Long.parseLong(parts[4]),
-                Long.parseLong(parts[5])
+                Long.parseLong(parts[5]),
+                parts.length == 7 ? Integer.parseInt(parts[6]) : -1
         );
     }
 

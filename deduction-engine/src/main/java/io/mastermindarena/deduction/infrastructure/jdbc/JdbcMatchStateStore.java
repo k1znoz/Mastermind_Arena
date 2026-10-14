@@ -18,6 +18,16 @@ public final class JdbcMatchStateStore implements MatchStateStore {
     }
 
     @Override
+    public <T> T atomic(String matchId, java.util.function.Supplier<T> operation) {
+        return context.atomic(matchId, operation);
+    }
+
+    @Override
+    public boolean hasAtomicWrites() {
+        return true;
+    }
+
+    @Override
     public Optional<MatchRuntimeState> findById(String matchId) {
         String sql = "SELECT payload FROM " + context.table("match_state") + " WHERE match_id = ?";
         try (Connection connection = context.openConnection();

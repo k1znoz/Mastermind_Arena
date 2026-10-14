@@ -38,6 +38,11 @@
 	let maskSecrets = true
 
 	let playerName = ''
+	let theme = 'dark'
+	let lastNotifiedVersion = null
+	let refreshInFlight = false
+	let recoveryInput = ''
+	let recoveryError = ''
 
 	const debugEnabled = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
 
@@ -112,7 +117,28 @@
 		}
 	}
 
-	function continueWelcome() {
+	function toggleTheme() {
+        theme = theme === 'dark' ? 'light' : 'dark'
+        document.documentElement.dataset.theme = theme
+        localStorage.setItem('arenaTheme', theme)
+    }
+
+    async function recoverRoom(event) {
+        roomBusy = true
+        recoveryError = ''
+        try {
+            const admission = await lobbyClient().resume(event.detail.code)
+            playerName = admission.actorId === 'p1' ? admission.room.hostPseudo : admission.room.guestPseudo
+            enterRoom(admission)
+            recoveryInput = ''
+        } catch (error) {
+            recoveryError = roomErrorText(error)
+        } finally {
+            roomBusy = false
+        }
+    }
+
+    function continueWelcome() {
 		if (!playerName.trim()) return
 		playerName = playerName.trim()
 		sessionStorage.setItem('arenaPlayerName', playerName)
@@ -129,6 +155,7 @@
 		matchState = null
 		lastScrollFocusKey = ''
 		lastKnownVersion = 0
+		lastNotifiedVersion = null
 		setupSequence = []
 		draftGuess = ['', '', '', '']
 		hasSavedRoom = true
@@ -137,7 +164,8 @@
 		sessionStorage.setItem('arenaRoomName', roomName)
 		sessionStorage.setItem('arenaRoomToken', roomToken)
 		sessionStorage.setItem('arenaPlayerName', playerName)
-		view = currentActorId === 'p1' ? 'waiting' : 'game'
+		localStorage.setItem('arenaSavedRoom', JSON.stringify({ matchId: currentMatchId, actorId: currentActorId, roomName, roomToken, playerName }))
+		view = admission.room.joined ? 'game' : 'waiting'
 		activeTab = 'partie'
 		if (view === 'game') refreshMatchState()
 	}
@@ -277,15 +305,21 @@
 	}
 
 	async function refreshMatchState() {
+		if (refreshInFlight) return
+		refreshInFlight = true
+		const requestedMatch = currentMatchId
+		const requestedActor = currentActorId
+		const requestedToken = roomToken
 		if (!matchState) {
 			syncStatus = 'syncing'
 			syncMessage = 'Synchronisation en cours'
 		} else {
 			syncMessage = 'Actualisation en cours'
 		}
+		let request = {}
+		try {
 		const { matchClient } = currentClients()
-
-		const request = {
+		request = {
 			endpoint: `GET ${matchClient.endpoint}`,
 			matchId: currentMatchId,
 			actorId: currentActorId,
@@ -294,8 +328,12 @@
 			roomToken
 		}
 
-		try {
-			const result = await matchClient.getMatchState(currentMatchId, currentActorId)
+			const result = await matchClient.getMatchState(requestedMatch, requestedActor)
+			if (currentMatchId !== requestedMatch || currentActorId !== requestedActor || roomToken !== requestedToken) return
+			if (matchState && result.version < matchState.version) return
+			const incoming = (result.turns ?? []).filter(action => action.actorId !== currentActorId && action.version > (lastNotifiedVersion ?? result.version) && ['CORRECT_FEEDBACK', 'CONTEST_FEEDBACK'].includes(action.actionType))
+			if (incoming.length) openToast('success', incoming.at(-1).actionType === 'CORRECT_FEEDBACK' ? 'Votre adversaire a corrigé ses indices. Le résultat a été actualisé.' : 'Votre adversaire demande de vérifier les derniers indices.')
+			lastNotifiedVersion = result.version
 			if (typeof result.version === 'number' && Number.isFinite(result.version)) {
 				lastKnownVersion = result.version
 			}
@@ -312,9 +350,12 @@
 			logDebug(request, { accepted: true, body: result })
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error)
+			if (currentMatchId !== requestedMatch || currentActorId !== requestedActor) return
 			syncStatus = 'error'
 			syncMessage = `Erreur backend: ${message}`
 			logDebug(request, { accepted: false, error: message })
+		} finally {
+			refreshInFlight = false
 		}
 	}
 
@@ -518,7 +559,7 @@
 		if (selectedSetupSlot < 3) {
 			selectedSetupSlot += 1
 		}
-		setupSequence = setupSequence.filter(Boolean)
+		setupSequence = [...setupSequence]
 	}
 
 	function clearSetupSequence() {
@@ -567,7 +608,7 @@
 
 	/** @param {{ bienPlaces: number, malPlaces: number }} detail */
 	function submitFeedbackAction(detail) {
-		if (!isBackendReady || matchState?.state !== 'WAITING_FEEDBACK' || ownFeedbackSubmitted || !opponentGuessSubmitted) {
+		if (!isBackendReady || matchState?.state !== 'WAITING_FEEDBACK' || ownFeedbackSubmitted || !(matchState?.requiredPlayers ?? []).includes(currentActorId)) {
 			openToast('error', 'Action non autorisee a ce stade')
 			return
 		}
@@ -580,7 +621,19 @@
 		submitFeedbackAction(event.detail)
 	}
 
-	function requestRematch() {
+	function abandon() {
+        submitPayload(buildActionPayload('ABANDON'))
+    }
+
+    function correctFeedback(event) {
+        submitPayload(buildActionPayload('CORRECT_FEEDBACK', { feedbackVersion: event.detail.version }, event.detail.feedback))
+    }
+
+    function contestFeedback(event) {
+        submitPayload(buildActionPayload('CONTEST_FEEDBACK', { feedbackVersion: event.detail.version }))
+    }
+
+    function requestRematch() {
 		if (matchState?.state === "FINISHED") submitPayload(buildActionPayload("REQUEST_REMATCH"))
 	}/** @param {number | null | undefined} value */
 	function formatTimestamp(value) {
@@ -637,18 +690,17 @@
 	$: actorOrder = matchState?.players ?? []
 	$: opponentActorId = actorOrder.find((entry) => entry !== actorId) ?? null
 	$: matchActions = matchState?.turns ?? []
-	$: roundNumber = Math.floor(matchActions.filter((entry) => entry?.actionType === 'SEND_FEEDBACK').length / Math.max(actorOrder.length, 1))
-	$: ownGuessSubmitted = matchActions.filter((entry) => entry?.actionType === 'PLAY_GUESS' && entry?.actorId === actorId).length > roundNumber
-	$: ownFeedbackSubmitted = matchActions.filter((entry) => entry?.actionType === 'SEND_FEEDBACK' && entry?.actorId === actorId).length > roundNumber
-	$: opponentGuessSubmitted = matchActions.filter((entry) => entry?.actionType === 'PLAY_GUESS' && entry?.actorId === opponentActorId).length > roundNumber
-	$: isMyTurn = isBackendReady && matchState?.state === 'WAITING_GUESS' && !ownGuessSubmitted
+	$: roundNumber = matchState?.roundNumber ?? 0
+    $: ownGuessSubmitted = matchActions.some(entry => entry.actionType === 'PLAY_GUESS' && entry.actorId === actorId && entry.turnNumber === roundNumber + 1)
+    $: ownFeedbackSubmitted = matchActions.some(entry => entry.actionType === 'SEND_FEEDBACK' && entry.actorId === actorId && entry.turnNumber === roundNumber + 1)
+    $: isMyTurn = isBackendReady && matchState?.state === 'WAITING_GUESS' && (matchState?.requiredPlayers ?? []).includes(actorId) && !ownGuessSubmitted
 	$: hasSecretSet = (matchState?.readyPlayers ?? []).includes(actorId) || matchState?.visibleSecretCode?.length === CODE_LENGTH
 	$: hasOpponentSecretSet = opponentActorId ? (matchState?.readyPlayers ?? []).includes(opponentActorId) : false
 	$: hasPlayerReady = hasSecretSet
 	$: hasOpponentReady = hasOpponentSecretSet
 	$: isSecretSubmitting = submitStatus === 'loading' && pendingActionType === 'READY_SECRET'
 	$: isGuessSubmitting = submitStatus === 'loading' && pendingActionType === 'PLAY_GUESS'
-	$: canSubmitSecret = isBackendReady && matchState?.state === 'PREPARATION' && !hasSecretSet && !isSecretSubmitting
+	$: canSubmitSecret = isBackendReady && matchState?.state === 'PREPARATION' && !hasSecretSet && !isSecretSubmitting && normalizeSymbolSequence(setupSequence).length === CODE_LENGTH
 	$: canSubmitGuess = isMyTurn && hasSecretSet && hasOpponentSecretSet && guessSequence.length === CODE_LENGTH && !isGuessSubmitting
 	$: secretButtonLabel = isSecretSubmitting
 		? 'TRANSMISSION...'
@@ -661,29 +713,23 @@
 				? 'REPONDEZ A L ADVERSAIRE'
 				: (ownGuessSubmitted ? 'TENTATIVE ENVOYEE' : (guessSequence.length !== CODE_LENGTH ? 'SEQUENCE INCOMPLETE' : 'ENVOYER TENTATIVE'))))
 	$: historyRows = (matchState?.turns ?? []).slice().reverse()
-	$: latestAction = historyRows[0] ?? null
-	$: latestOwnAction = historyRows.find((entry) => entry?.actorId === actorId) ?? null
-	$: latestOpponentAction = opponentActorId ? (historyRows.find((entry) => entry?.actorId === opponentActorId) ?? null) : null
 	$: opponentDisplayName = currentActorId === "p1" ? (roomInfo?.guestPseudo || "Adversaire") : (roomInfo?.hostPseudo || "Adversaire")
 	$: displayPlayerName = playerName.trim() || (currentActorId === 'p2' ? 'Joueur 2' : 'Joueur 1')
-	$: phaseStepDone = (matchState?.submittedPlayers ?? []).includes(currentActorId)
 	$: opponentStepDone = Boolean(opponentActorId && (matchState?.submittedPlayers ?? []).includes(opponentActorId))
-	$: phaseTitle = matchState?.state === 'PREPARATION' ? 'Choisissez votre code secret' :
-		matchState?.state === 'WAITING_GUESS' ? 'Trouvez le code adverse' :
-		matchState?.state === 'WAITING_FEEDBACK' ? 'Donnez les indices à votre adversaire' :
-		matchState?.state === 'FINISHED' ? 'Partie terminée' : 'Connexion à la partie'
-	$: phaseDetail = matchState?.state === 'PREPARATION'
-		? (phaseStepDone ? 'Votre code est validé. Attendez celui de votre adversaire.' : 'Composez quatre symboles et validez votre code.')
-		: matchState?.state === 'WAITING_GUESS'
-			? (phaseStepDone ? 'Votre tentative est envoyée. Attendez votre adversaire.' : 'Préparez puis envoyez votre tentative.')
-			: matchState?.state === 'WAITING_FEEDBACK'
-				? (phaseStepDone ? 'Vos indices sont envoyés. Attendez votre adversaire.' : 'Comparez sa tentative à votre code et donnez les indices.')
-				: matchState?.state === 'FINISHED' ? 'Consultez le résultat et proposez une revanche.' : syncMessage
-	$: feedbackCount = (matchState?.turns ?? []).filter((entry) => entry?.actionType === 'SEND_FEEDBACK').length
-	$: displayRound = matchState?.state === 'FINISHED' ? Math.max(1, Math.ceil(feedbackCount / 2)) : Math.floor(feedbackCount / 2) + 1
-	$: displayedRuntimeConfig = { ...runtimeConfig, matchId: currentMatchId, actorId: currentActorId }
+	$: displayRound = matchState?.state === 'FINISHED' && !matchActions.some(action => action.actionType === 'ABANDON') ? Math.max(1, roundNumber) : roundNumber + 1
+	$: recoveryCode = roomToken ? `${currentMatchId}.${currentActorId}.${roomToken}` : ''
 
 	onMount(() => {
+        theme = localStorage.getItem('arenaTheme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        document.documentElement.dataset.theme = theme
+        if (!sessionStorage.getItem('arenaMatchId')) {
+            try {
+                const saved = JSON.parse(localStorage.getItem('arenaSavedRoom') || 'null')
+                if (saved?.roomToken) {
+                    for (const [key, value] of Object.entries({ arenaMatchId: saved.matchId, arenaActorId: saved.actorId, arenaRoomName: saved.roomName, arenaRoomToken: saved.roomToken, arenaPlayerName: saved.playerName })) sessionStorage.setItem(key, String(value))
+                }
+            } catch { localStorage.removeItem('arenaSavedRoom') }
+        }
 		playerName = sessionStorage.getItem('arenaPlayerName') || ''
 		const savedId = sessionStorage.getItem('arenaMatchId')
 		if (savedId) {
@@ -716,14 +762,14 @@
 <div class="app-root">
 	<div class="bg-grid"></div>
 
-	<TopBar {debugEnabled} homeAvailable={view === 'game' || view === 'waiting'} on:home={returnToLobby} on:opendebug={() => showDebugDrawer = true} />
+	<TopBar {debugEnabled} {theme} on:theme={toggleTheme} homeAvailable={view === 'game' || view === 'waiting'} on:home={returnToLobby} on:opendebug={() => showDebugDrawer = true} />
 
 	<main class="screen">
 		{#if view === 'welcome'}
-			<WelcomeScreen bind:playerName canResume={hasSavedRoom} on:continue={continueWelcome} on:resume={resumeRoom} />
+			<WelcomeScreen bind:playerName bind:recoveryInput recoveryError={recoveryError} busy={roomBusy} on:recover={recoverRoom} canResume={hasSavedRoom} on:continue={continueWelcome} on:resume={resumeRoom} />
 		{/if}
 		{#if view === 'lobby'}
-			<LobbyScreen {playerName} {rooms} busy={roomBusy} error={lobbyError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={() => view = 'welcome'} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
+			<LobbyScreen {playerName} bind:recoveryInput recoveryError={recoveryError} on:recover={recoverRoom} {rooms} busy={roomBusy} error={lobbyError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={() => view = 'welcome'} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
 		{/if}
 		{#if view === 'waiting'}
 			<section class="waiting-room">
@@ -733,25 +779,14 @@
 				<div><button type="button" on:click={refreshRoomStatus}>ACTUALISER</button><button type="button" on:click={returnToLobby}>VOIR LES PARTIES</button></div>
 			</section>
 		{/if}
-		{#if view === 'game'}
-		<section class="match-overview" aria-live="polite">
-			<div class="overview-top">
-				<div class="overview-identity"><span class="player-avatar">{currentActorId === 'p2' ? 'P2' : 'P1'}</span><div><small>VOUS JOUEZ EN TANT QUE</small><strong>{displayPlayerName}</strong></div></div>
-			</div>
-			<div class="overview-match"><span>PARTIE</span><strong>{roomName || currentMatchId}</strong><small>Partie {matchState?.gameNumber ?? 1} · Manche {displayRound}</small></div>
-			{#if matchState?.state === 'FINISHED'}
-				<div class="overview-final-score" aria-label={'Score final : ' + displayPlayerName + ' ' + (matchState?.scores?.[currentActorId] ?? 0) + ', ' + opponentDisplayName + ' ' + (matchState?.scores?.[opponentActorId] ?? 0)}>
-					<span class="score-player" class:winner={matchState?.winnerId === currentActorId}><small>VOUS · {displayPlayerName}</small><strong>{matchState?.scores?.[currentActorId] ?? 0}</strong></span>
-					<span class="score-separator" aria-hidden="true">—</span>
-					<span class="score-player" class:winner={matchState?.winnerId === opponentActorId}><strong>{matchState?.scores?.[opponentActorId] ?? 0}</strong><small>{opponentDisplayName} · ADVERSAIRE</small></span>
-				</div>
-			{:else}
-				<div class="overview-phase"><span>À FAIRE</span><strong>{phaseTitle}</strong><p>{phaseDetail}</p></div>
-				<div class="overview-foot"><span>SCORE · {matchState?.scores?.[currentActorId] ?? 0} — {matchState?.scores?.[opponentActorId] ?? 0}</span></div>
-			{/if}
-			{#if syncStatus === 'error'}<div class="overview-foot"><button type="button" on:click={refreshMatchState}>RÉESSAYER LA CONNEXION</button></div>{/if}
-		</section>
-		{/if}
+        {#if view === 'game'}
+        <section class="match-overview">
+            <div class="match-heading"><div><small>Manche {matchState?.gameNumber ?? 1} · Tour {displayRound}</small><h1>{roomName || 'Votre duel'}</h1></div><span class="match-score" aria-label={`Score : vous ${matchState?.scores?.[currentActorId] ?? 0}, adversaire ${matchState?.scores?.[opponentActorId] ?? 0}`}>{matchState?.scores?.[currentActorId] ?? 0} — {matchState?.scores?.[opponentActorId] ?? 0}</span></div>
+            <p class="match-players">{displayPlayerName} <span>contre</span> {opponentDisplayName}</p>
+            {#if syncStatus === 'error'}<div class="connection-error" role="alert"><p>La connexion est interrompue. Votre partie reste conservée.</p><button type="button" on:click={refreshMatchState}>Réessayer</button></div>{/if}
+            <details class="room-tools"><summary>Reprendre sur un autre appareil</summary><p>Ce code privé donne accès à votre place dans la partie. Conservez-le et ne le partagez pas avec votre adversaire.</p><label>Votre code de reprise<input readonly value={recoveryCode} on:focus={(event) => event.currentTarget.select()} /></label></details>
+        </section>
+        {/if}
 
 		{#if view === 'game' && activeTab === 'partie'}
 			<PartieScreen
@@ -779,9 +814,6 @@
 				{secretButtonLabel}
 				{canSubmitGuess}
 				{sendButtonLabel}
-				{latestAction}
-				{latestOwnAction}
-				{latestOpponentAction}
 				{opponentActorId}
 				{asSymbols}
 				{getSymbolVisual}
@@ -795,16 +827,18 @@
 				on:submitguess={submitGuess}
 				on:submitfeedback={onSubmitFeedback}
 				on:requestrematch={requestRematch}
+				on:abandon={abandon}
+				on:correctfeedback={correctFeedback}
+				on:contestfeedback={contestFeedback}
+				busy={submitInFlight}
 			/>
 		{/if}
 
 		{#if view === 'game' && activeTab === 'historique'}
 			<HistoryScreen
-				runtimeConfig={displayedRuntimeConfig}
 				{isPrototype}
 				{historyRows}
 				{asSymbols}
-				{getSymbolVisual}
 				{formatTimestamp}
 				{asTimestamp}
 				onRefresh={refreshMatchState}

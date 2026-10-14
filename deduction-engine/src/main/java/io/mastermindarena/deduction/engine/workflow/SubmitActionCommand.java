@@ -17,19 +17,23 @@ public record SubmitActionCommand(
     public static final String SEND_FEEDBACK = "SEND_FEEDBACK";
     public static final String DECLARE_DISCOVERY = "DECLARE_DISCOVERY";
     public static final String REQUEST_REMATCH = "REQUEST_REMATCH";
+    public static final String ABANDON = "ABANDON";
+    public static final String CORRECT_FEEDBACK = "CORRECT_FEEDBACK";
+    public static final String CONTEST_FEEDBACK = "CONTEST_FEEDBACK";
 
     public SubmitActionCommand {
         Objects.requireNonNull(matchId, "matchId is required");
         Objects.requireNonNull(actorId, "actorId is required");
         Objects.requireNonNull(idempotencyKey, "idempotencyKey is required");
         Objects.requireNonNull(actionType, "actionType is required");
-        if (!List.of(READY_SECRET, PLAY_GUESS, SEND_FEEDBACK, DECLARE_DISCOVERY, REQUEST_REMATCH).contains(actionType)) {
+        if (!List.of(READY_SECRET, PLAY_GUESS, SEND_FEEDBACK, DECLARE_DISCOVERY, REQUEST_REMATCH,
+                ABANDON, CORRECT_FEEDBACK, CONTEST_FEEDBACK).contains(actionType)) {
             throw new IllegalArgumentException("unsupported board action type: " + actionType);
         }
         if (payload == null && (PLAY_GUESS.equals(actionType) || READY_SECRET.equals(actionType))) {
             throw new IllegalArgumentException("payload is required for " + actionType);
         }
-        if (feedback == null && SEND_FEEDBACK.equals(actionType)) {
+        if (feedback == null && (SEND_FEEDBACK.equals(actionType) || CORRECT_FEEDBACK.equals(actionType))) {
             throw new IllegalArgumentException("feedback is required for SEND_FEEDBACK");
         }
     }

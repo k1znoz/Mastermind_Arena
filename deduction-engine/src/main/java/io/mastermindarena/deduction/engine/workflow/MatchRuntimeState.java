@@ -132,9 +132,6 @@ public record MatchRuntimeState(
         Objects.requireNonNull(actionRecord, "actionRecord is required");
         List<MatchActionRecord> updatedLog = new ArrayList<>(actionLog);
         updatedLog.add(actionRecord);
-        if (updatedLog.size() > 50) {
-            updatedLog = updatedLog.subList(updatedLog.size() - 50, updatedLog.size());
-        }
         return new MatchRuntimeState(
                 matchId,
                 status,
@@ -254,6 +251,30 @@ public record MatchRuntimeState(
                 actorOrder.get(actorOrder.size() > 1 ? 1 : 0),
                 version + 1, List.of(), null, scores, null, gameNumber + 1
         );
+    }
+    /** Reconciles the current duel point after manual feedback or a correction. */
+    public MatchRuntimeState withBoardResult(String nextStatus, String result) {
+        Map<String, Integer> nextScores = new HashMap<>(scores);
+        if (winnerId != null && !"DRAW".equals(winnerId)) {
+            nextScores.compute(winnerId, (id, score) -> Math.max(0, (score == null ? 0 : score) - 1));
+        }
+        if (result != null && !"DRAW".equals(result)) nextScores.merge(result, 1, Integer::sum);
+        nextScores.entrySet().removeIf(entry -> entry.getValue() == 0);
+        return new MatchRuntimeState(matchId, nextStatus, turnNumber, currentActorIndex,
+                currentFeedbackActorIndex, WAITING_GUESS.equals(nextStatus), actorOrder,
+                activePlayerId, feedbackPlayerId, version, actionLog, legacyMatchOutcome,
+                nextScores, result, gameNumber);
+    }
+    public MatchRuntimeState withoutRematchRequests() {
+        return new MatchRuntimeState(matchId, status, turnNumber, currentActorIndex, currentFeedbackActorIndex,
+                turnActive, actorOrder, activePlayerId, feedbackPlayerId, version,
+                actionLog.stream().filter(action -> !SubmitActionCommand.REQUEST_REMATCH.equals(action.actionType())).toList(),
+                legacyMatchOutcome, scores, winnerId, gameNumber);
+    }
+
+    public MatchRuntimeState completeCurrentRound() {
+        return new MatchRuntimeState(matchId, WAITING_GUESS, turnNumber + 1, currentActorIndex, currentFeedbackActorIndex,
+                true, actorOrder, activePlayerId, feedbackPlayerId, version, actionLog, legacyMatchOutcome, scores, winnerId, gameNumber);
     }
     public Optional<MatchOutcome> legacyMatchOutcomeOptional() {
         return Optional.ofNullable(legacyMatchOutcome);

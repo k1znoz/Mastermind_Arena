@@ -22,8 +22,6 @@
 
 {#if open}
   <button type="button" class="drawer-overlay" on:click={close} aria-label="Fermer debug"></button>
-{/if}
-
 <aside class="debug-drawer" class:open={open}>
   <header>
     <div>
@@ -57,3 +55,4 @@
     {/if}
   </footer>
 </aside>
+{/if}

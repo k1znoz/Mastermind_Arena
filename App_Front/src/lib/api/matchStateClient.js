@@ -1,4 +1,4 @@
-import { buildUrl, readErrorCode, safeJsonParse } from './httpClientUtils'
+import { buildUrl, readErrorCode, safeJsonParse, fetchWithTimeout } from './httpClientUtils'
 
 /**
  * Selects a path default depending on access mode.
@@ -13,7 +13,7 @@ function resolveMatchStatePath(baseUrl, explicitPath) {
     return explicitPath
   }
 
-  return baseUrl ? '/health' : '/api/health'
+  return baseUrl ? '/local/match-state' : '/api/local/match-state'
 }
 
 /** @param {string} path */
@@ -128,6 +128,7 @@ function normalizeTurns(rawTurns) {
       actionType: typeof turn.actionType === 'string' ? turn.actionType : '',
       guess: parseGuessSequence(turn.guess),
       feedback: parseFeedbackPegs(turn.feedback),
+      feedbackVersion: Number(safeJsonParse(String(turn.guess ?? ''))?.feedbackVersion ?? 0),
       timestamp: typeof turn.timestamp === 'number' && Number.isFinite(turn.timestamp) ? turn.timestamp : 0,
       version: typeof turn.version === 'number' && Number.isFinite(turn.version) ? turn.version : 0
     }
@@ -180,7 +181,7 @@ export function createMatchStateClient(config = {}) {
     }
 
     const url = healthMode ? endpoint : buildMatchStateUrl(endpoint, matchId, actorId)
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: {
         [apiKeyHeaderName]: apiKeyValue,
@@ -236,7 +237,11 @@ export function createMatchStateClient(config = {}) {
       winnerId: typeof payload.winnerId === "string" ? payload.winnerId : undefined,
       gameNumber: typeof payload.gameNumber === "number" ? payload.gameNumber : 1,
       submittedPlayers: Array.isArray(payload.submittedPlayers) ? payload.submittedPlayers.map(String) : [],
-      rematchRequestedPlayers: Array.isArray(payload.rematchRequestedPlayers) ? payload.rematchRequestedPlayers.map(String) : []
+      rematchRequestedPlayers: Array.isArray(payload.rematchRequestedPlayers) ? payload.rematchRequestedPlayers.map(String) : [],
+      roundNumber: typeof payload.roundNumber === 'number' ? payload.roundNumber : 0,
+      solvedPlayers: Array.isArray(payload.solvedPlayers) ? payload.solvedPlayers.map(String) : [],
+      requiredPlayers: Array.isArray(payload.requiredPlayers) ? payload.requiredPlayers.map(String) : [],
+      opponentSecretCode: Array.isArray(payload.opponentSecretCode) ? payload.opponentSecretCode.map(String) : []
     }
   }
 

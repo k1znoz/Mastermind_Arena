@@ -1,15 +1,17 @@
-# Mastermind Arena Front
+# Front Mastermind Arena
 
-Svelte/Vite client for the local two-player Plateau match.
+Client Svelte / Vite du jeu simultané. Voir le [README principal](../README.md) pour les variables d'environnement et le démarrage du backend.
 
-## Local setup
+```powershell
+npm ci
+npm run dev
+npm run lint
+npm run check
+npm run build
+```
 
-1. Start the backend with `docker compose up --build` from the repository root. Docker exposes it at `http://localhost:8081`.
-2. Copy `.env.example` to `.env.local` in this folder. Set `VITE_API_KEY` to the same value as `APP_API_KEY` in the root `.env`.
-3. Run `npm ci` and `npm run dev` in this folder. Open the URL printed by Vite; it may use port 5174 if 5173 is busy.
+Avec `VITE_API_BASE_URL` vide, le proxy Vite transmet `/api/*` au backend défini par `VITE_PROXY_TARGET`. En production, configurer l'URL HTTPS du backend séparé.
 
-With `VITE_API_BASE_URL` empty, Vite forwards `/api/*` to `VITE_PROXY_TARGET`. The front uses `/api/local/match-state`, `/api/local/submit-action`, and `/api/health`.
+Le lobby permet de créer et rejoindre une partie. Chaque joueur possède un jeton privé ; le code privé de reprise permet de retrouver sa place sur un autre appareil, sans choisir librement `p1` ou `p2`. Le code d'accès facultatif à une partie ne remplace pas ce jeton.
 
-For two local players, leave the room code empty in the first tab (`p1`), then enter `local-match` as the room code in a second tab (`p2`). Both tabs must use the same match ID. This identity selection is only a local test mechanism.
-
-Run `npm run build` to check the production bundle.
+Téléphone prioritaire : action courante, palette de six couleurs nommées, choix entre les deux plateaux, corrections secondaires, thème clair/sombre. Les indices sont donnés par les joueurs, jamais calculés dans le navigateur.

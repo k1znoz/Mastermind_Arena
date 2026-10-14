@@ -19,10 +19,13 @@ class RematchScoreTest {
         playToFeedback();
         act("p2", "SEND_FEEDBACK", null, "{\"bienPlaces\":4,\"malPlaces\":0}");
         MatchRuntimeState finished = act("p1", "SEND_FEEDBACK", null, "{\"bienPlaces\":1,\"malPlaces\":0}");
-        assertEquals(MatchRuntimeState.FINISHED, finished.status());
+        assertEquals(MatchRuntimeState.WAITING_GUESS, finished.status());
         assertEquals("p1", finished.winnerId());
         assertEquals(1, finished.scores().get("p1"));
         assertEquals(1, finished.gameNumber());
+
+        finished = act("p2", "ABANDON", null, null);
+        assertEquals(MatchRuntimeState.FINISHED, finished.status());
 
         MatchRuntimeState asked = act("p1", "REQUEST_REMATCH", null, null);
         assertEquals(MatchRuntimeState.FINISHED, asked.status());

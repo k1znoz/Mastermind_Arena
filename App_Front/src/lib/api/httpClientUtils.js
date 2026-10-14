@@ -54,3 +54,17 @@ export function readErrorCode(body, fallbackCode) {
 
   return fallbackCode
 }
+
+/** @param {string} url @param {RequestInit} [options] */
+export async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 15000)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('REQUEST_TIMEOUT', { cause: error })
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}

@@ -1,3 +1,5 @@
+> Document historique : certains choix ont été remplacés le 13 octobre 2026. Consulter `decision.md`, `docs/GAME_RULES.md` et `docs/ARCHITECTURE_V2.md` pour la version actuelle.
+
 # Migration vers le jeu de plateau en ligne
 
 ## Objectif

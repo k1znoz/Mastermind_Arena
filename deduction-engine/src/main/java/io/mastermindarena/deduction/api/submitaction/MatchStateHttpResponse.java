@@ -17,7 +17,11 @@ public record MatchStateHttpResponse(
         String winnerId,
         int gameNumber,
         List<String> submittedPlayers,
-        List<String> rematchRequestedPlayers
+        List<String> rematchRequestedPlayers,
+        int roundNumber,
+        List<String> solvedPlayers,
+        List<String> requiredPlayers,
+        List<String> opponentSecretCode
 ) {
     public MatchStateHttpResponse {
         players = players == null ? List.of() : List.copyOf(players);
@@ -27,6 +31,9 @@ public record MatchStateHttpResponse(
         scores = scores == null ? Map.of() : Map.copyOf(scores);
         submittedPlayers = submittedPlayers == null ? List.of() : List.copyOf(submittedPlayers);
         rematchRequestedPlayers = rematchRequestedPlayers == null ? List.of() : List.copyOf(rematchRequestedPlayers);
+        solvedPlayers = solvedPlayers == null ? List.of() : List.copyOf(solvedPlayers);
+        requiredPlayers = requiredPlayers == null ? List.of() : List.copyOf(requiredPlayers);
+        opponentSecretCode = opponentSecretCode == null ? List.of() : List.copyOf(opponentSecretCode);
     }
 
     public record TurnEntry(

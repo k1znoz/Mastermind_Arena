@@ -13,6 +13,7 @@ public final class JdbcPersistenceContext {
     private final String dbUser;
     private final String dbPassword;
     private final String schema;
+    private final ThreadLocal<Connection> transaction = new ThreadLocal<>();
 
     public JdbcPersistenceContext(String dbUrl, String dbUser, String dbPassword, String schema) {
         this.dbUrl = Objects.requireNonNull(dbUrl, "dbUrl is required");
@@ -32,11 +33,54 @@ public final class JdbcPersistenceContext {
     }
 
     public Connection openConnection() {
+        Connection active = transaction.get();
+        if (active != null) {
+            return (Connection) java.lang.reflect.Proxy.newProxyInstance(Connection.class.getClassLoader(),
+                    new Class<?>[]{Connection.class}, (proxy, method, args) -> {
+                        if (ListHolder.TRANSACTION_METHODS.contains(method.getName())) return null;
+                        try {
+                            return method.invoke(active, args);
+                        } catch (java.lang.reflect.InvocationTargetException failure) {
+                            throw failure.getCause();
+                        }
+                    });
+        }
         try {
             return DriverManager.getConnection(dbUrl, dbUser, dbPassword);
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to open JDBC connection", e);
         }
+    }
+
+    public <T> T atomic(String matchId, java.util.function.Supplier<T> operation) {
+        if (transaction.get() != null) return operation.get();
+        try (Connection connection = openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                if (isPostgresUrl()) {
+                    try (var lock = connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext(?))")) {
+                        lock.setString(1, schema + ":match:" + matchId);
+                        lock.execute();
+                    }
+                }
+                transaction.set(connection);
+                T result = operation.get();
+                connection.commit();
+                return result;
+            } catch (RuntimeException | SQLException failure) {
+                connection.rollback();
+                throw failure;
+            } finally {
+                transaction.remove();
+            }
+        } catch (SQLException failure) {
+            throw new IllegalStateException("MATCH_PERSISTENCE_FAILED", failure);
+        }
+    }
+
+    private static final class ListHolder {
+        private static final java.util.Set<String> TRANSACTION_METHODS = java.util.Set.of("close", "commit", "rollback", "setAutoCommit");
+        private ListHolder() {}
     }
 
     public String schema() {

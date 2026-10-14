@@ -6,6 +6,6 @@
 </script>
 
 <nav class="bottom-nav" aria-label="Navigation principale">
-  <button type="button" class:active={activeTab === 'partie'} on:click={() => select('partie')}>Plateau</button>
-  <button type="button" class:active={activeTab === 'historique'} on:click={() => select('historique')}>Historique</button>
+  <button type="button" aria-current={activeTab === 'partie' ? 'page' : undefined} class:active={activeTab === 'partie'} on:click={() => select('partie')}>Plateau</button>
+  <button type="button" aria-current={activeTab === 'historique' ? 'page' : undefined} class:active={activeTab === 'historique'} on:click={() => select('historique')}>Historique</button>
 </nav>

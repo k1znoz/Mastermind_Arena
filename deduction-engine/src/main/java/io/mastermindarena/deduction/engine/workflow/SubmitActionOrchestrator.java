@@ -1,17 +1,10 @@
 package io.mastermindarena.deduction.engine.workflow;
 
-import io.mastermindarena.deduction.engine.contract.Rejection;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public final class SubmitActionOrchestrator {
-    private static final ObjectMapper JSON = new ObjectMapper();
     private final MatchStateStore stateStore;
     private final EventSink eventSink;
     private final IdempotencyStore idempotencyStore;
@@ -21,212 +14,141 @@ public final class SubmitActionOrchestrator {
     }
 
     public SubmitActionOrchestrator(MatchStateStore stateStore, EventSink eventSink, IdempotencyStore idempotencyStore) {
-        this.stateStore = Objects.requireNonNull(stateStore, "stateStore is required");
-        this.eventSink = Objects.requireNonNull(eventSink, "eventSink is required");
-        this.idempotencyStore = Objects.requireNonNull(idempotencyStore, "idempotencyStore is required");
+        this.stateStore = Objects.requireNonNull(stateStore);
+        this.eventSink = Objects.requireNonNull(eventSink);
+        this.idempotencyStore = Objects.requireNonNull(idempotencyStore);
     }
 
     public synchronized SubmitActionResult submit(SubmitActionCommand command) {
+        return stateStore.atomic(command.matchId(), () -> resolve(command));
+    }
+
+    private SubmitActionResult resolve(SubmitActionCommand command) {
         MatchRuntimeState current = stateStore.findById(command.matchId())
                 .orElseThrow(() -> new IllegalStateException("MATCH_NOT_FOUND"));
-
-        String idempotencyScopeKey = command.matchId() + "|" + command.actorId() + "|" + command.idempotencyKey();
-        String requestFingerprint = command.expectedVersion() + "|" + command.actionType() + "|" + command.payload() + "|" + command.feedback();
-        IdempotencyStore.Entry existing = idempotencyStore.find(idempotencyScopeKey).orElse(null);
+        if (!current.actorOrder().contains(command.actorId())) throw new IllegalStateException("ACTOR_NOT_AUTHORIZED");
+        String key = command.matchId() + "|" + command.actorId() + "|" + command.idempotencyKey();
+        String fingerprint = command.expectedVersion() + "|" + command.actionType() + "|" + command.payload() + "|" + command.feedback();
+        IdempotencyStore.Entry existing = idempotencyStore.find(key).orElse(null);
         if (existing != null) {
-            if (existing.fingerprint().equals(requestFingerprint)) {
-                return existing.result();
-            }
-            throw new IllegalStateException("IDEMPOTENCY_CONFLICT");
+            if (!existing.fingerprint().equals(fingerprint)) throw new IllegalStateException("IDEMPOTENCY_CONFLICT");
+            return existing.result();
         }
-        if (isReplayOfRecordedAction(current, command)) {
-            SubmitActionResult replay = new SubmitActionResult(current, command, List.of(), null);
-            saveIdempotencyBestEffort(idempotencyScopeKey, requestFingerprint, replay, command);
-            return replay;
+        // Recovery for memory stores whose idempotency journal was temporarily unavailable.
+        if (command.expectedVersion() < current.version() && current.actionLog().stream().anyMatch(record ->
+                record.version() == command.expectedVersion() + 1 && command.actorId().equals(record.actorId())
+                        && command.actionType().equals(record.actionType()) && Objects.equals(command.payload(), record.guess())
+                        && Objects.equals(command.feedback(), record.feedback()))) {
+            return new SubmitActionResult(current, command, List.of(), null);
         }
-
-        if (current.isTerminal() && !SubmitActionCommand.REQUEST_REMATCH.equals(command.actionType())) {
+        if (command.expectedVersion() != current.version()) throw new IllegalStateException("VERSION_CONFLICT");
+        String type = command.actionType();
+        boolean correction = SubmitActionCommand.CORRECT_FEEDBACK.equals(type);
+        boolean contest = SubmitActionCommand.CONTEST_FEEDBACK.equals(type);
+        if (current.isTerminal() && !SubmitActionCommand.REQUEST_REMATCH.equals(type) && !correction && !contest) {
             throw new IllegalStateException("MATCH_ALREADY_TERMINAL");
         }
-
-        if (!current.isTerminal() && !MatchRuntimeState.WAITING_GUESS.equals(current.status())
-                && !MatchRuntimeState.WAITING_FEEDBACK.equals(current.status())
-                && !MatchRuntimeState.PREPARATION.equals(current.status())) {
-            throw new IllegalStateException("INVALID_MATCH_STATE");
-        }
-
-        if (command.expectedVersion() != current.version()) {
-            throw new IllegalStateException("VERSION_CONFLICT");
-        }
-
-        if (!current.actorOrder().contains(command.actorId())) {
-            throw new IllegalStateException("ACTOR_NOT_AUTHORIZED");
-        }
-
-        List<String> emitted = new ArrayList<>();
         MatchRuntimeState updated;
-        Rejection rejection = null;
-
-        switch (command.actionType()) {
+        GameEvent event;
+        boolean record = true;
+        boolean completeRound = false;
+        switch (type) {
             case SubmitActionCommand.READY_SECRET -> {
-                if (!MatchRuntimeState.PREPARATION.equals(current.status())) {
-                    throw new IllegalStateException("INVALID_STATE_FOR_READY_SECRET");
-                }
-                if (hasReadySecret(current, command.actorId())) {
-                    throw new IllegalStateException("SECRET_ALREADY_SET");
-                }
-                boolean otherPlayerReady = current.actorOrder().stream()
-                        .anyMatch(actorId -> !actorId.equals(command.actorId()) && hasReadySecret(current, actorId));
-                updated = otherPlayerReady ? current.advanceToWaitingGuess() : current.withVersionIncremented();
-                emit(emitted, GameEvent.GUESS_PLAYED);
+                requireState(current, MatchRuntimeState.PREPARATION, "INVALID_STATE_FOR_READY_SECRET");
+                if (hasAction(current, command.actorId(), type)) throw new IllegalStateException("SECRET_ALREADY_SET");
+                MastermindBoardRules.validateCode(command.payload());
+                boolean otherReady = hasAction(current, MastermindBoardRules.opponent(current, command.actorId()), type);
+                updated = otherReady ? current.advanceToWaitingGuess() : current.withVersionIncremented();
+                event = GameEvent.GAME_STARTED;
             }
             case SubmitActionCommand.PLAY_GUESS -> {
-                if (!MatchRuntimeState.WAITING_GUESS.equals(current.status())) {
-                    throw new IllegalStateException("INVALID_STATE_FOR_PLAY_GUESS");
-                }
-                if (hasActedThisRound(current, command.actorId(), SubmitActionCommand.PLAY_GUESS)) {
-                    throw new IllegalStateException("GUESS_ALREADY_SUBMITTED");
-                }
-                boolean otherPlayerGuessed = current.actorOrder().stream()
-                        .anyMatch(actorId -> !actorId.equals(command.actorId())
-                                && hasActedThisRound(current, actorId, SubmitActionCommand.PLAY_GUESS));
-                updated = otherPlayerGuessed ? current.advanceToWaitingFeedback() : current.withVersionIncremented();
-                emit(emitted, GameEvent.GUESS_PLAYED);
+                requireState(current, MatchRuntimeState.WAITING_GUESS, "INVALID_STATE_FOR_PLAY_GUESS");
+                if (!MastermindBoardRules.guessers(current).contains(command.actorId())) throw new IllegalStateException("PLAYER_ALREADY_SOLVED");
+                if (MastermindBoardRules.hasActed(current, command.actorId(), type)) throw new IllegalStateException("GUESS_ALREADY_SUBMITTED");
+                MastermindBoardRules.validateCode(command.payload());
+                boolean all = MastermindBoardRules.guessers(current).stream().allMatch(id -> id.equals(command.actorId())
+                        || MastermindBoardRules.hasActed(current, id, type));
+                updated = all ? current.advanceToWaitingFeedback() : current.withVersionIncremented();
+                event = GameEvent.GUESS_PLAYED;
             }
             case SubmitActionCommand.SEND_FEEDBACK -> {
-                if (!MatchRuntimeState.WAITING_FEEDBACK.equals(current.status())) {
-                    throw new IllegalStateException("INVALID_STATE_FOR_SEND_FEEDBACK");
-                }
-                if (hasActedThisRound(current, command.actorId(), SubmitActionCommand.SEND_FEEDBACK)) {
-                    throw new IllegalStateException("FEEDBACK_ALREADY_SUBMITTED");
-                }
-                boolean otherPlayerResponded = current.actorOrder().stream()
-                        .anyMatch(actorId -> !actorId.equals(command.actorId())
-                                && hasActedThisRound(current, actorId, SubmitActionCommand.SEND_FEEDBACK));
-                if (otherPlayerResponded) {
-                    String winner = roundResult(current, command);
-                    updated = winner != null || current.turnNumber() >= 9
-                            ? current.finishWithResult(winner == null ? "DRAW" : winner)
-                            : current.advanceToNextRound();
-                    emit(emitted, updated.isTerminal() ? GameEvent.GAME_FINISHED : GameEvent.TURN_CHANGED);
-                } else {
-                    blackPegs(command.feedback());
-                    updated = current.withVersionIncremented();
-                    emit(emitted, GameEvent.TURN_CHANGED);
-                }
+                requireState(current, MatchRuntimeState.WAITING_FEEDBACK, "INVALID_STATE_FOR_SEND_FEEDBACK");
+                if (!MastermindBoardRules.feedbackGivers(current).contains(command.actorId())) throw new IllegalStateException("FEEDBACK_NOT_REQUIRED");
+                if (MastermindBoardRules.hasActed(current, command.actorId(), type)) throw new IllegalStateException("FEEDBACK_ALREADY_SUBMITTED");
+                MastermindBoardRules.blackPegs(command.feedback());
+                completeRound = MastermindBoardRules.feedbackGivers(current).stream().allMatch(id -> id.equals(command.actorId())
+                        || MastermindBoardRules.hasActed(current, id, type));
+                updated = completeRound ? current.advanceToNextRound() : current.withVersionIncremented();
+                event = GameEvent.FEEDBACK_SENT;
             }
-            case SubmitActionCommand.DECLARE_DISCOVERY -> {
+            case SubmitActionCommand.CORRECT_FEEDBACK, SubmitActionCommand.CONTEST_FEEDBACK -> {
+                MatchActionRecord target = MastermindBoardRules.editableFeedback(current, MastermindBoardRules.feedbackTarget(command.payload()));
+                boolean owner = target.actorId().equals(command.actorId());
+                if (correction != owner) throw new IllegalStateException("ACTOR_NOT_AUTHORIZED");
+                if (correction) MastermindBoardRules.blackPegs(command.feedback());
+                if (contest && current.actionLog().stream().anyMatch(action -> type.equals(action.actionType())
+                        && command.actorId().equals(action.actorId()) && Objects.equals(command.payload(), action.guess()))) {
+                    throw new IllegalStateException("FEEDBACK_ALREADY_CONTESTED");
+                }
+                updated = correction ? current.withoutRematchRequests().withVersionIncremented() : current.withVersionIncremented();
+                event = GameEvent.FEEDBACK_SENT;
+            }
+            case SubmitActionCommand.ABANDON -> {
+                if (MatchRuntimeState.PREPARATION.equals(current.status())) {
+                    throw new IllegalStateException("ABANDON_REQUIRES_STARTED_GAME");
+                }
                 updated = current.finish();
-                emit(emitted, GameEvent.GAME_FINISHED);
+                event = GameEvent.GAME_FINISHED;
             }
             case SubmitActionCommand.REQUEST_REMATCH -> {
                 if (!current.isTerminal()) throw new IllegalStateException("REMATCH_REQUIRES_FINISHED_MATCH");
-                if (hasRequestedRematch(current, command.actorId())) throw new IllegalStateException("REMATCH_ALREADY_REQUESTED");
-                boolean otherRequested = current.actorOrder().stream().anyMatch(id -> !id.equals(command.actorId()) && hasRequestedRematch(current, id));
-                updated = otherRequested ? current.restartForRematch() : current.withVersionIncremented();
-                emit(emitted, GameEvent.TURN_CHANGED);
+                if (hasAction(current, command.actorId(), type)) throw new IllegalStateException("REMATCH_ALREADY_REQUESTED");
+                boolean both = hasAction(current, MastermindBoardRules.opponent(current, command.actorId()), type);
+                updated = both ? current.restartForRematch() : current.withVersionIncremented();
+                record = !both;
+                event = GameEvent.GAME_STARTED;
             }
-            default -> throw new IllegalStateException("UNSUPPORTED_ACTION_TYPE");
+            default -> throw new IllegalStateException("DISCOVERY_REQUIRES_MANUAL_FEEDBACK");
         }
-
-        if (!(SubmitActionCommand.REQUEST_REMATCH.equals(command.actionType()) && !updated.isTerminal())) {
-        updated = updated.withRecordedAction(new MatchActionRecord(
-                command.actorId(),
-                command.actionType(),
-                command.payload(),
-                command.feedback(),
-                System.currentTimeMillis(),
-                updated.version()
-        ));
-        }
-
-
+        if (record) updated = updated.withRecordedAction(new MatchActionRecord(command.actorId(), type,
+                command.payload(), command.feedback(), System.currentTimeMillis(), updated.version(), current.turnNumber()));
+        if (completeRound || correction || SubmitActionCommand.ABANDON.equals(type)) updated = reconcile(updated);
+        if (updated.isTerminal()) event = GameEvent.GAME_FINISHED;
         stateStore.save(updated);
-        SubmitActionResult result = new SubmitActionResult(updated, command, List.copyOf(emitted), rejection);
-        saveIdempotencyBestEffort(idempotencyScopeKey, requestFingerprint, result, command);
-
+        List<String> emitted = new ArrayList<>();
+        emitted.add(event.name());
+        eventSink.publish(event);
+        SubmitActionResult result = new SubmitActionResult(updated, command, List.copyOf(emitted), null);
+        try {
+            idempotencyStore.save(key, new IdempotencyStore.Entry(fingerprint, result));
+        } catch (IllegalStateException failure) {
+            if (stateStore.hasAtomicWrites()) throw failure;
+            System.err.println("Idempotency journal unavailable; action retained in state history");
+        }
         return result;
     }
 
-    private void saveIdempotencyBestEffort(
-            String scopeKey,
-            String fingerprint,
-            SubmitActionResult result,
-            SubmitActionCommand command
-    ) {
-        try {
-            idempotencyStore.save(scopeKey, new IdempotencyStore.Entry(fingerprint, result));
-        } catch (IllegalStateException persistenceFailure) {
-            System.err.printf(
-                    "{\"event\":\"idempotency_persist_failed\",\"matchId\":\"%s\",\"actorId\":\"%s\",\"message\":\"%s\"}%n",
-                    safeLogValue(command.matchId()), safeLogValue(command.actorId()), safeLogValue(persistenceFailure.getMessage())
-            );
+    private static MatchRuntimeState reconcile(MatchRuntimeState state) {
+        List<String> guessers = MastermindBoardRules.guessers(state);
+        if (!guessers.isEmpty() && guessers.stream().allMatch(id -> MastermindBoardRules.hasActed(state, id, SubmitActionCommand.PLAY_GUESS))
+                && MastermindBoardRules.feedbackGivers(state).stream().allMatch(id -> MastermindBoardRules.hasActed(state, id, SubmitActionCommand.SEND_FEEDBACK))) {
+            return reconcile(state.completeCurrentRound());
         }
+        String winner = MastermindBoardRules.result(state);
+        boolean abandoned = state.actionLog().stream().anyMatch(action -> SubmitActionCommand.ABANDON.equals(action.actionType()));
+        String status;
+        if (abandoned || MastermindBoardRules.guessers(state).isEmpty()) status = MatchRuntimeState.FINISHED;
+        else status = MastermindBoardRules.guessers(state).stream().allMatch(id ->
+                MastermindBoardRules.hasActed(state, id, SubmitActionCommand.PLAY_GUESS))
+                ? MatchRuntimeState.WAITING_FEEDBACK : MatchRuntimeState.WAITING_GUESS;
+        return state.withBoardResult(status, winner);
     }
 
-    private static boolean isReplayOfRecordedAction(MatchRuntimeState state, SubmitActionCommand command) {
-        if (command.expectedVersion() >= state.version()) {
-            return false;
-        }
-        return state.actionLog().stream().anyMatch(record ->
-                record.version() > command.expectedVersion()
-                        && command.actorId().equals(record.actorId())
-                        && command.actionType().equals(record.actionType())
-                        && Objects.equals(command.payload(), record.guess())
-                        && Objects.equals(command.feedback(), record.feedback()));
-    }
-    private static boolean hasRequestedRematch(MatchRuntimeState state, String actorId) {
-        return state.actionLog().stream().anyMatch(record ->
-                SubmitActionCommand.REQUEST_REMATCH.equals(record.actionType()) && actorId.equals(record.actorId()));
+    private static boolean hasAction(MatchRuntimeState state, String actor, String type) {
+        return state.actionLog().stream().anyMatch(action -> actor.equals(action.actorId()) && type.equals(action.actionType()));
     }
 
-    private static String roundResult(MatchRuntimeState state, SubmitActionCommand lastFeedback) {
-        List<MatchActionRecord> current = state.actionLog().stream()
-                .filter(record -> SubmitActionCommand.SEND_FEEDBACK.equals(record.actionType()))
-                .skip((long) state.turnNumber() * state.actorOrder().size()).toList();
-        String firstWinner = null;
-        boolean both = false;
-        for (MatchActionRecord record : current) {
-            if (blackPegs(record.feedback()) == 4) {
-                String solver = state.actorOrder().stream().filter(id -> !id.equals(record.actorId())).findFirst().orElse(null);
-                if (firstWinner != null && !firstWinner.equals(solver)) both = true;
-                else firstWinner = solver;
-            }
-        }
-        if (blackPegs(lastFeedback.feedback()) == 4) {
-            String solver = state.actorOrder().stream().filter(id -> !id.equals(lastFeedback.actorId())).findFirst().orElse(null);
-            if (firstWinner != null && !firstWinner.equals(solver)) both = true;
-            else firstWinner = solver;
-        }
-        return both ? "DRAW" : firstWinner;
-    }
-
-    private static int blackPegs(String raw) {
-        try {
-            JsonNode node = JSON.readTree(raw);
-            int black = node.path("bienPlaces").asInt(-1);
-            int white = node.path("malPlaces").asInt(-1);
-            if (black < 0 || white < 0 || black + white > 4) throw new IllegalStateException("INVALID_FEEDBACK");
-            return black;
-        } catch (java.io.IOException e) {
-            throw new IllegalStateException("INVALID_FEEDBACK", e);
-        }
-    }
-    private static String safeLogValue(String value) {
-        return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-    private void emit(List<String> emitted, GameEvent event) {
-        emitted.add(event.name());
-        eventSink.publish(event);
-    }
-
-    private static boolean hasActedThisRound(MatchRuntimeState state, String actorId, String actionType) {
-        return state.actionLog().stream()
-                .filter(record -> actionType.equals(record.actionType()) && actorId.equals(record.actorId()))
-                .count() > state.turnNumber();
-    }
-    private static boolean hasReadySecret(MatchRuntimeState state, String actorId) {
-        return state.actionLog().stream()
-                .anyMatch(record -> SubmitActionCommand.READY_SECRET.equals(record.actionType()) && actorId.equals(record.actorId()));
+    private static void requireState(MatchRuntimeState state, String required, String code) {
+        if (!required.equals(state.status())) throw new IllegalStateException(code);
     }
 }
