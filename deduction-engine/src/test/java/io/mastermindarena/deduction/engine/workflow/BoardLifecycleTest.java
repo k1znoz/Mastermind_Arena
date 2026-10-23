@@ -2,6 +2,7 @@ package io.mastermindarena.deduction.engine.workflow;
 
 import io.mastermindarena.deduction.api.submitaction.MatchStateHttpMapper;
 import io.mastermindarena.deduction.infrastructure.file.FilePersistenceCodec;
+import io.mastermindarena.deduction.infrastructure.jdbc.BoardPersistenceCodec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +20,24 @@ class BoardLifecycleTest {
 
     @BeforeEach void create() { store.save(new MatchRuntimeState("board", List.of("p1", "p2"))); }
 
+    @Test void embeddedJsonRejectsDuplicateKeysAndTrailingDocumentsWithExistingCodes() {
+        for (String raw : List.of(CODE + " null", CODE + " []")) {
+            assertEquals("INVALID_CODE", assertThrows(IllegalStateException.class,
+                    () -> MastermindBoardRules.validateCode(raw)).getMessage());
+        }
+        for (String raw : List.of(ZERO + " {}", "{\"bienPlaces\":4,\"bienPlaces\":0,\"malPlaces\":0}")) {
+            assertEquals("INVALID_FEEDBACK", assertThrows(IllegalStateException.class,
+                    () -> MastermindBoardRules.blackPegs(raw)).getMessage());
+        }
+        for (String raw : List.of("{\"feedbackVersion\":1} null", "{\"feedbackVersion\":2,\"feedbackVersion\":1}")) {
+            assertEquals("INVALID_FEEDBACK_TARGET", assertThrows(IllegalStateException.class,
+                    () -> MastermindBoardRules.feedbackTarget(raw)).getMessage());
+        }
+        MastermindBoardRules.validateCode(" \n" + CODE + " \t");
+        assertEquals(0, MastermindBoardRules.blackPegs(ZERO));
+        assertEquals(1, MastermindBoardRules.feedbackTarget("{\"feedbackVersion\":1}"));
+    }
+
     @Test void unlimitedRoundsRetainSecretsAndAllActions() {
         ready();
         for (int round = 0; round < 30; round++) {
@@ -32,6 +51,7 @@ class BoardLifecycleTest {
         assertEquals(122, state.actionLog().size());
         assertEquals(List.of("A", "B", "E", "F"), MatchStateHttpMapper.fromRuntimeState(state, "p1").visibleSecretCode());
         assertEquals(state, FilePersistenceCodec.deserializeMatchRuntimeState(FilePersistenceCodec.serializeMatchRuntimeState(state)));
+        assertEquals(state, BoardPersistenceCodec.decodeState(BoardPersistenceCodec.encodeState(state)));
     }
 
     @Test void loserContinuesWithoutChangingTheDuelPoint() {

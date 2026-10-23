@@ -1,13 +1,5 @@
-import { buildUrl, readErrorCode, safeJsonParse, fetchWithTimeout } from './httpClientUtils'
-
-/**
- * @typedef {{
- *  code?: string,
- *  rejectionOrigin?: string,
- *  version?: number,
- *  status?: string
- * }} SubmitActionErrorBody
- */
+import { buildUrl, requestJson, assertAuthConfig } from './httpClientUtils.js'
+import { validateSubmitResponse, validateSubmitError } from './responseContract.js'
 
 /**
  * @param {string} baseUrl
@@ -31,37 +23,14 @@ function createIdempotencyKey() {
   return `idem-${Date.now()}-${random}`
 }
 
-/** @param {string} headerName @param {string} apiKeyValue */
-function assertAuthConfig(headerName, apiKeyValue) {
-  if (!headerName || !String(headerName).trim()) {
-    throw new Error('CLIENT:API_KEY_HEADER_MISSING')
-  }
-
-  const safeApiKey = String(apiKeyValue ?? '').trim()
-  if (!safeApiKey) {
-    throw new Error('CLIENT:API_KEY_MISSING')
-  }
-
-  const weakKeys = new Set([
-    'dev-submit-action-key',
-    'dev-local-key-123',
-    'change-me-dev-key',
-    'change-me-api-key'
-  ])
-
-  if (weakKeys.has(safeApiKey)) {
-    throw new Error('CLIENT:API_KEY_WEAK_DEFAULT')
-  }
-}
-
 /** @param {*} [config] */
 export function createSubmitActionClient(config = {}) {
   const safeConfig = /** @type {Record<string, any>} */ (config ?? {})
-  const baseUrl = safeConfig.baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? ''
-  const path = resolveSubmitPath(baseUrl, safeConfig.path ?? import.meta.env.VITE_SUBMIT_ACTION_PATH)
-  const apiKeyHeaderName = safeConfig.apiKeyHeaderName ?? import.meta.env.VITE_API_KEY_HEADER ?? 'X-API-Key'
-  const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env.VITE_API_KEY ?? ''
-  const requestIdHeaderName = safeConfig.requestIdHeaderName ?? import.meta.env.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
+  const baseUrl = safeConfig.baseUrl ?? import.meta.env?.VITE_API_BASE_URL ?? ''
+  const path = resolveSubmitPath(baseUrl, safeConfig.path ?? import.meta.env?.VITE_SUBMIT_ACTION_PATH)
+  const apiKeyHeaderName = safeConfig.apiKeyHeaderName ?? import.meta.env?.VITE_API_KEY_HEADER ?? 'X-API-Key'
+  const apiKeyValue = safeConfig.apiKeyValue ?? import.meta.env?.VITE_API_KEY ?? ''
+  const requestIdHeaderName = safeConfig.requestIdHeaderName ?? import.meta.env?.VITE_REQUEST_ID_HEADER ?? 'X-Request-Id'
   const roomToken = safeConfig.roomToken ?? ''
 
   assertAuthConfig(apiKeyHeaderName, apiKeyValue)
@@ -73,7 +42,9 @@ export function createSubmitActionClient(config = {}) {
     matchId,
     actorId,
     expectedVersion,
-    actionPayload
+    actionPayload,
+    idempotencyKey = createIdempotencyKey(),
+    signal
   }) {
     if (!matchId) {
       throw new Error('CLIENT:INVALID_MATCH_ID')
@@ -89,10 +60,10 @@ export function createSubmitActionClient(config = {}) {
     }
 
     const requestId = createIdempotencyKey()
-    const idempotencyKey = createIdempotencyKey()
 
-    const response = await fetchWithTimeout(endpoint, {
+    const { response, body } = await requestJson(endpoint, {
       method: 'POST',
+      signal,
       headers: {
         'Content-Type': 'application/json',
         [apiKeyHeaderName]: apiKeyValue,
@@ -108,37 +79,16 @@ export function createSubmitActionClient(config = {}) {
       })
     })
 
-    const rawText = await response.text()
-    const body = /** @type {SubmitActionErrorBody | null} */ (safeJsonParse(rawText))
 
     if (!response.ok) {
-      const rejectionCode = readErrorCode(body, 'HTTP_ERROR')
-      const rejectionOrigin = body && typeof body === 'object' && typeof body.rejectionOrigin === 'string'
-        ? body.rejectionOrigin
-        : 'HTTP'
-      const error = new Error(`${rejectionOrigin}:${rejectionCode}`)
-      if (body && typeof body === 'object') {
-        if (typeof body.version === 'number' && Number.isFinite(body.version)) {
-          // @ts-ignore attach backend state for targeted recovery in the app layer
-          error.version = body.version
-        }
-        if (typeof body.status === 'string' && body.status) {
-          // @ts-ignore attach backend state for targeted recovery in the app layer
-          error.matchStatus = body.status
-        }
+      const metadata = validateSubmitError(body, matchId)
+      if (metadata.code === 'VERSION_CONFLICT' && (response.status !== 409 || metadata.rejectionOrigin !== 'ENGINE')) {
+        throw new Error('HTTP:INVALID_ERROR_RESPONSE')
       }
-      // @ts-ignore attach structured error metadata for targeted recovery in the app layer
-      error.code = rejectionCode
-      // @ts-ignore attach structured error metadata for targeted recovery in the app layer
-      error.rejectionOrigin = rejectionOrigin
-      throw error
+      throw Object.assign(new Error(`${metadata.rejectionOrigin}:${metadata.code}`), metadata)
     }
 
-    if (!body || typeof body !== 'object') {
-      throw new Error('HTTP:INVALID_RESPONSE_BODY')
-    }
-
-    return /** @type {any} */ (body)
+    return validateSubmitResponse(body, matchId, expectedVersion)
   }
 
   return {

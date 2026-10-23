@@ -22,5 +22,7 @@
   label { font-size:14px; }
   input { width:100%; min-height:48px; padding:12px; border:1px solid var(--line); background:var(--panel-strong); color:var(--text); font-size:16px; }
   p { font-size:13px; color:var(--muted); line-height:1.5; margin:0; }
-  button { justify-self:start; min-height:44px; padding:10px 16px; color:var(--primary-soft); border:1px solid var(--line); background:var(--panel-strong); cursor:pointer; }
+  button { justify-self:start; min-height:44px; padding:10px 16px; color:var(--primary-soft); border:1px solid var(--line); background:var(--panel-strong); cursor:pointer; font:500 13px Inter,sans-serif; }
+
+.error { color:var(--error); }
 </style>

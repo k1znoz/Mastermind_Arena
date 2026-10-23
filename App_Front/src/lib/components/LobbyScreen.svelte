@@ -62,7 +62,7 @@
   .lobby-header span, h2, label span, .room-table-head { font:11px "JetBrains Mono",monospace; letter-spacing:.08em; color:var(--primary); }
   h1 { margin:8px 0 4px; font:700 clamp(28px,5vw,40px) "Space Grotesk",sans-serif; }
   p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
-  button { min-height:34px; padding:6px 10px; border:1px solid var(--line-soft); background:transparent; color:var(--text); cursor:pointer; font:10px "JetBrains Mono",monospace; }
+  button { min-height:44px; padding:6px 10px; border:1px solid var(--line-soft); background:transparent; color:var(--text); cursor:pointer; font:500 13px Inter,sans-serif; }
   button:disabled { opacity:.4; cursor:default; }
   .lobby-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:12px; }
   .room-list,.create-room { min-width:0; padding:16px; border:1px solid var(--line); background:var(--panel); }
@@ -79,8 +79,8 @@
   .create-room h2 { margin:0; }
   label { display:grid; gap:6px; }
   label span { color:var(--muted); font-size:10px; }
-  input { width:100%; min-height:40px; padding:8px; border:1px solid var(--line-soft); background:var(--panel-strong); color:var(--text); font-size:13px; }
-  .create-button { border-color:var(--primary); background:rgba(0,219,233,.12); color:var(--primary-soft); min-height:40px; }
+  input { width:100%; min-height:40px; padding:8px; border:1px solid var(--line-soft); background:var(--panel-strong); color:var(--text); font-size:16px; min-height:48px; }
+  .create-button { border-color:var(--primary); background:rgba(0,219,233,.12); color:var(--primary-soft); min-height:44px; }
   .room-code-entry { display:flex; gap:8px; align-items:end; padding:10px; background:rgba(255,171,243,.06); }
   .room-code-entry label { flex:1; }
   .room-code-entry button { border-color:var(--secondary); color:var(--secondary); }
@@ -91,6 +91,14 @@
     .lobby-grid { grid-template-columns:1fr; }
     .room-list,.create-room { padding:12px; }
     .room-table-head,.room-table-row { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 50px 70px; gap:5px; }
-    .room-table-row button { font-size:8px; padding:4px; }
+    .room-table-row button { font-size:13px; padding:4px; }
+  }
+  .lobby-header,.room-list,.create-room { border-radius:16px; }
+  @media(max-width:600px) {
+    .room-table-head { display:none; }
+    .room-table-row { grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:16px 0; }
+    .room-table-row strong { grid-column:1; font-size:14px; }
+    .room-table-row span { grid-column:1; font-size:13px; }
+    .room-table-row button { grid-column:2; grid-row:1 / span 3; padding:10px; font-size:12px; }
   }
 </style>

@@ -2,6 +2,8 @@ package io.mastermindarena.deduction.engine.workflow;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +50,8 @@ public final class MastermindBoardRules {
 
     private static JsonNode read(String raw, String error) {
         try {
-            JsonNode node = raw == null ? null : JSON.readTree(raw);
+            JsonNode node = raw == null ? null : JSON.reader().with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                    .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(raw);
             if (node == null) throw new IllegalStateException(error);
             return node;
         } catch (IOException failure) {

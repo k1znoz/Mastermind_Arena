@@ -1,32 +1,16 @@
 <script>
   import { createEventDispatcher } from 'svelte'
   import CodePegs from './CodePegs.svelte'
-  export let matchState = null
-  export let isMyTurn = false
-  export let actorId = 'p1'
-  export let hasPlayerReady = false
-  export let hasOpponentReady = false
-  export let hasSecretSet = false
-  export let opponentName = 'Adversaire'
-  export let opponentStepDone = false
-  export let setupSequence = []
-  export let setupSlots = []
-  export let selectedSetupSlot = 0
-  export let draftGuess = []
-  export let selectedGuessSlot = 0
-  export let guessSequence = []
-  export let symbolPalette = []
-  export let isSecretSubmitting = false
-  export let isGuessSubmitting = false
-  export let isBackendReady = false
-  export let canSubmitSecret = false
-  export let secretButtonLabel = ''
-  export let canSubmitGuess = false
-  export let sendButtonLabel = ''
-  export let opponentActorId = null
-  export let asSymbols = () => []
-  export let getSymbolVisual = () => ({ token:'Vide', toneClass:'symbol-tone-muted' })
-  export let busy = false
+  import { deriveGameView } from '../state/gameView.js'
+  import { asSymbols } from '../utils/presentation.js'
+  import { getSymbolVisual } from '../utils/symbolVisuals.js'
+  export let view = deriveGameView()
+  $: ({ matchState, isMyTurn, actorId, hasOpponentReady, hasSecretSet, opponentName, opponentStepDone,
+    setupSequence, setupSlots, selectedSetupSlot, draftGuess, selectedGuessSlot, guessSequence, symbolPalette,
+    isSecretSubmitting, isGuessSubmitting, isBackendReady, canSubmitSecret, secretButtonLabel, canSubmitGuess,
+    sendButtonLabel, busy, turns, round, phaseKey, feedbackKey, preparation, finished, ownGuesses,
+    opponentGuesses, given, received, canRespond, mySolved, theirSolved, result, currentOpponentGuess,
+    myRematchAsked, theirRematchAsked, notices } = view)
   const dispatch = createEventDispatcher()
   let selectedBoard = 'own'
   let lastPhase = ''
@@ -37,36 +21,19 @@
   let editBlack = 0
   let editWhite = 0
   let confirmAbandon = false
-  $: turns = matchState?.turns ?? []
-  $: round = matchState?.roundNumber ?? 0
-  $: phaseKey = `${matchState?.matchId}:${matchState?.gameNumber}:${matchState?.state}`
   $: if (phaseKey !== lastPhase) {
     selectedBoard = matchState?.state === 'WAITING_FEEDBACK' ? 'opponent' : 'own'
     // eslint-disable-next-line no-useless-assignment
     lastPhase = phaseKey
   }
-  $: feedbackKey = `${matchState?.matchId}:${matchState?.gameNumber}:${round}`
   $: if (feedbackKey !== resetKey) {
     black = 0; white = 0; editing = null
     // eslint-disable-next-line no-useless-assignment
     resetKey = feedbackKey
   }
-  $: preparation = matchState?.state === 'PREPARATION'
-  $: finished = matchState?.state === 'FINISHED'
-  $: ownGuesses = turns.filter(a => a.actionType === 'PLAY_GUESS' && a.actorId === actorId)
-  $: opponentGuesses = turns.filter(a => a.actionType === 'PLAY_GUESS' && a.actorId === opponentActorId)
-  $: given = turns.filter(a => a.actionType === 'SEND_FEEDBACK' && a.actorId === actorId)
-  $: received = turns.filter(a => a.actionType === 'SEND_FEEDBACK' && a.actorId === opponentActorId)
-  $: canRespond = isBackendReady && matchState?.state === 'WAITING_FEEDBACK' && (matchState?.requiredPlayers ?? []).includes(actorId) && !(matchState?.submittedPlayers ?? []).includes(actorId)
-  $: mySolved = (matchState?.solvedPlayers ?? []).includes(actorId)
-  $: theirSolved = (matchState?.solvedPlayers ?? []).includes(opponentActorId)
-  $: result = matchState?.winnerId === 'DRAW' ? 'Égalité dans le duel' : matchState?.winnerId === actorId ? 'Vous avez remporté le duel' : matchState?.winnerId ? `${opponentName} a remporté le duel` : ''
-  $: currentOpponentGuess = opponentGuesses.find(a => a.turnNumber === round + 1)
   $: rows = (selectedBoard === 'own' ? ownGuesses : opponentGuesses).slice().reverse()
   $: feedbackRows = selectedBoard === 'own' ? received : given
-  $: myRematchAsked = (matchState?.rematchRequestedPlayers ?? []).includes(actorId)
-  $: theirRematchAsked = (matchState?.rematchRequestedPlayers ?? []).includes(opponentActorId)
-  $: notices = turns.filter(a => ['CORRECT_FEEDBACK','CONTEST_FEEDBACK'].includes(a.actionType)).slice(-3).reverse()
+
 
   function adjust(field, amount, edit = false) {
     if (edit) {
@@ -100,7 +67,7 @@
       </div>
       {#if !hasSecretSet}
         <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={!isBackendReady || busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedSetupSlot + 1} du code secret`} on:click={() => dispatch('choosesetupsymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
-        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.length} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret || busy} on:click={() => dispatch('submitsecret')}>{isSecretSubmitting ? 'Envoi…' : secretButtonLabel}</button></div>
+        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.some(Boolean)} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret || busy} on:click={() => dispatch('submitsecret')}>{isSecretSubmitting ? 'Envoi…' : secretButtonLabel}</button></div>
       {:else}<p class="waiting-note">{hasOpponentReady ? 'Les deux codes sont prêts.' : `En attente du code de ${opponentName}.`}</p>{/if}
     </section>
   {:else}
@@ -109,7 +76,7 @@
         <h2>Votre essai · tour {round + 1}</h2><p>Choisissez une case, puis sa couleur.</p>
         <div class="slot-picker">{#each Array(4) as _, index}<button type="button" class:selected={selectedGuessSlot === index} disabled={busy} aria-pressed={selectedGuessSlot === index} aria-label={`Case ${index + 1}, ${getSymbolVisual(draftGuess[index]).token}`} on:click={() => dispatch('selectguessslot',{index})}><span class="color-dot {getSymbolVisual(draftGuess[index]).toneClass}"></span><small>{index + 1}</small></button>{/each}</div>
         <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedGuessSlot + 1} de l’essai`} on:click={() => dispatch('chooseguesssymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
-        <div class="action-buttons"><button type="button" disabled={busy || !guessSequence.length} on:click={() => dispatch('clearguess')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitGuess || busy} on:click={() => dispatch('submitguess')}>{isGuessSubmitting ? 'Envoi…' : sendButtonLabel}</button></div>
+        <div class="action-buttons"><button type="button" disabled={busy || !guessSequence.some(Boolean)} on:click={() => dispatch('clearguess')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitGuess || busy} on:click={() => dispatch('submitguess')}>{isGuessSubmitting ? 'Envoi…' : sendButtonLabel}</button></div>
       </section>
     {:else if canRespond}
       <section class="action-card response-panel">
@@ -157,7 +124,7 @@
   {#if finished}<button class="primary-action" type="button" disabled={busy || myRematchAsked || !isBackendReady} on:click={() => dispatch('requestrematch')}>{myRematchAsked ? 'Revanche proposée · en attente' : theirRematchAsked ? 'Accepter la revanche' : 'Proposer une revanche'}</button>
   {:else if !preparation}<button class="subtle abandon" type="button" disabled={!isBackendReady || busy} on:click={() => confirmAbandon = true}>Abandonner la manche</button>{/if}
   {#if confirmAbandon}<div class="abandon-confirm" role="alert"><strong>Abandonner cette manche ?</strong><p>La recherche s’arrêtera et les codes seront révélés. Le résultat du duel sera conservé s’il est déjà attribué.</p><div class="action-buttons"><button type="button" on:click={() => confirmAbandon = false}>Continuer à jouer</button><button type="button" disabled={busy} on:click={() => { dispatch('abandon'); confirmAbandon = false }}>Confirmer l’abandon</button></div></div>{/if}
-  <span class="sr-only">{hasPlayerReady ? 'Votre code est prêt.' : ''}</span>
+  <span class="sr-only">{hasSecretSet ? 'Votre code est prêt.' : ''}</span>
 </section>
 
 <style>
@@ -188,7 +155,7 @@
   .index-dot { width:12px; height:12px; border:1px solid var(--line-soft); border-radius:50%; display:block; background:var(--line-soft); }
   .index-dot.black { background:#141414; border-color:#888; }
   .index-dot.white { background:#fff; border-color:#888; }
-  .hint { font-size:13px; }
+  .hint { font-size:13px; font-style:italic; }
   .board-tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .board-tabs .active { border-color:var(--primary); background:var(--accent-wash); }
   .board-tabs small { margin-left:6px; color:var(--muted); }
@@ -213,4 +180,5 @@
   .abandon-confirm { border-color:var(--error); }
   .abandon-confirm strong { display:block; margin-bottom:8px; }
   @media(max-width:420px) { .action-card { padding:16px; } .palette-grid button { gap:6px; } .attempt-content { gap:8px; } .comparison { gap:18px; } }
+
 </style>

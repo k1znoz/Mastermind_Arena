@@ -9,7 +9,7 @@ export default [
   js.configs.recommended,
   ...svelte.configs['flat/recommended'],
   {
-    files: ['src/**/*.{js,svelte}', '*.js'],
+    files: ['src/**/*.{js,svelte}', 'tests/**/*.js', '*.js'],
     languageOptions: {
       globals: {
         ...globals.browser,

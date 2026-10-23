@@ -1,7 +1,6 @@
 package io.mastermindarena.deduction.infrastructure.jdbc;
 
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
-import io.mastermindarena.deduction.infrastructure.file.FilePersistenceCodec;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -45,7 +44,7 @@ public final class JdbcRoomDirectory {
             try (PreparedStatement match = connection.prepareStatement(matchSql);
                  PreparedStatement room = connection.prepareStatement(roomSql)) {
                 match.setString(1, roomId);
-                match.setString(2, FilePersistenceCodec.serializeMatchRuntimeState(state));
+                match.setString(2, BoardPersistenceCodec.encodeState(state));
                 match.executeUpdate();
                 room.setString(1, roomId);
                 room.setString(2, name);

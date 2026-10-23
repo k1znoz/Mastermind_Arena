@@ -1,0 +1,20 @@
+{
+  "matchId": "contract-room",
+  "state": "PREPARATION",
+  "activePlayer": "p1",
+  "feedbackGiver": "p2",
+  "players": ["p1", "p2"],
+  "readyPlayers": [],
+  "turns": [],
+  "version": 0,
+  "visibleSecretCode": [],
+  "scores": {},
+  "winnerId": null,
+  "gameNumber": 1,
+  "submittedPlayers": [],
+  "rematchRequestedPlayers": [],
+  "roundNumber": 0,
+  "solvedPlayers": [],
+  "requiredPlayers": ["p1", "p2"],
+  "opponentSecretCode": []
+}

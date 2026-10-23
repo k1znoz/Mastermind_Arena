@@ -4,6 +4,8 @@ Validées avec le concepteur le 13 octobre 2026. Les réflexions initiales sur u
 
 ## Produit et livraison
 
+Décision du 14 octobre 2026 : les données actuelles sont jetables. La remise à zéro des parties est autorisée ; aucune conservation de leur historique ni compatibilité des anciens codes de partie n'est nécessaire pour la nouvelle version. Préparer et valider la reconstruction sur une base isolée avant l'opération distante. Cette décision ne dispense pas de protéger les parties créées après la nouvelle publication.
+
 - Jeu Mastermind indépendant ; une plateforme de jeux reste un projet futur.
 - Présentation au portfolio / diplôme CDA le 23 novembre 2026, avec une démonstration en ligne.
 - Deux projets Vercel distincts (front / backend), déployés depuis `main`. PostgreSQL est hébergé sur Supabase.

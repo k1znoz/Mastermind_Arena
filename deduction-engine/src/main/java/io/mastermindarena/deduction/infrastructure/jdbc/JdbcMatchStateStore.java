@@ -2,7 +2,6 @@ package io.mastermindarena.deduction.infrastructure.jdbc;
 
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
 import io.mastermindarena.deduction.engine.workflow.MatchStateStore;
-import io.mastermindarena.deduction.infrastructure.file.FilePersistenceCodec;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,7 +36,7 @@ public final class JdbcMatchStateStore implements MatchStateStore {
                 if (!resultSet.next()) {
                     return Optional.empty();
                 }
-                return Optional.of(FilePersistenceCodec.deserializeMatchRuntimeState(resultSet.getString(1)));
+                return Optional.of(BoardPersistenceCodec.decodeState(resultSet.getString(1)));
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to load match state", e);
@@ -46,7 +45,7 @@ public final class JdbcMatchStateStore implements MatchStateStore {
 
     @Override
     public void save(MatchRuntimeState state) {
-        String payload = FilePersistenceCodec.serializeMatchRuntimeState(state);
+        String payload = BoardPersistenceCodec.encodeState(state);
         if (context.isPostgresUrl()) {
             savePostgres(state.matchId(), payload);
             return;

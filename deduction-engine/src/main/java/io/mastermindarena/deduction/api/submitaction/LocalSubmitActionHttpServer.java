@@ -1,7 +1,6 @@
 package io.mastermindarena.deduction.api.submitaction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationService;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
@@ -14,25 +13,15 @@ import io.mastermindarena.deduction.infrastructure.jdbc.JdbcSchemaMigrator;
 import io.mastermindarena.deduction.infrastructure.jdbc.JdbcWorkflowEventSink;
 import io.mastermindarena.deduction.api.websocket.runtime.WebSocketBroadcastService;
 import io.mastermindarena.deduction.api.websocket.runtime.WebSocketSessionRegistry;
-
+import io.mastermindarena.deduction.api.submitaction.HttpExchangeSupport.CorsPolicy;
+import io.mastermindarena.deduction.api.submitaction.HttpObservability.RuntimeMetrics;
+import io.mastermindarena.deduction.api.submitaction.HttpObservability.RuntimeMetricsSnapshot;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import static io.mastermindarena.deduction.api.submitaction.HttpExchangeSupport.createCorsPolicy;
+import static io.mastermindarena.deduction.api.submitaction.HttpObservability.logStructured;
 
 public final class LocalSubmitActionHttpServer implements AutoCloseable {
     private final HttpServer server;
@@ -43,22 +32,13 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         this.metrics = metrics;
     }
 
-    private record CorsPolicy(
-            Set<String> allowedOrigins,
-            boolean wildcardOrigin,
-            String allowMethods,
-            String allowHeaders,
-            int maxAgeSeconds
-    ) {
-    }
-
     public static LocalSubmitActionHttpServer create(LocalSubmitActionRuntimeConfig config) {
         Objects.requireNonNull(config, "config is required");
 
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(config.port()), 0);
             ObjectMapper objectMapper = new ObjectMapper();
-                RuntimeMetrics metrics = new RuntimeMetrics();
+            RuntimeMetrics metrics = new RuntimeMetrics();
             JdbcPersistenceContext persistenceContext = new JdbcPersistenceContext(
                     config.dbUrl(),
                     config.dbUser(),
@@ -78,10 +58,10 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     new JdbcIdempotencyStore(persistenceContext)
             );
             LocalSubmitActionEndpoint endpoint = new LocalSubmitActionEndpoint(new SubmitActionApplicationService(orchestrator));
-                LocalMatchStateEndpoint matchStateEndpoint = new LocalMatchStateEndpoint(stateStore);
-                CorsPolicy corsPolicy = createCorsPolicy(config);
+            LocalMatchStateEndpoint matchStateEndpoint = new LocalMatchStateEndpoint(stateStore);
+            CorsPolicy corsPolicy = createCorsPolicy(config);
 
-            server.createContext(config.path(), exchange -> handleSubmitAction(
+            server.createContext(config.path(), exchange -> GameHttpHandlers.handleSubmitAction(
                     exchange,
                     endpoint,
                     rooms,
@@ -92,7 +72,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     corsPolicy,
                     metrics
             ));
-                server.createContext(LocalMatchStateEndpoint.PATH, exchange -> handleMatchState(
+            server.createContext(LocalMatchStateEndpoint.PATH, exchange -> GameHttpHandlers.handleMatchState(
                     exchange,
                     matchStateEndpoint,
                     rooms,
@@ -102,202 +82,15 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     config.requestIdHeaderName(),
                     corsPolicy,
                     metrics
-                ));
-                server.createContext("/local/rooms", exchange -> handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
-                server.createContext("/local/rooms/join", exchange -> handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
-                server.createContext("/local/rooms/resume", exchange -> handleRoomResume(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
-                server.createContext("/health", exchange -> handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
+            ));
+            server.createContext("/local/rooms", exchange -> RoomHttpHandlers.handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
+            server.createContext("/local/rooms/join", exchange -> RoomHttpHandlers.handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
+            server.createContext("/local/rooms/resume", exchange -> RoomHttpHandlers.handleRoomResume(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
+            server.createContext("/health", exchange -> GameHttpHandlers.handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
             return new LocalSubmitActionHttpServer(server, metrics);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create local SubmitAction HTTP server", e);
-        }
-    }
-
-    private static void handleSubmitAction(
-            HttpExchange exchange,
-            LocalSubmitActionEndpoint endpoint,
-            JdbcRoomDirectory rooms,
-            ObjectMapper objectMapper,
-            String apiKeyHeaderName,
-            String apiKeyValue,
-            String requestIdHeaderName,
-                CorsPolicy corsPolicy,
-            RuntimeMetrics metrics
-    ) throws IOException {
-        long startNanos = System.nanoTime();
-        String requestId = resolveRequestId(exchange, requestIdHeaderName);
-        setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
-        try (exchange) {
-            try {
-            String path = exchange.getRequestURI().getPath();
-            String method = exchange.getRequestMethod();
-            if (!applyCors(exchange, corsPolicy)) {
-                logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(403, elapsedMillis(startNanos)));
-                writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
-                return;
-            }
-            if ("OPTIONS".equalsIgnoreCase(method)) {
-                exchange.sendResponseHeaders(204, -1);
-                return;
-            }
-            if (!LocalSubmitActionEndpoint.METHOD.equalsIgnoreCase(exchange.getRequestMethod())) {
-                logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(405, elapsedMillis(startNanos)));
-                writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
-                return;
-            }
-
-            String providedApiKey = exchange.getRequestHeaders().getFirst(apiKeyHeaderName);
-            if (!secureEquals(apiKeyValue, providedApiKey)) {
-                logStructured("request_rejected", path, method, 401, "UNAUTHORIZED", requestId, elapsedMillis(startNanos), metrics.record(401, elapsedMillis(startNanos)));
-                writeJson(exchange, objectMapper, 401, new ErrorBody("UNAUTHORIZED"));
-                return;
-            }
-
-            SubmitActionHttpRequest request = readBody(exchange, objectMapper, SubmitActionHttpRequest.class);
-            if (!rooms.authorize(request.matchId(), request.actorId(), exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
-                writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
-                return;
-            }
-            if (rooms.waitingForGuest(request.matchId())) {
-                writeJson(exchange, objectMapper, 409, new ErrorBody("ROOM_WAITING_FOR_PLAYER"));
-                return;
-            }
-            SubmitActionHttpResponse.Envelope response = endpoint.postSubmitAction(request);
-            long elapsedMillis = elapsedMillis(startNanos);
-            logStructured(
-                    "submit_action",
-                    path,
-                    method,
-                    response.statusCode(),
-                    response.body().accepted() ? "ACCEPTED" : response.body().rejectionCode(),
-                    requestId,
-                    elapsedMillis,
-                    metrics.record(response.statusCode(), elapsedMillis)
-            );
-            writeJson(exchange, objectMapper, response.statusCode(), response.body());
-        } catch (RuntimeException ex) {
-            long elapsedMillis = elapsedMillis(startNanos);
-            int errorStatus = ex instanceof IllegalArgumentException ? 400 : 500;
-            String errorCode = ex instanceof IllegalArgumentException ? "INVALID_REQUEST" : "SERVER_ERROR";
-            logStructured(
-                    "request_rejected",
-                    exchange.getRequestURI().getPath(),
-                    exchange.getRequestMethod(),
-                    errorStatus,
-                    errorCode,
-                    requestId,
-                    elapsedMillis,
-                    metrics.record(errorStatus, elapsedMillis)
-            );
-            writeJson(exchange, objectMapper, errorStatus, new ErrorBody(errorCode));
-            }
-        }
-    }
-
-    private static void handleHealth(
-            HttpExchange exchange,
-            ObjectMapper objectMapper,
-            String requestIdHeaderName,
-                CorsPolicy corsPolicy,
-            RuntimeMetrics metrics
-    ) throws IOException {
-        long startNanos = System.nanoTime();
-        String requestId = resolveRequestId(exchange, requestIdHeaderName);
-        setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
-        try (exchange) {
-            String path = exchange.getRequestURI().getPath();
-            String method = exchange.getRequestMethod();
-            if (!applyCors(exchange, corsPolicy)) {
-                long elapsedMillis = elapsedMillis(startNanos);
-                logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(403, elapsedMillis));
-                writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
-                return;
-            }
-            if ("OPTIONS".equalsIgnoreCase(method)) {
-                exchange.sendResponseHeaders(204, -1);
-                return;
-            }
-            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-                long elapsedMillis = elapsedMillis(startNanos);
-                logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(405, elapsedMillis));
-                writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
-                return;
-            }
-
-            long elapsedMillis = elapsedMillis(startNanos);
-            RuntimeMetricsSnapshot snapshot = metrics.record(200, elapsedMillis);
-            logStructured("health", path, method, 200, "UP", requestId, elapsedMillis, snapshot);
-            writeJson(exchange, objectMapper, 200, new HealthBody("UP", snapshot.requestsOk(), snapshot.requestsKo(), snapshot.averageLatencyMs()));
-        }
-    }
-
-    private static void handleMatchState(
-            HttpExchange exchange,
-            LocalMatchStateEndpoint endpoint,
-            JdbcRoomDirectory rooms,
-            ObjectMapper objectMapper,
-            String apiKeyHeaderName,
-            String apiKeyValue,
-            String requestIdHeaderName,
-                CorsPolicy corsPolicy,
-            RuntimeMetrics metrics
-    ) throws IOException {
-        long startNanos = System.nanoTime();
-        String requestId = resolveRequestId(exchange, requestIdHeaderName);
-        setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
-        try (exchange) {
-            String path = exchange.getRequestURI().getPath();
-            String method = exchange.getRequestMethod();
-            if (!applyCors(exchange, corsPolicy)) {
-                long elapsedMillis = elapsedMillis(startNanos);
-                logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(403, elapsedMillis));
-                writeJson(exchange, objectMapper, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED"));
-                return;
-            }
-            if ("OPTIONS".equalsIgnoreCase(method)) {
-                exchange.sendResponseHeaders(204, -1);
-                return;
-            }
-            if (!LocalMatchStateEndpoint.METHOD.equalsIgnoreCase(method)) {
-                long elapsedMillis = elapsedMillis(startNanos);
-                logStructured("request_rejected", path, method, 405, "METHOD_NOT_ALLOWED", requestId, elapsedMillis, metrics.record(405, elapsedMillis));
-                writeJson(exchange, objectMapper, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
-                return;
-            }
-
-            String providedApiKey = exchange.getRequestHeaders().getFirst(apiKeyHeaderName);
-            if (!secureEquals(apiKeyValue, providedApiKey)) {
-                long elapsedMillis = elapsedMillis(startNanos);
-                logStructured("request_rejected", path, method, 401, "UNAUTHORIZED", requestId, elapsedMillis, metrics.record(401, elapsedMillis));
-                writeJson(exchange, objectMapper, 401, new ErrorBody("UNAUTHORIZED"));
-                return;
-            }
-
-            Map<String, String> queryParams = queryParams(exchange.getRequestURI().getRawQuery());
-            String matchId = queryParams.get("matchId");
-            String actorId = queryParams.get("actorId");
-            if (!rooms.authorize(matchId, actorId, exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
-                writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
-                return;
-            }
-            MatchStateHttpResponse.Envelope response = endpoint.getMatchState(matchId, actorId);
-            long elapsedMillis = elapsedMillis(startNanos);
-
-            if (response.statusCode() == 200) {
-                logStructured("match_state", path, method, 200, "FOUND", requestId, elapsedMillis, metrics.record(200, elapsedMillis));
-                writeJson(exchange, objectMapper, 200, response.body());
-                return;
-            }
-
-            if (response.statusCode() == 404) {
-                logStructured("request_rejected", path, method, 404, "MATCH_NOT_FOUND", requestId, elapsedMillis, metrics.record(404, elapsedMillis));
-                writeJson(exchange, objectMapper, 404, new ErrorBody("MATCH_NOT_FOUND"));
-                return;
-            }
-
-            logStructured("request_rejected", path, method, 400, "INVALID_MATCH_ID", requestId, elapsedMillis, metrics.record(400, elapsedMillis));
-            writeJson(exchange, objectMapper, 400, new ErrorBody("INVALID_MATCH_ID"));
         }
     }
 
@@ -338,140 +131,6 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             throw new IllegalStateException("Interrupted while initializing JDBC persistence", interrupted);
         }
     }
-    private record CreateRoomBody(String name, String pseudo, String accessCode) {}
-    private record JoinRoomBody(String roomId, String pseudo, String accessCode) {}
-    private record ResumeRoomBody(String recoveryCode) {}
-    private record RoomListBody(List<JdbcRoomDirectory.RoomInfo> rooms) {}
-
-    private static void handleRooms(
-            HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
-            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors
-    ) throws IOException {
-        String requestId = resolveRequestId(exchange, requestHeader);
-        setResponseRequestIdHeader(exchange, requestHeader, requestId);
-        try (exchange) {
-            if (!applyCors(exchange, cors)) { writeJson(exchange, json, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED")); return; }
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) { exchange.sendResponseHeaders(204, -1); return; }
-            if (!secureEquals(apiKey, exchange.getRequestHeaders().getFirst(apiHeader))) {
-                writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
-            }
-            try {
-                if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-                    String roomId = queryParams(exchange.getRequestURI().getRawQuery()).get("roomId");
-                    if (roomId == null || roomId.isBlank()) {
-                        writeJson(exchange, json, 200, new RoomListBody(rooms.waitingRooms()));
-                    } else {
-                        var info = rooms.findInfo(roomId);
-                        writeJson(exchange, json, info.isPresent() ? 200 : 404,
-                                info.<Object>map(value -> value).orElse(new ErrorBody("ROOM_NOT_FOUND")));
-                    }
-                } else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                    CreateRoomBody body = readBody(exchange, json, CreateRoomBody.class);
-                    writeJson(exchange, json, 201, rooms.create(body.name(), body.pseudo(), body.accessCode()));
-                } else {
-                    writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED"));
-                }
-            } catch (IllegalStateException e) {
-                writeRoomError(exchange, json, e, requestId);
-            } catch (RuntimeException e) {
-                writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
-            }
-        }
-    }
-
-    private static void handleRoomJoin(
-            HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
-            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors
-    ) throws IOException {
-        String requestId = resolveRequestId(exchange, requestHeader);
-        setResponseRequestIdHeader(exchange, requestHeader, requestId);
-        try (exchange) {
-            if (!applyCors(exchange, cors)) { writeJson(exchange, json, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED")); return; }
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) { exchange.sendResponseHeaders(204, -1); return; }
-            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED")); return;
-            }
-            if (!secureEquals(apiKey, exchange.getRequestHeaders().getFirst(apiHeader))) {
-                writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
-            }
-            try {
-                JoinRoomBody body = readBody(exchange, json, JoinRoomBody.class);
-                writeJson(exchange, json, 200, rooms.join(body.roomId(), body.pseudo(), body.accessCode()));
-            } catch (IllegalStateException e) {
-                writeRoomError(exchange, json, e, requestId);
-            } catch (RuntimeException e) {
-                writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
-            }
-        }
-    }
-
-    private static void writeRoomError(
-            HttpExchange exchange,
-            ObjectMapper json,
-            IllegalStateException e,
-            String requestId
-    ) throws IOException {
-        String code = e.getMessage();
-        int status = switch (code) {
-            case "ROOM_NOT_FOUND" -> 404;
-            case "ROOM_FULL", "ROOM_WAITING_FOR_PLAYER" -> 409;
-            case "ROOM_CODE_INVALID", "ROOM_RESUME_INVALID" -> 403;
-            case "ROOM_NAME_REQUIRED", "PSEUDO_REQUIRED", "FIELD_TOO_LONG" -> 400;
-            default -> 500;
-        };
-        if (status == 500) {
-            logRoomPersistenceFailure(code, requestId, e);
-        }
-        writeJson(exchange, json, status, new ErrorBody(status == 500 ? "ROOM_SERVER_ERROR" : code));
-    }
-
-    private static void handleRoomResume(HttpExchange exchange, JdbcRoomDirectory rooms, ObjectMapper json,
-            String apiHeader, String apiKey, String requestHeader, CorsPolicy cors) throws IOException {
-        String requestId = resolveRequestId(exchange, requestHeader);
-        setResponseRequestIdHeader(exchange, requestHeader, requestId);
-        try (exchange) {
-            if (!applyCors(exchange, cors)) { writeJson(exchange, json, 403, new ErrorBody("CORS_ORIGIN_NOT_ALLOWED")); return; }
-            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) { exchange.sendResponseHeaders(204, -1); return; }
-            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) { writeJson(exchange, json, 405, new ErrorBody("METHOD_NOT_ALLOWED")); return; }
-            if (!secureEquals(apiKey, exchange.getRequestHeaders().getFirst(apiHeader))) {
-                writeJson(exchange, json, 401, new ErrorBody("UNAUTHORIZED")); return;
-            }
-            try {
-                ResumeRoomBody body = readBody(exchange, json, ResumeRoomBody.class);
-                writeJson(exchange, json, 200, rooms.resume(body.recoveryCode()));
-            } catch (IllegalStateException failure) {
-                writeRoomError(exchange, json, failure, requestId);
-            } catch (IllegalArgumentException failure) {
-                writeJson(exchange, json, 400, new ErrorBody("INVALID_REQUEST"));
-            }
-        }
-    }
-
-    private static <T> T readBody(HttpExchange exchange, ObjectMapper json, Class<T> type) {
-        try {
-            byte[] bytes = exchange.getRequestBody().readNBytes(65_537);
-            if (bytes.length > 65_536) throw new IllegalArgumentException("Request body too large");
-            return json.readValue(bytes, type);
-        } catch (IOException failure) {
-            throw new IllegalArgumentException("Invalid JSON request", failure);
-        }
-    }
-
-    private static void logRoomPersistenceFailure(String code, String requestId, IllegalStateException failure) {
-        Throwable cause = failure.getCause();
-        String sqlState = cause instanceof SQLException sqlFailure ? sqlFailure.getSQLState() : "n/a";
-        System.err.println(String.format(Locale.ROOT,
-                "{\"event\":\"room_persistence_failure\",\"code\":\"%s\",\"requestId\":\"%s\",\"sqlState\":\"%s\"}",
-                escapeJson(code), escapeJson(requestId), escapeJson(sqlState)));
-    }
-    private static void writeJson(HttpExchange exchange, ObjectMapper objectMapper, int statusCode, Object body) throws IOException {
-        byte[] json = objectMapper.writeValueAsString(body).getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", "application/json");
-        exchange.sendResponseHeaders(statusCode, json.length);
-        try (OutputStream outputStream = exchange.getResponseBody()) {
-            outputStream.write(json);
-        }
-    }
 
     public void start() {
         server.start();
@@ -495,170 +154,4 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         stop();
     }
 
-    private record ErrorBody(String code) {
-    }
-
-    private record HealthBody(
-            String status,
-            long requestsOk,
-            long requestsKo,
-            long averageLatencyMs
-    ) {
-    }
-
-    private static void logStructured(
-            String event,
-            String path,
-            String method,
-            int statusCode,
-            String outcome,
-            String requestId,
-            long durationMs,
-            RuntimeMetricsSnapshot metrics
-    ) {
-        String escapedEvent = escapeJson(event);
-        String escapedPath = escapeJson(path);
-        String escapedMethod = escapeJson(method);
-        String escapedOutcome = escapeJson(outcome);
-        String escapedRequestId = escapeJson(requestId);
-        System.out.println(String.format(Locale.ROOT,
-                "{\"event\":\"%s\",\"path\":\"%s\",\"method\":\"%s\",\"statusCode\":%d,\"outcome\":\"%s\",\"requestId\":\"%s\",\"durationMs\":%d,\"requestsTotal\":%d,\"requestsOk\":%d,\"requestsKo\":%d,\"averageLatencyMs\":%d}",
-                escapedEvent,
-                escapedPath,
-                escapedMethod,
-                statusCode,
-                escapedOutcome,
-                escapedRequestId,
-                durationMs,
-                metrics.requestsTotal(),
-                metrics.requestsOk(),
-                metrics.requestsKo(),
-                metrics.averageLatencyMs()));
-    }
-
-    private static String resolveRequestId(HttpExchange exchange, String requestIdHeaderName) {
-        String provided = exchange.getRequestHeaders().getFirst(requestIdHeaderName);
-        if (provided == null || provided.isBlank()) {
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
-        }
-        return provided;
-    }
-
-    private static void setResponseRequestIdHeader(HttpExchange exchange, String requestIdHeaderName, String requestId) {
-        exchange.getResponseHeaders().set(requestIdHeaderName, requestId);
-    }
-
-    private static long elapsedMillis(long startNanos) {
-        return (System.nanoTime() - startNanos) / 1_000_000L;
-    }
-
-    private static String escapeJson(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    private static boolean secureEquals(String expected, String provided) {
-        if (provided == null) {
-            return false;
-        }
-        return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                provided.getBytes(StandardCharsets.UTF_8)
-        );
-    }
-
-    private static CorsPolicy createCorsPolicy(LocalSubmitActionRuntimeConfig config) {
-        String rawOrigins = config.corsAllowedOrigins();
-        boolean wildcard = rawOrigins.trim().equals("*");
-        Set<String> origins = wildcard
-                ? Set.of("*")
-                : Arrays.stream(rawOrigins.split(","))
-                .map(LocalSubmitActionHttpServer::normalizeOrigin)
-                .filter(value -> !value.isBlank())
-                .collect(Collectors.toUnmodifiableSet());
-
-        return new CorsPolicy(
-                origins,
-                wildcard,
-                config.corsAllowedMethods(),
-                config.corsAllowedHeaders(),
-                config.corsMaxAgeSeconds()
-        );
-    }
-
-    private static boolean applyCors(HttpExchange exchange, CorsPolicy policy) {
-        String requestOrigin = exchange.getRequestHeaders().getFirst("Origin");
-        if (requestOrigin == null || requestOrigin.isBlank()) {
-            return true;
-        }
-
-        boolean originAllowed = policy.wildcardOrigin() || policy.allowedOrigins().contains(normalizeOrigin(requestOrigin));
-        if (!originAllowed) {
-            return false;
-        }
-
-        String responseOrigin = policy.wildcardOrigin() ? "*" : requestOrigin;
-        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", responseOrigin);
-        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", policy.allowMethods());
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", policy.allowHeaders());
-        exchange.getResponseHeaders().set("Access-Control-Max-Age", Integer.toString(policy.maxAgeSeconds()));
-        exchange.getResponseHeaders().add("Vary", "Origin");
-        return true;
-    }
-
-    private static String normalizeOrigin(String origin) {
-        String normalized = origin.trim();
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
-    }
-
-    private static Map<String, String> queryParams(String rawQuery) {
-        if (rawQuery == null || rawQuery.isBlank()) {
-            return Map.of();
-        }
-
-        Map<String, String> params = new LinkedHashMap<>();
-        Arrays.stream(rawQuery.split("&"))
-                .filter(token -> !token.isBlank())
-                .forEach(token -> {
-                    String[] keyValue = token.split("=", 2);
-                    String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
-                    String value = keyValue.length > 1
-                            ? URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8)
-                            : "";
-                    params.put(key, value);
-                });
-
-        return Map.copyOf(params);
-    }
-
-    record RuntimeMetricsSnapshot(long requestsTotal, long requestsOk, long requestsKo, long averageLatencyMs) {
-    }
-
-    private static final class RuntimeMetrics {
-        private final AtomicLong requestsTotal = new AtomicLong();
-        private final AtomicLong requestsOk = new AtomicLong();
-        private final AtomicLong requestsKo = new AtomicLong();
-        private final AtomicLong latencyTotalMs = new AtomicLong();
-
-        RuntimeMetricsSnapshot record(int statusCode, long latencyMs) {
-            requestsTotal.incrementAndGet();
-            if (statusCode >= 200 && statusCode < 400) {
-                requestsOk.incrementAndGet();
-            } else {
-                requestsKo.incrementAndGet();
-            }
-            latencyTotalMs.addAndGet(Math.max(latencyMs, 0L));
-            return snapshot();
-        }
-
-        RuntimeMetricsSnapshot snapshot() {
-            long total = requestsTotal.get();
-            long ok = requestsOk.get();
-            long ko = requestsKo.get();
-            long avg = total == 0L ? 0L : latencyTotalMs.get() / total;
-            return new RuntimeMetricsSnapshot(total, ok, ko, avg);
-        }
-    }
 }

@@ -1,10 +1,8 @@
 <script>
+  import { asSymbols, asTimestamp, formatTimestamp } from '../utils/presentation.js'
   import CodePegs from './CodePegs.svelte'
   export let isPrototype = false
   export let historyRows = []
-  export let asSymbols = () => []
-  export let formatTimestamp = () => ''
-  export let asTimestamp = () => null
   export let onRefresh = () => {}
   const labels = { PLAY_GUESS:'Essai envoyé', SEND_FEEDBACK:'Indices donnés', CORRECT_FEEDBACK:'Indices corrigés', CONTEST_FEEDBACK:'Vérification demandée', ABANDON:'Abandon de la manche', REQUEST_REMATCH:'Revanche proposée' }
 </script>
