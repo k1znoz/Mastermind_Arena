@@ -10,14 +10,19 @@
 	import { deriveGameView } from './lib/state/gameView.js'
 	import { createPolling } from './lib/state/polling.js'
 	import { createRoomConnection } from './lib/state/roomConnection.js'
+	import { apiErrorText } from './lib/utils/apiErrorText.js'
 	import { sanitizeDebug } from './lib/utils/diagnostics.js'
 	import { createPhaseFocus, browserFocusSurface } from './lib/state/phaseFocus.js'
 	import TopBar from './lib/components/TopBar.svelte'
-	import BottomNav from './lib/components/BottomNav.svelte'
+	import DuelNav from './lib/components/DuelNav.svelte'
+	import Icon from './lib/components/Icon.svelte'
+	import userCircle from './lib/assets/tabler/user-circle.svg'
 
 	import PartieScreen from './lib/components/PartieScreen.svelte'
 	import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
 	import LobbyScreen from './lib/components/LobbyScreen.svelte'
+	import WaitingScreen from './lib/components/WaitingScreen.svelte'
+	import RecoveryScreen from './lib/components/RecoveryScreen.svelte'
 	import HistoryScreen from './lib/components/HistoryScreen.svelte'
 
 	import DebugDrawer from './lib/components/DebugDrawer.svelte'
@@ -44,6 +49,9 @@
 	let lastNotifiedVersion = null
 	let recoveryInput = ''
 	let recoveryError = ''
+	let recoveryReturnView = 'welcome'
+	let lobbyDraftName = ''
+	let lobbyDraftCode = ''
 
 	const debugEnabled = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
 
@@ -87,6 +95,28 @@
 
     function recoverRoom(event) { return roomConnection.recover(event.detail.code) }
 
+    function clearLobbyDraft() {
+        lobbyDraftName = ''
+        lobbyDraftCode = ''
+    }
+
+    function openRecovery() {
+        recoveryReturnView = view
+        phaseFocus.cancel()
+        roomConnection.invalidate()
+        recoveryError = ''
+        view = 'recovery'
+    }
+
+    async function closeRecovery() {
+        roomConnection.invalidate()
+        const destination = recoveryReturnView
+        view = destination
+        if (view === 'lobby') refreshRooms()
+        await tick()
+        if (view === destination) document.getElementById('open-recovery')?.focus()
+    }
+
     function continueWelcome() {
 		if (!playerName.trim()) return
 		playerName = playerName.trim()
@@ -97,6 +127,7 @@
 	}
 
 	function enterRoom(admission) {
+		clearLobbyDraft()
 		roomConnection.invalidate()
 		gameConnection.invalidate()
 		submitStatus = 'idle'
@@ -130,6 +161,7 @@
 
 	function resumeRoom() {
 		if (!hasSavedRoom) return
+		clearLobbyDraft()
 		phaseFocus.cancel()
 		roomConnection.invalidate()
 		view = roomToken && currentActorId === 'p1' && !roomInfo?.joined ? 'waiting' : 'game'
@@ -139,6 +171,7 @@
 	}
 
 	function returnToLobby() {
+		clearLobbyDraft()
 		phaseFocus.cancel()
 		roomConnection.invalidate()
 		view = 'lobby'
@@ -243,6 +276,7 @@
         }
     })
     function returnToWelcome() {
+        clearLobbyDraft()
         phaseFocus.cancel()
         roomConnection.invalidate()
         view = 'welcome'
@@ -267,14 +301,14 @@
         },
         onSync: (status, error) => {
             syncStatus = status
-            syncMessage = error instanceof Error ? error.message : ''
+            syncMessage = status === 'error' ? apiErrorText(error, 'sync') : ''
         },
         onSubmit: (status, action, error) => {
             submitStatus = status
             pendingActionType = status === 'loading' ? action : ''
-            submitError = error instanceof Error ? error.message : ''
+            submitError = status === 'error' ? apiErrorText(error, 'submit') : ''
             if (status === 'success') openToast('success', 'Action envoyée')
-            if (status === 'error') openToast('error', submitError)
+            if (status === 'error' && submitError) openToast('error', submitError)
         }
     })
     function refreshMatchState() { return gameConnection.refresh() }
@@ -432,31 +466,33 @@
 	})
 </script>
 
-<div class="app-root" class:compact-board={view === 'game' && activeTab === 'partie'}>
+<div class="app-root" class:compact-board={view === 'game' && activeTab === 'partie'} class:arrival-view={view !== 'game'} class:duel-view={view === 'game'}>
 
-	<TopBar compact={view === 'game' && activeTab === 'partie'} {debugEnabled} {theme} on:theme={toggleTheme} homeAvailable={view === 'game' || view === 'waiting'} on:home={returnToLobby} on:opendebug={() => showDebugDrawer = true} />
+	<TopBar arrival={view !== 'game'} duel={view === 'game'} {debugEnabled} {theme} on:theme={toggleTheme} homeAvailable={view === 'game' || view === 'waiting'} on:home={returnToLobby} on:opendebug={() => showDebugDrawer = true} />
 
 	<main class="screen">
 		{#if view === 'welcome'}
-			<WelcomeScreen bind:playerName bind:recoveryInput recoveryError={recoveryError} busy={roomBusy} on:recover={recoverRoom} canResume={hasSavedRoom} on:continue={continueWelcome} on:resume={resumeRoom} />
+			<WelcomeScreen bind:playerName canResume={hasSavedRoom} on:openrecovery={openRecovery} on:continue={continueWelcome} on:resume={resumeRoom} />
 		{/if}
 		{#if view === 'lobby'}
-			<LobbyScreen {playerName} bind:recoveryInput recoveryError={recoveryError} on:recover={recoverRoom} {rooms} busy={roomBusy} error={lobbyError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={returnToWelcome} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
+			<LobbyScreen {playerName} bind:newName={lobbyDraftName} bind:newCode={lobbyDraftCode} on:openrecovery={openRecovery} {rooms} busy={roomBusy} error={lobbyError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={returnToWelcome} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
+		{/if}
+		{#if view === 'recovery'}
+			<RecoveryScreen bind:value={recoveryInput} busy={roomBusy} error={recoveryError} on:recover={recoverRoom} on:back={closeRecovery} />
 		{/if}
 		{#if view === 'waiting'}
-			<section class="waiting-room">
-				<span>PARTIE CRÉÉE</span><h1>{roomName}</h1>
-				<p>En attente d’un deuxième joueur. Votre partie apparaît dans la liste des parties en attente.</p>
-				<p>{roomInfo?.locked ? 'Un code d’accès est requis pour la rejoindre.' : 'Tout joueur peut la rejoindre.'}</p>
-				{#if lobbyError}<p role="alert">{lobbyError}</p><button type="button" on:click={forgetRoom}>Oublier cette reprise sur cet appareil</button>{/if}
-				<div><button type="button" on:click={refreshRoomStatus}>ACTUALISER</button><button type="button" on:click={returnToLobby}>VOIR LES PARTIES</button></div>
-			</section>
+			<WaitingScreen {roomName} hostPseudo={roomInfo?.hostPseudo || playerName} locked={roomInfo?.locked ?? false} error={lobbyError} on:refresh={refreshRoomStatus} on:lobby={returnToLobby} on:forget={forgetRoom} />
 		{/if}
         {#if view === 'game'}
         <section class="match-overview">
-            <div class="match-heading"><div><small>Manche {matchState?.gameNumber ?? 1} · Tour {gameView.displayRound}</small><h1>{roomName || 'Votre duel'}</h1></div><span class="match-score" aria-label={`Score : vous ${matchState?.scores?.[currentActorId] ?? 0}, adversaire ${matchState?.scores?.[gameView.opponentActorId] ?? 0}`}>{matchState?.scores?.[currentActorId] ?? 0} — {matchState?.scores?.[gameView.opponentActorId] ?? 0}</span></div>
-            <p class="match-players">{gameView.displayPlayerName} <span>contre</span> {gameView.opponentName}</p>
-            {#if syncStatus === 'error'}<div class="connection-error" role="alert"><p>{syncMessage === 'ROOM_ACCESS_DENIED' || syncMessage === 'MATCH_NOT_FOUND' ? 'Cette reprise n’est plus valide ou vous n’avez plus accès à cette partie.' : 'La connexion est interrompue. Le dernier plateau reçu reste affiché.'}</p><button type="button" on:click={refreshMatchState}>Réessayer</button></div>{/if}
+            <h1 class="sr-only">{roomName || 'Votre duel'}</h1>
+            <p class="match-round">Manche {matchState?.gameNumber ?? 1} · Tour {gameView.displayRound}</p>
+            <div class="match-heading">
+                <div class="match-player"><Icon src={userCircle} size={32} /><span>{gameView.displayPlayerName}</span></div>
+                <span class="match-score" aria-label={`Score : vous ${matchState?.scores?.[currentActorId] ?? 0}, adversaire ${matchState?.scores?.[gameView.opponentActorId] ?? 0}`}>{matchState?.scores?.[currentActorId] ?? 0} – {matchState?.scores?.[gameView.opponentActorId] ?? 0}</span>
+                <div class="match-player"><Icon src={userCircle} size={32} /><span>{gameView.opponentName}</span></div>
+            </div>
+            {#if syncStatus === 'error' && syncMessage}<div class="connection-error" role="alert"><p>{syncMessage}</p><button type="button" on:click={refreshMatchState}>Réessayer</button></div>{/if}
             <details class="room-tools"><summary>Reprendre sur un autre appareil</summary><p>Ce code privé donne accès à votre place dans la partie. Conservez-le et ne le partagez pas avec votre adversaire.</p><label>Votre code de reprise<input readonly value={recoveryCode} on:focus={(event) => event.currentTarget.select()} /></label><p>Sur un appareil partagé, copiez votre code avant d’oublier cette place. La partie ne sera pas supprimée.</p><button type="button" on:click={forgetRoom}>Oublier ma place sur cet appareil</button></details>
         </section>
         {/if}
@@ -488,7 +524,7 @@
 		{/if}
 	</main>
 
-	{#if view === "game"}<BottomNav compact={activeTab === 'partie'} {activeTab} on:change={onNavChange} />{/if}
+	{#if view === "game"}<DuelNav {activeTab} on:change={onNavChange} on:home={returnToLobby} />{/if}
 
 	<DebugDrawer
 		open={showDebugDrawer}
@@ -509,27 +545,33 @@
   .compact-board .screen { grid-template-columns:minmax(0,1fr); }
   @media(min-width:651px) { .compact-board .screen { max-width:1080px; } }
   @media(max-width:600px) { .screen { padding:16px 12px; } }
-  @media(max-width:650px) { .app-root.compact-board { padding-top:48px; padding-bottom:54px; } .compact-board .screen { padding:6px; gap:5px; } }
-.match-overview { display:grid; gap:5px; width:100%; max-width:760px; margin:0 auto 18px; padding:18px; background:var(--panel); border:1px solid var(--line); border-radius:16px; }
-@media(max-width:650px) { .match-overview { gap:4px; } }
-.match-heading { display:flex; gap:12px; justify-content:space-between; align-items:center; }
-.match-heading h1 { margin:6px 0 0; font:600 22px 'Space Grotesk',sans-serif; overflow-wrap:anywhere; }
-.match-heading small { font:12px Inter,sans-serif; color:var(--muted); }
-.match-score { flex:none; font:600 22px 'Space Grotesk',sans-serif; }
-.match-players { font-size:13px; margin:10px 0 0; color:var(--text); overflow-wrap:anywhere; }
-.match-players span { color:var(--muted); margin:0 6px; }
-.room-tools { margin-top:12px; }
+  .arrival-view { padding-top:104px; padding-bottom:32px; background:var(--bg); }
+  .arrival-view .screen { max-width:1360px; padding:32px 48px; }
+  :global(:root:not([data-theme="light"])) .arrival-view { --bg:#10181f; --panel:#162129; --panel-strong:#202c36; --line:#2d3c48; --line-soft:#435461; --primary:#63d0d4; --primary-soft:#83dfdf; --on-primary:#10262d; --text:#f0f3f7; --muted:#b9c4d0; }
+  @media(max-width:600px) { .arrival-view { padding-top:80px; padding-bottom:24px; } .arrival-view .screen { padding:20px 24px; } }
+  @media(max-width:650px) { .compact-board .screen { padding:6px; gap:5px; } }
+  .duel-view { padding-bottom:calc(88px + env(safe-area-inset-bottom)); }
+  @media(min-width:851px) { .duel-view { padding-left:216px; padding-bottom:32px; } }
+.match-overview { display:grid; gap:12px; width:100%; max-width:760px; margin:0 auto 10px; padding:8px 0; }
+.match-round { margin:0; text-align:center; color:var(--muted); font-size:13px; }
+.match-heading { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:24px; align-items:center; max-width:600px; width:100%; margin:auto; }
+.match-player { display:flex; align-items:center; gap:12px; min-width:0; padding:12px 16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+.match-player span { min-width:0; overflow-wrap:anywhere; font-size:15px; }
+.match-score { white-space:nowrap; font:600 30px Inter,sans-serif; }
+.room-tools { width:100%; }
 .room-tools summary { min-height:44px; padding:12px 0; cursor:pointer; font-size:13px; color:var(--muted); }
 .room-tools p { color:var(--muted); font-size:13px; line-height:1.6; }
 .room-tools label { display:grid; gap:8px; font-size:13px; }
 .room-tools input { min-width:0; width:100%; min-height:44px; padding:10px; color:var(--text); border:1px solid var(--line); background:var(--panel-strong); font-size:14px; }
 .connection-error { margin-top:12px; color:var(--error); font-size:14px; }
 .connection-error button { min-height:44px; border:1px solid var(--error); background:transparent; color:var(--error); padding:8px 12px; }
-.waiting-room { display:grid; gap:14px; padding:clamp(20px,5vw,42px); border:1px solid var(--line); background:var(--panel); border-radius:16px; }
-.waiting-room > span { color:var(--primary); font:11px "JetBrains Mono",monospace; letter-spacing:.1em; }
-.waiting-room h1 { margin:0; font:700 clamp(28px,5vw,42px) "Space Grotesk",sans-serif; }
-.waiting-room p { margin:0; color:var(--muted); font-size:14px; line-height:1.45; }
-.waiting-room div { display:flex; gap:8px; flex-wrap:wrap; }
-.waiting-room button { min-height:44px; padding:8px 12px; border:1px solid var(--primary); background:rgba(0,219,233,.1); color:var(--primary-soft); cursor:pointer; font:500 13px Inter,sans-serif; }
+@media(max-width:650px) {
+  .match-overview { padding:12px 10px 0; gap:10px; margin-bottom:0; }
+  .match-heading { gap:12px; }
+  .match-player { gap:6px; padding:10px 8px; border-radius:12px; }
+  .match-player span { font-size:13px; }
+  .match-score { font-size:24px; }
+  .room-tools summary { text-align:center; }
+}
 
 </style>

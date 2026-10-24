@@ -36,7 +36,6 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         Objects.requireNonNull(config, "config is required");
 
         try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(config.port()), 0);
             ObjectMapper objectMapper = new ObjectMapper();
             RuntimeMetrics metrics = new RuntimeMetrics();
             JdbcPersistenceContext persistenceContext = new JdbcPersistenceContext(
@@ -47,6 +46,7 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
             );
             JdbcMatchStateStore stateStore = new JdbcMatchStateStore(persistenceContext);
             initializeDatabase(persistenceContext, stateStore, config);
+            HttpServer server = HttpServer.create(new InetSocketAddress(config.port()), 0);
             JdbcRoomDirectory rooms = new JdbcRoomDirectory(persistenceContext);
 
             JdbcWorkflowEventSink eventSink = new JdbcWorkflowEventSink(persistenceContext);
@@ -83,9 +83,9 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
                     corsPolicy,
                     metrics
             ));
-            server.createContext("/local/rooms", exchange -> RoomHttpHandlers.handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
-            server.createContext("/local/rooms/join", exchange -> RoomHttpHandlers.handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
-            server.createContext("/local/rooms/resume", exchange -> RoomHttpHandlers.handleRoomResume(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy));
+            server.createContext("/local/rooms", HttpObservability.observeRoom(exchange -> RoomHttpHandlers.handleRooms(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy), metrics, config.requestIdHeaderName()));
+            server.createContext("/local/rooms/join", HttpObservability.observeRoom(exchange -> RoomHttpHandlers.handleRoomJoin(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy), metrics, config.requestIdHeaderName()));
+            server.createContext("/local/rooms/resume", HttpObservability.observeRoom(exchange -> RoomHttpHandlers.handleRoomResume(exchange, rooms, objectMapper, config.apiKeyHeaderName(), config.apiKeyValue(), config.requestIdHeaderName(), corsPolicy), metrics, config.requestIdHeaderName()));
             server.createContext("/health", exchange -> GameHttpHandlers.handleHealth(exchange, objectMapper, config.requestIdHeaderName(), corsPolicy, metrics));
             server.setExecutor(null);
             return new LocalSubmitActionHttpServer(server, metrics);
@@ -102,7 +102,12 @@ public final class LocalSubmitActionHttpServer implements AutoCloseable {
         IllegalStateException lastFailure = null;
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {
-                new JdbcSchemaMigrator(persistenceContext).migrateToLatest();
+                var migrator = new JdbcSchemaMigrator(persistenceContext);
+                if (!config.migrateOnStart()) {
+                    migrator.verifyLatest();
+                    return;
+                }
+                migrator.migrateToLatest();
                 stateStore.findById(config.seedMatchId()).orElseGet(() -> {
                     MatchRuntimeState seeded = new MatchRuntimeState(
                             config.seedMatchId(),

@@ -1,22 +1,8 @@
+import { apiErrorText } from '../utils/apiErrorText.js'
+
 /** User-facing messages never include server payloads or credentials. @param {unknown} error */
 export function roomErrorText(error) {
-  const code = error instanceof Error ? error.message : ''
-  const messages = {
-    ROOM_CODE_INVALID: 'Code d’accès incorrect.',
-    ROOM_FULL: 'Cette partie a déjà deux joueurs.',
-    ROOM_NOT_FOUND: 'Cette partie n’existe plus.',
-    ROOM_ACCESS_DENIED: 'Ce code de reprise n’est plus valide.',
-    ROOM_RESUME_INVALID: 'Ce code de reprise est incorrect ou n’est plus valide.',
-    'HTTP:INVALID_ROOM_RESPONSE': 'La réponse du serveur est incompatible. Réessayez ou rechargez la page.',
-    'HTTP:INVALID_ADMISSION_RESPONSE': 'La réponse du serveur est incompatible. Votre place n’a pas été remplacée.',
-    ROOM_NAME_REQUIRED: 'Choisissez un nom de partie.',
-    PSEUDO_REQUIRED: 'Choisissez un pseudo.',
-    FIELD_TOO_LONG: 'Le nom ou le code est trop long.',
-    ROOM_SERVER_ERROR: 'Le serveur n’a pas pu ouvrir cette partie.',
-    REQUEST_TIMEOUT: 'Le serveur met trop de temps à répondre. Réessayez.',
-    'Failed to fetch': 'Le serveur est inaccessible.'
-  }
-  return Object.hasOwn(messages, code) ? messages[code] : 'Impossible de charger cette partie. Réessayez.'
+  return apiErrorText(error, 'room')
 }
 
 /** Admission and lobby reads, scoped to the screen and private seat that started them.

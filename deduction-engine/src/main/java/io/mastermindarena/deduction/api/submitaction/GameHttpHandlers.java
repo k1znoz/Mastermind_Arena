@@ -38,7 +38,7 @@ final class GameHttpHandlers {
         String requestId = resolveRequestId(exchange, requestIdHeaderName);
         setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
         try {
-            String path = exchange.getRequestURI().getPath();
+            String path = exchange.getHttpContext().getPath();
             String method = exchange.getRequestMethod();
             if (!applyCors(exchange, corsPolicy)) {
                 logStructured("request_rejected", path, method, 403, "CORS_ORIGIN_NOT_ALLOWED", requestId, elapsedMillis(startNanos), metrics.record(403, elapsedMillis(startNanos)));
@@ -46,6 +46,8 @@ final class GameHttpHandlers {
                 return;
             }
             if ("OPTIONS".equalsIgnoreCase(method)) {
+                logStructured("preflight", path, method, 204, "OPTIONS", requestId,
+                        elapsedMillis(startNanos), metrics.record(204, elapsedMillis(startNanos)));
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
@@ -64,10 +66,14 @@ final class GameHttpHandlers {
 
             SubmitActionHttpRequest request = readBody(exchange, objectMapper, SubmitActionHttpRequest.class);
             if (!rooms.authorize(request.matchId(), request.actorId(), exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
+                logStructured("request_rejected", path, method, 403, "ROOM_ACCESS_DENIED", requestId,
+                        elapsedMillis(startNanos), metrics.record(403, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
                 return;
             }
             if (rooms.waitingForGuest(request.matchId())) {
+                logStructured("request_rejected", path, method, 409, "ROOM_WAITING_FOR_PLAYER", requestId,
+                        elapsedMillis(startNanos), metrics.record(409, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 409, new ErrorBody("ROOM_WAITING_FOR_PLAYER"));
                 return;
             }
@@ -102,7 +108,7 @@ final class GameHttpHandlers {
         String requestId = resolveRequestId(exchange, requestIdHeaderName);
         setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
         try {
-            String path = exchange.getRequestURI().getPath();
+            String path = exchange.getHttpContext().getPath();
             String method = exchange.getRequestMethod();
             if (!applyCors(exchange, corsPolicy)) {
                 long elapsedMillis = elapsedMillis(startNanos);
@@ -111,6 +117,8 @@ final class GameHttpHandlers {
                 return;
             }
             if ("OPTIONS".equalsIgnoreCase(method)) {
+                logStructured("preflight", path, method, 204, "OPTIONS", requestId,
+                        elapsedMillis(startNanos), metrics.record(204, elapsedMillis(startNanos)));
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
@@ -147,7 +155,7 @@ final class GameHttpHandlers {
         String requestId = resolveRequestId(exchange, requestIdHeaderName);
         setResponseRequestIdHeader(exchange, requestIdHeaderName, requestId);
         try {
-            String path = exchange.getRequestURI().getPath();
+            String path = exchange.getHttpContext().getPath();
             String method = exchange.getRequestMethod();
             if (!applyCors(exchange, corsPolicy)) {
                 long elapsedMillis = elapsedMillis(startNanos);
@@ -156,6 +164,8 @@ final class GameHttpHandlers {
                 return;
             }
             if ("OPTIONS".equalsIgnoreCase(method)) {
+                logStructured("preflight", path, method, 204, "OPTIONS", requestId,
+                        elapsedMillis(startNanos), metrics.record(204, elapsedMillis(startNanos)));
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
@@ -178,6 +188,8 @@ final class GameHttpHandlers {
             String matchId = queryParams.get("matchId");
             String actorId = queryParams.get("actorId");
             if (!rooms.authorize(matchId, actorId, exchange.getRequestHeaders().getFirst("X-Room-Token"))) {
+                logStructured("request_rejected", path, method, 403, "ROOM_ACCESS_DENIED", requestId,
+                        elapsedMillis(startNanos), metrics.record(403, elapsedMillis(startNanos)));
                 writeJson(exchange, objectMapper, 403, new ErrorBody("ROOM_ACCESS_DENIED"));
                 return;
             }
@@ -212,7 +224,7 @@ final class GameHttpHandlers {
             String errorCode = ex instanceof IllegalArgumentException ? "INVALID_REQUEST" : "SERVER_ERROR";
             logStructured(
                     "request_rejected",
-                    exchange.getRequestURI().getPath(),
+                    exchange.getHttpContext().getPath(),
                     exchange.getRequestMethod(),
                     errorStatus,
                     errorCode,

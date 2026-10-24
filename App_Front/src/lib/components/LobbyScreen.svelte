@@ -1,19 +1,21 @@
 <script>
   import { createEventDispatcher } from 'svelte'
-  import RecoveryForm from './RecoveryForm.svelte'
-  export let recoveryInput = ''
-  export let recoveryError = ''
+  import Icon from './Icon.svelte'
+  import userCircle from '../assets/tabler/user-circle.svg'
+  import refresh from '../assets/tabler/refresh.svg'
+  import lock from '../assets/tabler/lock.svg'
   export let playerName = ''
   export let rooms = []
   export let busy = false
   export let error = ''
   export let canResume = false
   export let ownRoomId = ''
-  let newName = ''
-  let newCode = ''
+  export let newName = ''
+  export let newCode = ''
   let joinRoomId = ''
   let joinCode = ''
   const dispatch = createEventDispatcher()
+  function focusCodeInput(input) { input.focus() }
   function join(room) {
     if (room.roomId === ownRoomId) { dispatch('resume'); return }
     if (room.locked) { joinRoomId = room.roomId; joinCode = ''; return }
@@ -23,22 +25,20 @@
 
 <section class="lobby-screen">
   <header class="lobby-header">
-    <div><span>02 / 02 · CHOISIR UNE PARTIE</span><h1>Parties en attente</h1><p>Bonjour {playerName}. Rejoignez un joueur ou ouvrez une nouvelle partie.</p></div>
-    <button type="button" on:click={() => dispatch('back')}>CHANGER DE PSEUDO</button>
+    <div><h1>Bonjour {playerName}</h1><button class="change-name" type="button" on:click={() => dispatch('back')}>Changer de pseudo</button></div>
   </header>
   {#if error}<p class="lobby-error" role="alert">{error}</p>{/if}
   <div class="lobby-grid">
     <section class="room-list">
-      <div class="section-title"><h2>REJOINDRE</h2><button type="button" on:click={() => dispatch('refresh')}>ACTUALISER</button></div>
-      <div class="room-table-head"><span>PARTIE</span><span>CRÉATEUR</span><span>ACCÈS</span><span></span></div>
+      <div class="section-title"><h2>Parties en attente</h2><button type="button" on:click={() => dispatch('refresh')}><Icon src={refresh} size={18} />Actualiser</button></div>
       {#each rooms as room (room.roomId)}
         <div class="room-table-row">
-          <strong>{room.name}</strong><span>{room.hostPseudo}</span>
-          <span class:locked={room.locked}>{room.locked ? 'CODE' : 'OUVERT'}</span>
-          <button type="button" disabled={busy} on:click={() => join(room)}>{room.roomId === ownRoomId ? "REPRENDRE" : "REJOINDRE"}</button>
+          <div class="room-identity"><span class="player-avatar"><Icon src={userCircle} size={40} /></span><div><strong>{room.name}</strong><span>Créée par {room.hostPseudo}</span></div></div>
+          <span class="access-badge" class:locked={room.locked}>{#if room.locked}<Icon src={lock} size={14} />{/if}{room.locked ? 'Code requis' : 'Ouverte'}</span>
+          {#if joinRoomId !== room.roomId}<button class="join-button" type="button" disabled={busy} on:click={() => join(room)}>{room.roomId === ownRoomId ? "Reprendre" : "Rejoindre"}</button>{/if}
         </div>
         {#if joinRoomId === room.roomId}
-          <div class="room-code-entry"><label><span>CODE D’ACCÈS</span><input type="password" maxlength="64" autocomplete="off" bind:value={joinCode} /></label><button type="button" disabled={busy || !joinCode.trim()} on:click={() => dispatch('joinroom', { roomId: room.roomId, accessCode: joinCode })}>ENTRER</button></div>
+          <div class="room-code-entry"><label><span>Code d’accès</span><input type="password" maxlength="64" autocomplete="off" bind:value={joinCode} use:focusCodeInput /></label><button class="join-button" type="button" disabled={busy || !joinCode.trim()} on:click={() => dispatch('joinroom', { roomId: room.roomId, accessCode: joinCode })}>Entrer</button></div>
         {/if}
       {:else}
         <p class="empty-list">{error ? 'La liste des parties n’a pas pu être chargée. Réessayez dans un instant.' : 'Aucune partie n’attend un deuxième joueur. Créez la vôtre.'}</p>
@@ -46,59 +46,78 @@
     </section>
 
     <section class="create-room">
-      <h2>CRÉER UNE PARTIE</h2>
-      <p>Vous serez Joueur 1. La partie commencera quand un Joueur 2 vous aura rejoint.</p>
-      <label><span>NOM DE LA PARTIE</span><input type="text" maxlength="60" placeholder="Ex. Duel du soir" bind:value={newName} /></label>
-      <label><span>CODE D’ACCÈS · FACULTATIF</span><input type="password" maxlength="64" autocomplete="new-password" placeholder="Laisser vide pour une partie ouverte" bind:value={newCode} /></label>
-      <button type="button" class="create-button" disabled={busy || !newName.trim()} on:click={() => dispatch('createroom', { name: newName, accessCode: newCode })}>{busy ? 'EN COURS...' : 'CRÉER ET ATTENDRE'}</button>
+      <h2>Créer une partie</h2>
+      <label><span>Nom de la partie</span><input type="text" maxlength="60" placeholder="Ex. Duel du soir" bind:value={newName} /></label>
+      <label><span>Code d’accès (optionnel)</span><input type="password" maxlength="64" autocomplete="new-password" bind:value={newCode} /></label>
+      <p>Laissez vide pour une partie ouverte.</p>
+      <button type="button" class="create-button" disabled={busy || !newName.trim()} on:click={() => dispatch('createroom', { name: newName, accessCode: newCode })}>{busy ? 'Création en cours…' : 'Créer et attendre'}</button>
     </section>
   </div>
-  {#if canResume}<button type="button" class="resume-button" on:click={() => dispatch('resume')}>REPRENDRE MA PARTIE EN COURS</button>{/if}
-  <RecoveryForm bind:value={recoveryInput} {busy} error={recoveryError} on:recover={(event) => dispatch('recover', event.detail)} />
+  {#if canResume}<button type="button" class="resume-button" on:click={() => dispatch('resume')}>Reprendre ma partie en cours</button>{/if}
+  <div class="recovery-entry"><button id="open-recovery" type="button" on:click={() => dispatch('openrecovery')}>Reprendre une partie</button></div>
 </section>
 <style>
-  .lobby-screen { display:grid; gap:14px; }
-  .lobby-header { display:flex; justify-content:space-between; align-items:start; gap:14px; padding:20px; border:1px solid var(--line); background:var(--panel); }
-  .lobby-header span, h2, label span, .room-table-head { font:11px "JetBrains Mono",monospace; letter-spacing:.08em; color:var(--primary); }
-  h1 { margin:8px 0 4px; font:700 clamp(28px,5vw,40px) "Space Grotesk",sans-serif; }
-  p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
-  button { min-height:44px; padding:6px 10px; border:1px solid var(--line-soft); background:transparent; color:var(--text); cursor:pointer; font:500 13px Inter,sans-serif; }
+  .lobby-screen { display:grid; gap:32px; padding-top:24px; }
+  .lobby-header { display:flex; align-items:center; gap:18px; padding:0; }
+  .lobby-header > div { min-width:0; }
+  .player-avatar { display:flex; color:var(--muted); }
+  h1 { margin:0 0 8px; font:600 clamp(30px,4vw,48px)/1.2 Inter,sans-serif; letter-spacing:-.03em; overflow-wrap:anywhere; }
+  p { margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
+  button { min-height:48px; padding:10px 18px; border:1px solid var(--line-soft); border-radius:10px; background:transparent; color:var(--text); cursor:pointer; font:500 15px Inter,sans-serif; }
   button:disabled { opacity:.4; cursor:default; }
-  .lobby-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:12px; }
-  .room-list,.create-room { min-width:0; padding:16px; border:1px solid var(--line); background:var(--panel); }
-  .section-title { display:flex; justify-content:space-between; gap:8px; align-items:center; }
-  h2 { margin:0 0 12px; }
-  .room-table-head,.room-table-row { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 56px 88px; gap:8px; align-items:center; }
-  .room-table-head { padding:8px 0; border-bottom:1px solid var(--line-soft); color:var(--muted); font-size:9px; }
-  .room-table-row { min-height:56px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:12px; }
-  .room-table-row strong,.room-table-row span { min-width:0; overflow:hidden; text-overflow:ellipsis; }
-  .room-table-row .locked { color:var(--secondary); }
-  .room-table-row button { border-color:var(--primary); color:var(--primary-soft); }
-  .empty-list { padding:22px 2px; }
-  .create-room { display:grid; gap:12px; align-content:start; }
-  .create-room h2 { margin:0; }
-  label { display:grid; gap:6px; }
-  label span { color:var(--muted); font-size:10px; }
-  input { width:100%; min-height:40px; padding:8px; border:1px solid var(--line-soft); background:var(--panel-strong); color:var(--text); font-size:16px; min-height:48px; }
-  .create-button { border-color:var(--primary); background:rgba(0,219,233,.12); color:var(--primary-soft); min-height:44px; }
-  .room-code-entry { display:flex; gap:8px; align-items:end; padding:10px; background:rgba(255,171,243,.06); }
+  .change-name { min-height:44px; padding:0; border:0; border-radius:0; color:var(--muted); text-decoration:underline; text-underline-offset:4px; }
+  .lobby-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(300px,1fr); gap:24px; align-items:start; }
+  .room-list,.create-room { min-width:0; padding:28px; border:1px solid var(--line); border-radius:18px; background:var(--panel); }
+  .section-title { display:flex; justify-content:space-between; gap:12px; align-items:center; padding-bottom:20px; border-bottom:1px solid var(--line); }
+  .section-title button { display:flex; align-items:center; gap:6px; border:0; padding:4px; font-size:14px; color:var(--muted); }
+  h2 { margin:0; font:600 22px/1.3 Inter,sans-serif; text-transform:none; letter-spacing:normal; }
+  .room-table-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:16px; align-items:center; min-height:110px; padding:24px 0; border-bottom:1px solid var(--line); }
+  .room-identity { display:flex; align-items:center; gap:14px; min-width:0; }
+  .room-identity > div { display:grid; gap:6px; min-width:0; }
+  .room-identity strong { font-size:18px; overflow-wrap:anywhere; }
+  .room-identity span { font-size:14px; color:var(--muted); overflow-wrap:anywhere; }
+  .access-badge { display:flex; align-items:center; gap:4px; padding:7px 12px; border-radius:24px; background:var(--accent-wash); color:var(--primary-soft); font-size:12px; white-space:nowrap; }
+  .access-badge.locked { background:var(--panel-strong); color:var(--muted); }
+  .join-button,.create-button { border-color:var(--primary); background:var(--primary); color:var(--on-primary); font-weight:600; }
+  .empty-list { padding:28px 0 4px; }
+  .create-room { display:grid; gap:24px; align-content:start; }
+  .create-room h2 { padding-bottom:20px; border-bottom:1px solid var(--line); }
+  label { display:grid; gap:10px; min-width:0; margin:0; }
+  label span { color:var(--muted); font:400 15px Inter,sans-serif; letter-spacing:normal; }
+  input { width:100%; height:58px; padding:12px 16px; border:1px solid var(--line-soft); border-radius:12px; background:var(--panel-strong); color:var(--text); font:400 18px Inter,sans-serif; }
+  .create-room p { margin-top:-12px; }
+  .create-button { min-height:60px; }
+  .room-code-entry { display:flex; gap:12px; align-items:end; padding:20px; border:1px solid var(--line-soft); border-radius:12px; margin-top:12px; }
   .room-code-entry label { flex:1; }
-  .room-code-entry button { border-color:var(--secondary); color:var(--secondary); }
-  .lobby-error { padding:10px; color:var(--error); border:1px solid var(--error); }
+  .lobby-error { padding:16px; color:var(--error); border:1px solid var(--error); border-radius:12px; }
   .resume-button { justify-self:start; }
-  @media (max-width:700px) {
-    .lobby-header { flex-direction:column; padding:14px; }
+  .recovery-entry { padding-top:16px; border-top:1px solid var(--line); text-align:center; }
+  .recovery-entry button { padding:8px; border:0; color:var(--primary-soft); text-decoration:underline; text-underline-offset:4px; font-weight:400; }
+  @media (max-width:850px) {
     .lobby-grid { grid-template-columns:1fr; }
-    .room-list,.create-room { padding:12px; }
-    .room-table-head,.room-table-row { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 50px 70px; gap:5px; }
-    .room-table-row button { font-size:13px; padding:4px; }
   }
-  .lobby-header,.room-list,.create-room { border-radius:16px; }
   @media(max-width:600px) {
-    .room-table-head { display:none; }
-    .room-table-row { grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:16px 0; }
-    .room-table-row strong { grid-column:1; font-size:14px; }
-    .room-table-row span { grid-column:1; font-size:13px; }
-    .room-table-row button { grid-column:2; grid-row:1 / span 3; padding:10px; font-size:12px; }
+    .lobby-screen { gap:16px; padding-top:0; }
+    h1 { margin-bottom:0; }
+    .lobby-grid { gap:16px; }
+    .room-list,.create-room { padding:16px; border-radius:16px; }
+    h2 { font-size:18px; }
+    button { min-height:44px; padding:8px 14px; }
+    .section-title { gap:8px; padding-bottom:8px; }
+    .section-title button { font-size:12px; }
+    .room-table-row { grid-template-columns:minmax(0,1fr) auto; gap:8px; min-height:0; padding:12px 0; }
+    .room-identity { gap:8px; }
+    .room-identity strong { font-size:16px; }
+    .room-identity span { font-size:12px; }
+    .access-badge { padding:6px 10px; font-size:11px; }
+    .room-table-row .join-button { grid-column:1 / -1; width:100%; }
+    .room-code-entry { flex-direction:column; align-items:stretch; gap:8px; padding:0 0 8px; margin-top:8px; border:0; border-radius:0; }
+    .create-room { gap:12px; }
+    .create-room h2 { padding-bottom:10px; }
+    .create-room p { margin-top:-4px; font-size:12px; }
+    label { gap:6px; }
+    label span { font-size:13px; }
+    input { height:44px; font-size:16px; }
+    .create-button { min-height:44px; }
   }
 </style>

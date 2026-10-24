@@ -3,6 +3,41 @@ import assert from 'node:assert/strict'
 import { validateMatchResponse, validateAdmission } from '../src/lib/api/responseContract.js'
 import { readFile } from 'node:fs/promises'
 import { createMatchStateClient } from '../src/lib/api/matchStateClient.js'
+import { createGameConnection } from '../src/lib/state/gameConnection.js'
+
+test('additive public response fields work, incompatible deployment preserves the last valid board', async t => {
+  const baseline = JSON.parse(await readFile(new URL('../../deduction-engine/src/test/resources/contracts/match-preparation.json', import.meta.url), 'utf8'))
+  let wire = baseline
+  t.mock.method(globalThis, 'fetch', async () => Response.json(wire))
+  const client = createMatchStateClient({ baseUrl: 'http://test', apiKeyValue: 'test-only-strong-api-key' })
+  let current = null, syncError = null, updates = 0
+  const connection = createGameConnection({
+    getContext: () => ({ matchId: baseline.matchId, actorId: 'p1', roomToken: 'test-only-token' }),
+    getState: () => current,
+    fetchState: (_context, signal) => client.getMatchState(baseline.matchId, 'p1', { signal }),
+    sendAction: async () => { throw new Error('This compatibility check must not submit') },
+    onState: value => { current = value; updates++ },
+    onSync: (_status, error) => { syncError = error }, onSubmit: () => {}
+  })
+  await connection.refresh()
+  assert.equal(updates, 1)
+  wire = { ...baseline, publicLabel: 'optional future field' }
+  await connection.refresh()
+  assert.equal(updates, 2)
+  const lastValid = current
+  for (const patch of [{ state: 'FUTURE_PHASE' }, { requiredPlayers: undefined }, { version: '0' }]) {
+    wire = { ...baseline, ...patch }
+    await connection.refresh()
+    assert.equal(current, lastValid)
+    assert.equal(updates, 2)
+    assert.equal(syncError.message, 'HTTP:INVALID_MATCH_RESPONSE')
+  }
+  wire = baseline
+  await connection.refresh()
+  assert.equal(updates, 3)
+  assert.equal(syncError, undefined)
+  connection.invalidate()
+})
 
 const state = () => ({ matchId: 'board', state: 'WAITING_GUESS', version: 2, roundNumber: 0, gameNumber: 1,
   players: ['p1', 'p2'], readyPlayers: ['p1', 'p2'], submittedPlayers: [], requiredPlayers: ['p1', 'p2'],

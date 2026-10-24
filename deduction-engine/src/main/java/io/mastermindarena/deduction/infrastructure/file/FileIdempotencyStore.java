@@ -44,7 +44,7 @@ public final class FileIdempotencyStore implements IdempotencyStore {
             }
 
             String fingerprint = FilePersistenceCodec.decode(lines.get(1));
-            return Optional.of(new Entry(fingerprint, FilePersistenceCodec.deserializeSubmitActionResult(lines.subList(2, 5))));
+            return Optional.of(new Entry(fingerprint, FilePersistenceCodec.deserializeReceipt(lines.subList(2, 5))));
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read idempotency entry", e);
         }
@@ -56,7 +56,7 @@ public final class FileIdempotencyStore implements IdempotencyStore {
         List<String> lines = new java.util.ArrayList<>();
         lines.add(FilePersistenceCodec.encode(key));
         lines.add(FilePersistenceCodec.encode(entry.fingerprint()));
-        lines.addAll(FilePersistenceCodec.serializeSubmitActionResult(entry.result()));
+        lines.addAll(FilePersistenceCodec.serializeReceipt(entry.receipt()));
 
         try {
             Path parent = file.getParent();

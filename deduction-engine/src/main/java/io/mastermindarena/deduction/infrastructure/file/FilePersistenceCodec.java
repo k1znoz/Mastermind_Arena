@@ -10,8 +10,7 @@ import io.mastermindarena.deduction.engine.contract.Rejection;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
 import io.mastermindarena.deduction.engine.workflow.MatchActionRecord;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
-import io.mastermindarena.deduction.engine.workflow.SubmitActionCommand;
-import io.mastermindarena.deduction.engine.workflow.SubmitActionResult;
+import io.mastermindarena.deduction.engine.workflow.ActionReceipt;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 
 public final class FilePersistenceCodec {
     // separateur interne (non present en base64) pour combiner deux blobs deja encodes dans une seule ligne
-    private static final String FIELD_GROUP_SEPARATOR = "\u001F";
 
     private FilePersistenceCodec() {
     }
@@ -266,99 +264,18 @@ public final class FilePersistenceCodec {
         );
     }
 
-    public static List<String> serializeSubmitActionResult(SubmitActionResult result) {
-        return List.of(
-                encode(result.state() == null ? "" : serializeMatchRuntimeState(result.state())),
-                encode(serializeActionAndRejection(result.action(), result.rejection())),
-                encode(encodeStringList(result.emittedEvents()))
-        );
+    public static List<String> serializeReceipt(ActionReceipt receipt) {
+        return List.of("receipt:1", encode(receipt.matchId()) + "\t" + receipt.version() + "\t" + encode(receipt.status()),
+                encode(encodeStringList(receipt.emittedEvents())));
     }
 
-    public static SubmitActionResult deserializeSubmitActionResult(List<String> lines) {
-        if (lines.size() != 3) {
-            throw new IllegalArgumentException("Invalid SubmitActionResult payload");
-        }
-
-        String stateRaw = decode(lines.get(0));
-        MatchRuntimeState state = stateRaw.isBlank() ? null : deserializeMatchRuntimeState(stateRaw);
-
-        String[] actionAndRejection = decode(lines.get(1)).split(FIELD_GROUP_SEPARATOR, -1);
-        if (actionAndRejection.length != 2) {
-            throw new IllegalArgumentException("Invalid SubmitActionResult action/rejection payload");
-        }
-        SubmitActionCommand action = deserializeSubmitActionCommand(actionAndRejection[0]);
-        Rejection rejection = actionAndRejection[1].isBlank() ? null : deserializeRejection(actionAndRejection[1]);
-
-        List<String> emittedEvents = decodeStringList(decode(lines.get(2)));
-
-        return new SubmitActionResult(state, action, emittedEvents, rejection);
+    public static ActionReceipt deserializeReceipt(List<String> lines) {
+        if (lines.size() != 3 || !"receipt:1".equals(lines.get(0))) throw new IllegalArgumentException("INVALID_RECEIPT_FORMAT");
+        String[] fields = lines.get(1).split("\t", -1);
+        if (fields.length != 3) throw new IllegalArgumentException("INVALID_RECEIPT_FORMAT");
+        return new ActionReceipt(decode(fields[0]), Long.parseLong(fields[1]),
+                decode(fields[2]), decodeStringList(decode(lines.get(2))));
     }
-
-    private static String serializeActionAndRejection(SubmitActionCommand action, Rejection rejection) {
-        return String.join(FIELD_GROUP_SEPARATOR,
-                serializeSubmitActionCommand(action),
-                rejection == null ? "" : serializeRejection(rejection)
-        );
-    }
-
-    private static String serializeSubmitActionCommand(SubmitActionCommand action) {
-        return String.join("\t",
-                encode(action.matchId()),
-                encode(action.actorId()),
-                Long.toString(action.expectedVersion()),
-                encode(action.idempotencyKey()),
-                encode(action.actionType()),
-                encode(action.payload() == null ? "" : action.payload()),
-                encode(action.feedback() == null ? "" : action.feedback())
-        );
-    }
-
-    private static SubmitActionCommand deserializeSubmitActionCommand(String value) {
-        String[] fields = value.split("\t", -1);
-        if (fields.length != 7) {
-            throw new IllegalArgumentException("Invalid SubmitActionCommand payload");
-        }
-
-        String payload = decode(fields[5]);
-        String feedback = decode(fields[6]);
-        return new SubmitActionCommand(
-                decode(fields[0]),
-                decode(fields[1]),
-                Long.parseLong(fields[2]),
-                decode(fields[3]),
-                decode(fields[4]),
-                payload.isBlank() ? null : payload,
-                feedback.isBlank() ? null : feedback
-        );
-    }
-
-    private static String serializeRejection(Rejection rejection) {
-        String targets = rejection.targetLogs().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
-        return String.join("\t",
-                rejection.origin().name(),
-                encode(rejection.code()),
-                encode(rejection.messageKey() == null ? "" : rejection.messageKey()),
-                encode(targets)
-        );
-    }
-
-    private static Rejection deserializeRejection(String value) {
-        String[] fields = value.split("\t", -1);
-        if (fields.length != 4) {
-            throw new IllegalArgumentException("Invalid Rejection payload");
-        }
-
-        RejectionOrigin origin = RejectionOrigin.valueOf(fields[0]);
-        String code = decode(fields[1]);
-        String messageKey = decode(fields[2]);
-        String targetsRaw = decode(fields[3]);
-        Set<LogTarget> targetLogs = targetsRaw.isBlank()
-                ? Set.of(LogTarget.TECHNICAL_LOG)
-                : ArraysUtil.toEnumSet(targetsRaw.split(",", -1), LogTarget::valueOf);
-
-        return new Rejection(origin, code, messageKey.isBlank() ? null : messageKey, null, targetLogs);
-    }
-
     private static String serializeMatchOutcome(MatchOutcome outcome) {
         String participants = outcome.participantResults().stream()
                 .map(p -> encode(p.participantId()) + "," + encode(p.result()) + "," + (p.rank() == null ? "" : p.rank()))

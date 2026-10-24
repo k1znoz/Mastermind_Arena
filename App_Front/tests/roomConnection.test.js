@@ -48,6 +48,34 @@ test('late admission success or failure cannot alter a different screen or seat'
   }
 })
 
+test('leaving recovery aborts its request and ignores late success or failure after reopening', async () => {
+  for (const failure of [false, true]) {
+    const old = deferred(), next = deferred()
+    const signals = []
+    const h = harness({ resume: (_code, options) => {
+      signals.push(options.signal)
+      return signals.length === 1 ? old.promise : next.promise
+    } })
+    h.scope('recovery:first-seat')
+    const previous = h.connection.recover('old-private-test-code')
+    h.connection.invalidate()
+    h.scope('welcome:first-seat')
+    assert.equal(signals[0].aborted, true)
+    h.scope('recovery:first-seat')
+    const current = h.connection.recover('new-private-test-code')
+    if (failure) old.reject(new Error('ROOM_RESUME_INVALID'))
+    else old.resolve({ actorId: 'p1', room: 'old' })
+    await previous
+    assert.deepEqual(h.events.admissions, [])
+    assert.equal(h.events.errors.filter(event => event.message).length, 0)
+    assert.equal(h.events.busy.at(-1), true)
+    next.resolve({ actorId: 'p2', room: 'current' })
+    await current
+    assert.deepEqual(h.events.admissions, [{ value: { actorId: 'p2', room: 'current' }, recovered: true }])
+    assert.equal(h.events.busy.at(-1), false)
+  }
+})
+
 test('invalidation aborts reads and prevents an old finally from unlocking a newer admission', async () => {
   const old = deferred(), next = deferred()
   const signals = []

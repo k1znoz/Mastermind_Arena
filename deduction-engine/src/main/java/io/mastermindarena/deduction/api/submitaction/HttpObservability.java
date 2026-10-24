@@ -1,6 +1,7 @@
 package io.mastermindarena.deduction.api.submitaction;
 
 import java.sql.SQLException;
+import com.sun.net.httpserver.HttpHandler;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
 import static io.mastermindarena.deduction.api.submitaction.HttpExchangeSupport.escapeJson;
@@ -8,6 +9,23 @@ import static io.mastermindarena.deduction.api.submitaction.HttpExchangeSupport.
 /** Structured request diagnostics and in-process counters, without request payloads. */
 final class HttpObservability {
     private HttpObservability() {}
+
+    /** Count lobby responses once, including refusals and preflights. No body/query/credential values logged. */
+    static HttpHandler observeRoom(HttpHandler handler, RuntimeMetrics metrics, String requestHeader) {
+        return exchange -> {
+            long start = System.nanoTime();
+            try {
+                handler.handle(exchange);
+            } finally {
+                int status = Math.max(0, exchange.getResponseCode());
+                long duration = HttpExchangeSupport.elapsedMillis(start);
+                String requestId = exchange.getResponseHeaders().getFirst(requestHeader);
+                logStructured("room_request", exchange.getHttpContext().getPath(), exchange.getRequestMethod(),
+                        status, status == 0 ? "NO_RESPONSE" : "HTTP_" + status,
+                        requestId == null ? "n/a" : requestId, duration, metrics.record(status, duration));
+            }
+        };
+    }
 
     static void logStructured(
             String event,

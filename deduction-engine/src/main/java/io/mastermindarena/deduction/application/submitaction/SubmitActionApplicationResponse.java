@@ -2,7 +2,7 @@ package io.mastermindarena.deduction.application.submitaction;
 
 import io.mastermindarena.deduction.engine.contract.Rejection;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
-import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
+import io.mastermindarena.deduction.engine.workflow.ActionReceipt;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionResult;
 
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.Objects;
 
 public record SubmitActionApplicationResponse(
         boolean accepted,
-        MatchRuntimeState state,
+        ActionReceipt receipt,
         SubmitActionApplicationRejection rejection,
         List<String> emittedEvents
 ) {
@@ -30,7 +30,7 @@ public record SubmitActionApplicationResponse(
         if (rulesetRejection != null && rulesetRejection.origin() == RejectionOrigin.RULESET) {
             return new SubmitActionApplicationResponse(
                     false,
-                    result.state(),
+                    result.receipt(),
                     new SubmitActionApplicationRejection(
                             RejectionOrigin.RULESET,
                             rulesetRejection.code(),
@@ -42,7 +42,7 @@ public record SubmitActionApplicationResponse(
 
         return new SubmitActionApplicationResponse(
                 true,
-                result.state(),
+                result.receipt(),
                 null,
                 result.emittedEvents()
         );

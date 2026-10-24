@@ -6,6 +6,8 @@ Découpage du 15 octobre sans évolution de format : routes câblées par `Local
 
 Les chemins ci-dessous appartiennent au backend. En développement, Vite préfixe `/api` puis retire ce préfixe dans le proxy. En production, le front appelle l'URL du backend directement. Ne jamais utiliser l'API automatique Supabase pour lire les parties.
 
+Les règles d'évolution et l'ordre des publications séparées sont définis dans [DEPLOYMENT_COMPATIBILITY](DEPLOYMENT_COMPATIBILITY.md) : une extension additive de réponse n'autorise pas à changer une phase ou le type d'un champ requis. La compatibilité avec les versions en production doit être vérifiée avant promotion.
+
 | Méthode / chemin | Entrée | Réponse réussie |
 |---|---|---|
 | GET `/local/rooms` | Pas de jeton de place | `{ "rooms": [...] }`, 200 ; parties en attente uniquement |
@@ -58,7 +60,11 @@ Sur les lectures de parties et d'état, un paramètre de requête répété est 
 
 Les compteurs sont des entiers positifs ou nuls et leur somme ne dépasse pas quatre. Les règles de phase et d'auteur sont validées côté serveur. Le backend ne calcule pas les indices.
 
+Précision du 24 octobre : seules les sept commandes du tableau sont admises. L'ancienne DECLARE_DISCOVERY est retirée après accord du concepteur ; à accès autorisé et adversaire présent, elle reçoit 400 avec le corps `{ "code": "INVALID_REQUEST" }`, sans modification de l'état, de l'activité, des événements ou des reçus. Son ancien rejet ENGINE/DISCOVERY_REQUIRES_MANUAL_FEEDBACK n'est plus produit. Les états, transitions, événements effectifs et 21 refus métier sont recensés dans [WORKFLOW_CONTRACT](WORKFLOW_CONTRACT.md).
+
 `expectedVersion` est la version complète du match, pas le numéro de tour. Une clé idempotente n'est réutilisée que pour la même requête exacte. Après perte de réponse, le front rejoue cette requête avant d'envisager une nouvelle intention. Après conflit confirmé, il actualise puis ne retente que si manche, tour et phase sont encore les mêmes, avec une nouvelle clé.
+
+Le reçu de soumission conserve la version, le status et les événements de l'acceptation initiale. Un replay exact restitue ces valeurs même si la partie a avancé, a été corrigée ou qu'une revanche a démarré ; il ne rejoue pas l'action, ne publie pas de nouvel événement et ne prolonge pas la conservation. La lecture d'état reste indépendante et renvoie le plateau courant. Le stockage compact livré les 23–24 octobre change le contrat interne et le format persistant, sans ajouter ni retirer de champ HTTP. Après purge de la partie, son reçu n'est plus disponible et ses anciens jetons ne donnent plus accès au jeu.
 
 ## Vue de partie
 
@@ -76,13 +82,19 @@ Au 18 octobre, les contenus JSON de `turns[].guess` et `feedback` sont aussi con
 
 ## Erreurs et limites
 
+`GET /health` reste public, de type liveness : `{status,requestsOk,requestsKo,averageLatencyMs}`. Les compteurs couvrent les réponses des handlers enregistrés, dont lobby, refus de place et OPTIONS ; la requête de santé elle-même est incluse. Ils sont locaux à chaque processus et réinitialisés au redémarrage. Ils ne représentent ni un total multi-instance, ni une disponibilité de la base ; voir les limites de durée et de couverture dans [ARCHITECTURE_V2](ARCHITECTURE_V2.md).
+
 Erreurs du transport : `{code}`. Rejets de soumission : `{accepted:false,rejectionOrigin,rejectionCode,version,status,...}` lorsque le contexte existe.
 
 Les rejets de soumission sont vérifiés avant d'attacher des métadonnées à une erreur : origine ENGINE/RULESET et code stable, état absent (matchId/version/status tous null) ou associé au match demandé. Une réponse incohérente produit `HTTP:INVALID_ERROR_RESPONSE` ; son contenu n'est pas affiché ni utilisé comme preuve de conflit. Le retry de conflit requiert une réponse ENGINE/VERSION_CONFLICT et HTTP 409. Les succès incompatibles conservent `HTTP:INVALID_RESPONSE_BODY` et le traitement existant de réponse perdue par replay exact.
 
-401 : clé d'API absente/invalide. 403 : origine refusée, mauvais code partagé/reprise ou place non autorisée. 404 : partie absente. 409 : place occupée, attente d'adversaire, conflit de version/idempotence ou action déjà appliquée. 400 : requête invalide ou rejet moteur selon code. 422 : rejet d'origine RULESET. 500 : incident interne, sans détails sensibles dans la réponse.
+Au 23 octobre, le transport front distingue un succès HTTP vide (y compris espaces seuls) d'un succès au JSON illisible via la métadonnée locale `responseBodyState` (`empty`/`unreadable`). Le message d'erreur technique reste `HTTP:INVALID_RESPONSE_BODY` pour conserver le replay exact ; la présentation traduit la métadonnée sans afficher le corps reçu. Un JSON valide `null` ne compte pas comme un corps vide et reste soumis au contrat d'endpoint. Les erreurs HTTP non réussies conservent les codes et fallbacks précédents.
+
+401 : clé d'API absente/invalide. 403 : origine refusée, mauvais code partagé/reprise ou place non autorisée. 404 : partie absente. 409 : place occupée, attente d'adversaire, conflit de version/idempotence ou action déjà appliquée. 400 : requête invalide ou rejet moteur selon code. 422 : enveloppe de rejet RULESET conservée par le mapper, sans émetteur dans le workflow Mastermind courant. 500 : incident interne, sans détails sensibles dans la réponse.
 
 Les corps POST doivent être des objets JSON : les racines null/tableau/booléen, corps vide et JSON mal formé produisent 400/INVALID_REQUEST. Une exception interne inattendue produit 500/SERVER_ERROR sur les routes de jeu ou 500/ROOM_SERVER_ERROR sur les routes de parties. Une panne SQL n'est pas présentée comme une faute de saisie ; la réponse ne contient ni requête SQL, ni message d'exception. Les échanges sont fermés après réponse. Les exceptions d'écriture réseau restent des erreurs I/O et ne déclenchent pas une deuxième écriture HTTP.
+
+Correction vérifiée le 24 octobre : seuls les ActionRejectedException du métier sont traduits en rejets ENGINE. Les pannes techniques en soumission, auparavant absorbées par une capture générique de IllegalStateException, suivent désormais le 500 prévu ci-dessus. Les documents persistants invalides ne sont pas assimilés à une erreur de corps entrant. Tests réels : lecture indisponible, document invalide GET/POST et rollback à chaque stade d'écriture état/événement/reçu ; codes et statuts des quinze refus métier préservés.
 
 Corps entrants limités à 65 536 octets. Le délai du client est de 15 secondes, couvrant réception du corps. Une annulation de contexte est distincte d'un timeout. La limitation des tentatives et de la création de parties reste un chantier ouvert ; CORS et la clé publique ne la remplacent pas.
 

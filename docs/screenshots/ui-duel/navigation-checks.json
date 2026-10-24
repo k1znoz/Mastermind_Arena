@@ -1,0 +1,178 @@
+[
+  {
+    "buttons": [
+      {
+        "height": 55,
+        "label": "Plateau"
+      },
+      {
+        "height": 55,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 0,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 305,
+      "top": 772
+    },
+    "overflow": false,
+    "topbarLeft": 0,
+    "width": 320
+  },
+  {
+    "buttons": [
+      {
+        "height": 55,
+        "label": "Plateau"
+      },
+      {
+        "height": 55,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 0,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 390,
+      "top": 772
+    },
+    "overflow": false,
+    "topbarLeft": 0,
+    "width": 390
+  },
+  {
+    "buttons": [
+      {
+        "height": 55,
+        "label": "Plateau"
+      },
+      {
+        "height": 55,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 0,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 650,
+      "top": 772
+    },
+    "overflow": false,
+    "topbarLeft": 0,
+    "width": 650
+  },
+  {
+    "buttons": [
+      {
+        "height": 55,
+        "label": "Plateau"
+      },
+      {
+        "height": 55,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 0,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 768,
+      "top": 772
+    },
+    "overflow": false,
+    "topbarLeft": 0,
+    "width": 768
+  },
+  {
+    "buttons": [
+      {
+        "height": 55,
+        "label": "Plateau"
+      },
+      {
+        "height": 55,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 0,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 850,
+      "top": 772
+    },
+    "overflow": false,
+    "topbarLeft": 0,
+    "width": 850
+  },
+  {
+    "buttons": [
+      {
+        "height": 56,
+        "label": "Plateau"
+      },
+      {
+        "height": 56,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 216,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 216,
+      "top": 0
+    },
+    "overflow": false,
+    "topbarLeft": 216,
+    "width": 851
+  },
+  {
+    "buttons": [
+      {
+        "height": 56,
+        "label": "Plateau"
+      },
+      {
+        "height": 56,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 216,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 216,
+      "top": 0
+    },
+    "overflow": false,
+    "topbarLeft": 216,
+    "width": 1024
+  },
+  {
+    "buttons": [
+      {
+        "height": 56,
+        "label": "Plateau"
+      },
+      {
+        "height": 56,
+        "label": "Historique"
+      }
+    ],
+    "mainLeft": 288,
+    "nav": {
+      "bottom": 844,
+      "left": 0,
+      "right": 216,
+      "top": 0
+    },
+    "overflow": false,
+    "topbarLeft": 216,
+    "width": 1440
+  }
+]

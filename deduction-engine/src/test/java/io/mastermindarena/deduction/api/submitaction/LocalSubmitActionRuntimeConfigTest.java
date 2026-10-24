@@ -5,6 +5,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LocalSubmitActionRuntimeConfigTest {
+    @Test void migrationModeRequiresAnExplicitBoolean() {
+        assertEquals(true, LocalSubmitActionRuntimeConfig.parseMigrationMode("true"));
+        assertEquals(false, LocalSubmitActionRuntimeConfig.parseMigrationMode("false"));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                () -> LocalSubmitActionRuntimeConfig.parseMigrationMode("disabled"));
+    }
     @Test
     void convertsVercelPostgresUrlToJdbc() {
         assertEquals(

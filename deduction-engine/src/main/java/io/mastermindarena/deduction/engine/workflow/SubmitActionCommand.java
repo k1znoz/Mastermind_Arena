@@ -15,7 +15,6 @@ public record SubmitActionCommand(
     public static final String READY_SECRET = "READY_SECRET";
     public static final String PLAY_GUESS = "PLAY_GUESS";
     public static final String SEND_FEEDBACK = "SEND_FEEDBACK";
-    public static final String DECLARE_DISCOVERY = "DECLARE_DISCOVERY";
     public static final String REQUEST_REMATCH = "REQUEST_REMATCH";
     public static final String ABANDON = "ABANDON";
     public static final String CORRECT_FEEDBACK = "CORRECT_FEEDBACK";
@@ -26,7 +25,7 @@ public record SubmitActionCommand(
         Objects.requireNonNull(actorId, "actorId is required");
         Objects.requireNonNull(idempotencyKey, "idempotencyKey is required");
         Objects.requireNonNull(actionType, "actionType is required");
-        if (!List.of(READY_SECRET, PLAY_GUESS, SEND_FEEDBACK, DECLARE_DISCOVERY, REQUEST_REMATCH,
+        if (!List.of(READY_SECRET, PLAY_GUESS, SEND_FEEDBACK, REQUEST_REMATCH,
                 ABANDON, CORRECT_FEEDBACK, CONTEST_FEEDBACK).contains(actionType)) {
             throw new IllegalArgumentException("unsupported board action type: " + actionType);
         }

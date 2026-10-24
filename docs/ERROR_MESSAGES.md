@@ -1,0 +1,66 @@
+# Revue des erreurs et messages — 24 octobre 2026
+
+## Périmètre et constat
+
+Revue des routes exécutées, de SubmitActionOrchestrator, des règles de plateau, de JdbcRoomDirectory, du mapper HTTP et de apiErrorText. Quinze refus métier identifiés disposent désormais des formulations approuvées ci-dessous ; les messages existants d'accès, réseau, timeout, contrat, conflit et saisie sont préservés.
+
+Ce message reste adapté à une réponse perdue ou à une erreur inconnue : le navigateur ne peut pas conclure que l'action a échoué. Il est moins précis quand une réponse métier valide confirme que la nouvelle action a été refusée. Distinguer ces cas ne demande ni changement des règles, ni modification du contrat HTTP, ni nouvelle dépendance.
+
+## Messages approuvés et intégrés
+
+Le concepteur a validé la distinction entre refus explicite et résultat incertain. Les quinze formulations ci-dessous sont intégrées dans apiErrorText. Les statuts restent ceux du mapper existant ; aucune règle ou stratégie de retry modifiée.
+
+| Code public actuel | HTTP | Message affiché |
+|---|---:|---|
+| ROOM_WAITING_FOR_PLAYER | 409 | En attente du second joueur. |
+| MATCH_ALREADY_TERMINAL | 409 | Cette manche est terminée. Actualisez le plateau. |
+| INVALID_STATE_FOR_READY_SECRET | 400 | Cette action n’est pas disponible dans la phase actuelle. Actualisez le plateau. |
+| INVALID_STATE_FOR_PLAY_GUESS | 400 | Cette action n’est pas disponible dans la phase actuelle. Actualisez le plateau. |
+| INVALID_STATE_FOR_SEND_FEEDBACK | 400 | Cette action n’est pas disponible dans la phase actuelle. Actualisez le plateau. |
+| SECRET_ALREADY_SET | 400 | Votre combinaison secrète est déjà enregistrée. |
+| PLAYER_ALREADY_SOLVED | 400 | Vous avez déjà trouvé le code. Continuez à donner les indices à votre adversaire. |
+| GUESS_ALREADY_SUBMITTED | 409 | Votre proposition est déjà enregistrée pour ce tour. |
+| FEEDBACK_NOT_REQUIRED | 400 | Aucun indice n’est attendu de votre part pour ce tour. |
+| FEEDBACK_ALREADY_SUBMITTED | 409 | Vos indices sont déjà enregistrés pour ce tour. |
+| FEEDBACK_ALREADY_CONTESTED | 400 | Vous avez déjà demandé une vérification de ces indices. |
+| FEEDBACK_NOT_EDITABLE | 400 | Seuls les indices du dernier tour terminé peuvent être corrigés ou contestés. Actualisez le plateau. |
+| ABANDON_REQUIRES_STARTED_GAME | 400 | L’abandon sera disponible après la préparation des deux secrets. |
+| REMATCH_REQUIRES_FINISHED_MATCH | 400 | La manche doit être terminée pour demander une revanche. |
+| REMATCH_ALREADY_REQUESTED | 400 | Votre demande de revanche est déjà enregistrée. |
+
+Correction de la revue initiale : DECLARE_DISCOVERY passait la liste de SubmitActionCommand puis était refusée par le switch en DISCOVERY_REQUIRES_MANUAL_FEEDBACK ; elle n'était donc pas rejetée à la construction. Après accord du concepteur le 24 octobre, cette ancienne commande et son refus dédié sont retirés du chemin exécuté : commande inconnue, 400/INVALID_REQUEST après les gardes d'accès/admission. Les découvertes restent déterminées par les indices manuels. [Inventaire des états, actions, événements et codes](WORKFLOW_CONTRACT.md).
+
+### Correction et contestation d'anciens indices
+
+FEEDBACK_NOT_EDITABLE est émis par editableFeedback lorsque la cible ne désigne pas des indices du dernier tour terminé. Le concepteur a approuvé sa traduction explicite, désormais intégrée. Le parcours réel vérifie correction et contestation d'indices de la manche précédente après une revanche : HTTP 400, message dédié et plateau courant inchangé. Aucune règle modifiée.
+
+## Classification des erreurs techniques — corrigée
+
+La revue a reproduit une divergence avec API_CONTRACT : SubmitActionApplicationService capturait tous les IllegalStateException, y compris les pannes JDBC, puis publiait leur message comme rejet ENGINE. Une soumission valide dont la lecture SQL échouait recevait HTTP 400 au lieu de 500. Les tests HTTP et en mémoire ont échoué avant le correctif, puis réussi après.
+
+Le concepteur a choisi une exception métier dédiée. `ActionRejectedException` porte les codes des refus attendus du workflow et des règles ; seul ce type est traduit en rejet applicatif. Les autres erreurs pendant l'exécution sont des incidents internes. La validation de commande reste à l'entrée, donc une requête invalide conserve 400/INVALID_REQUEST. Le lecteur JDBC enveloppe aussi les documents stockés invalides comme panne interne : ils ne deviennent pas des erreurs de saisie dans GET ou POST.
+
+Les quinze refus métier gardent leurs codes/statuts et messages. Les incidents renvoient seulement `{code:SERVER_ERROR}` ou `{code:ROOM_SERVER_ERROR}` selon la route, sans publier le diagnostic de stockage. Les causes techniques restent disponibles dans la chaîne interne d'exception.
+
+| Cas de protocole | HTTP/code | Présentation actuelle |
+|---|---|---|
+| Clé API absente/invalide | 401 / UNAUTHORIZED | Accès serveur refusé, rechargement proposé |
+| Place non autorisée | 403 / ROOM_ACCESS_DENIED | Reprise privée proposée, sans modifier la session |
+| Origine CORS refusée | 403 / CORS_ORIGIN_NOT_ALLOWED côté serveur | Le navigateur peut ne recevoir qu'un échec réseau ; pas de diagnostic CORS affirmé à partir d'un TypeError |
+| Méthode incorrecte | 405 / METHOD_NOT_ALLOWED | Fallback sûr selon le contexte |
+| Corps/query/commande invalides | 400 / INVALID_REQUEST ou INVALID_MATCH_ID selon la route | Fallback sûr selon le contexte ; aucun détail arbitraire affiché |
+| Partie absente, si l'autorisation permet d'atteindre ce contrôle | 404 / MATCH_NOT_FOUND ou ROOM_NOT_FOUND | Partie inexistante ou indisponible ; ne pas promettre de distinguer une purge |
+| Incident du jeu | 500 / SERVER_ERROR | Problème serveur, actualisation proposée |
+| Incident du lobby/reprise | 500 / ROOM_SERVER_ERROR | Ouverture impossible ; diagnostic technique non affiché |
+
+Cette table décrit le comportement existant ; aucun nouveau message de protocole n'est ajouté. Une réponse réseau perdue n'est pas un refus métier, et un statut inconnu ne doit pas provoquer un retry automatique.
+
+## Preuves et vérifications restantes
+
+- **Acquis localement :** 61 tests front et contrôles lint/Svelte/build pour les messages ; test paramétré du vrai client/validateur/traducteur, refus connus distincts du fallback, erreurs inconnues/secret/propriétés héritées masqués, métadonnées conservées et annulation silencieuse.
+- **Acquis localement :** parcours HTTP/JDBC des quinze refus, correction, revanche et reprise ; vues du joueur inchangées après refus. Contrôle de volumes agrégés consigné dans [VALIDATION](VALIDATION.md), sans extrapoler à tous les horodatages.
+- **Acquis localement après correction technique :** 52 tests backend dont 21 PostgreSQL/HTTP, zéro ignoré, qualité Maven réussie. Panne de lecture et document stocké invalide en GET/POST : 500 au corps exact sans détails. Panne d'écriture injectée à chacun des trois stades état/événement/reçu : rollback de l'état, de l'activité et des deux journaux, puis nouvelle action acceptée après retrait de la panne. Les tests des corps mal formés conservent 400.
+- **Contrôle visuel ciblé :** SECRET_ALREADY_SET visible dans Chrome desktop sombre via API synthétique ; [capture](screenshots/refusal-secret-desktop-dark.jpg). Cette capture ne valide pas l'affichage de chaque message.
+- **Complément navigateur du 24 octobre :** 32 contrôles des surfaces de synchronisation, téléphone 390 × 844 et ordinateur 1280 × 900, clair/sombre ; huit captures de soumission longue/inconnue. Textes visibles, alerte dans la fenêtre, absence de débordement horizontal et quatre cases du brouillon conservées vérifiés. [Matrice des 40 captures](screenshots/ERROR_CHECKS.md). API synthétique : le message de timeout est testé par injection du code, sans nouvelle preuve du délai réseau réel.
+- **Inventaire courant réalisé :** quatre états, sept commandes, 21 refus métier ; admission/protocole, erreurs locales du front et noms historiques distingués dans [WORKFLOW_CONTRACT](WORKFLOW_CONTRACT.md). Revue statique complétée par les tests du retrait de commande, sans prétendre exécuter chaque branche en production.
+- **Encore ouvert :** accessibilité complète, parcours final et contrôle de production après autorisation. La notification de soumission de 2,4 secondes est un point à revoir au lot UX ; ce lot de validation ne change pas son comportement.

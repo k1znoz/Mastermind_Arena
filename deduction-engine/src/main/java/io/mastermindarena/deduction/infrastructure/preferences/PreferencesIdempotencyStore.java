@@ -29,10 +29,10 @@ public final class PreferencesIdempotencyStore implements IdempotencyStore {
 
         return Optional.of(new Entry(
                 fingerprint,
-                FilePersistenceCodec.deserializeSubmitActionResult(List.of(
-                        entryNode.get("result.state", ""),
-                        entryNode.get("result.resolution", ""),
-                        entryNode.get("result.events", "")
+                FilePersistenceCodec.deserializeReceipt(List.of(
+                        entryNode.get("receipt.format", ""),
+                        entryNode.get("receipt.identity", ""),
+                        entryNode.get("receipt.events", "")
                 ))
         ));
     }
@@ -40,11 +40,11 @@ public final class PreferencesIdempotencyStore implements IdempotencyStore {
     @Override
     public void save(String key, Entry entry) {
         Preferences entryNode = node.node(hashKey(key));
-        List<String> serialized = FilePersistenceCodec.serializeSubmitActionResult(entry.result());
+        List<String> serialized = FilePersistenceCodec.serializeReceipt(entry.receipt());
         entryNode.put("fingerprint", entry.fingerprint());
-        entryNode.put("result.state", serialized.get(0));
-        entryNode.put("result.resolution", serialized.get(1));
-        entryNode.put("result.events", serialized.get(2));
+        entryNode.put("receipt.format", serialized.get(0));
+        entryNode.put("receipt.identity", serialized.get(1));
+        entryNode.put("receipt.events", serialized.get(2));
         flush(entryNode);
     }
 

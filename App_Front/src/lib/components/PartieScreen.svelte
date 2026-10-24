@@ -7,7 +7,7 @@
   export let view = deriveGameView()
   $: ({ matchState, isMyTurn, actorId, hasOpponentReady, hasSecretSet, opponentName, opponentStepDone,
     setupSequence, setupSlots, selectedSetupSlot, draftGuess, selectedGuessSlot, guessSequence, symbolPalette,
-    isSecretSubmitting, isGuessSubmitting, isBackendReady, canSubmitSecret, secretButtonLabel, canSubmitGuess,
+    isSecretSubmitting, isGuessSubmitting, isBackendReady, canSubmitSecret, canSubmitGuess,
     sendButtonLabel, busy, turns, round, phaseKey, feedbackKey, preparation, finished, ownGuesses,
     opponentGuesses, given, received, canRespond, mySolved, theirSolved, result, currentOpponentGuess,
     myRematchAsked, theirRematchAsked, notices } = view)
@@ -57,9 +57,10 @@
   {/if}
 
   {#if preparation}
-    <section class="action-card secret-panel">
+    <section class="action-card secret-panel" class:secret-ready={hasSecretSet}>
       <h2>{hasSecretSet ? 'Votre code est prêt' : 'Choisissez votre code secret'}</h2>
-      <p>Quatre couleurs, répétitions autorisées. Votre adversaire ne verra pas votre code.</p>
+      {#if hasSecretSet}<p class="secret-status" role="status">{hasOpponentReady ? 'Les deux codes sont prêts.' : `En attente du code de ${opponentName}.`}</p>
+      {:else}<p>4 couleurs. Répétitions autorisées.</p>{/if}
       <div class="slot-picker">
         {#each setupSlots as color, index}
           <button type="button" class:selected={selectedSetupSlot === index && !hasSecretSet} disabled={hasSecretSet || busy} aria-pressed={!hasSecretSet && selectedSetupSlot === index} aria-label={`Case ${index + 1}, ${getSymbolVisual(color).token}`} on:click={() => dispatch('selectsetupslot',{index})}><span class="color-dot {getSymbolVisual(color).toneClass}"></span><small>{index + 1}</small></button>
@@ -67,8 +68,9 @@
       </div>
       {#if !hasSecretSet}
         <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={!isBackendReady || busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedSetupSlot + 1} du code secret`} on:click={() => dispatch('choosesetupsymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
-        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.some(Boolean)} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret || busy} on:click={() => dispatch('submitsecret')}>{isSecretSubmitting ? 'Envoi…' : secretButtonLabel}</button></div>
-      {:else}<p class="waiting-note">{hasOpponentReady ? 'Les deux codes sont prêts.' : `En attente du code de ${opponentName}.`}</p>{/if}
+        <p class="secret-privacy">Votre adversaire ne verra pas votre code.</p>
+        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.some(Boolean)} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret || busy} on:click={() => dispatch('submitsecret')}>{isSecretSubmitting ? 'Envoi…' : 'Confirmer mon code'}</button></div>
+      {:else}<p class="secret-privacy">Votre code reste privé.</p>{/if}
     </section>
   {:else}
     {#if isMyTurn}
@@ -180,5 +182,35 @@
   .abandon-confirm { border-color:var(--error); }
   .abandon-confirm strong { display:block; margin-bottom:8px; }
   @media(max-width:420px) { .action-card { padding:16px; } .palette-grid button { gap:6px; } .attempt-content { gap:8px; } .comparison { gap:18px; } }
+
+  .secret-panel { border:0; background:transparent; padding:12px 0 24px; text-align:center; }
+  .secret-panel h2 { font:600 clamp(25px,3vw,38px)/1.25 Inter,sans-serif; text-transform:none; letter-spacing:-.035em; margin-bottom:12px; }
+  .secret-panel>p { font-size:17px; }
+  .secret-panel .slot-picker { max-width:600px; margin:32px auto 24px; padding:20px; gap:16px; background:var(--panel-strong); border:1px solid var(--line); border-radius:40px; }
+  .secret-panel .slot-picker button { min-width:0; border:0; background:transparent; padding:6px 0; box-shadow:none; }
+  .secret-panel .slot-picker .color-dot { width:clamp(48px,7vw,88px); height:clamp(48px,7vw,88px); border-width:3px; outline:7px solid var(--bg); outline-offset:0; }
+  .secret-panel .slot-picker .selected .color-dot { outline:2px solid var(--primary); outline-offset:5px; }
+  .secret-panel .slot-picker small { color:var(--text); font-size:12px; margin-top:8px; }
+  .secret-panel .slot-picker button:disabled { opacity:1; }
+  .secret-panel .palette-grid { grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin:0 auto 24px; }
+  .secret-panel .palette-grid button { flex-direction:column; min-height:112px; gap:12px; font-size:14px; border-radius:16px; background:var(--panel); }
+  .secret-panel .palette-grid .color-dot { width:52px; height:52px; }
+  .secret-panel .secret-privacy { font-size:14px; margin:24px 0; }
+  .secret-panel .action-buttons { max-width:600px; margin:auto; grid-template-columns:1fr 1.7fr; gap:16px; }
+  .secret-panel .action-buttons button { min-height:56px; font-size:16px; }
+  .secret-panel .secret-status { margin:28px 0; }
+  .secret-ready .slot-picker { margin-top:40px; }
+  @media(max-width:650px) {
+    .secret-panel { padding:18px 10px; }
+    .secret-panel>p { font-size:14px; }
+    .secret-panel .slot-picker { padding:16px 10px; gap:12px; border-radius:28px; margin:24px auto; }
+    .secret-panel .slot-picker .color-dot { width:48px; height:48px; }
+    .secret-panel .palette-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:16px; }
+    .secret-panel .palette-grid button { min-height:94px; gap:9px; }
+    .secret-panel .palette-grid .color-dot { width:44px; height:44px; }
+    .secret-panel .secret-privacy { font-size:12px; margin:18px 0; }
+    .secret-panel .action-buttons { grid-template-columns:1fr; gap:8px; }
+    .secret-panel .action-buttons button { min-height:48px; font-size:14px; }
+  }
 
 </style>

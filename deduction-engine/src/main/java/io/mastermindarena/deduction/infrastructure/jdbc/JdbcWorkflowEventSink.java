@@ -19,10 +19,12 @@ public final class JdbcWorkflowEventSink implements EventSink {
 
     @Override
     public void publish(GameEvent event) {
-        String sql = "INSERT INTO " + context.table("workflow_event") + " (event_payload) VALUES (?)";
+        String matchId = context.transactionMatchId();
+        String sql = "INSERT INTO " + context.table("workflow_event") + " (event_payload,match_id) VALUES (?,?)";
         try (Connection connection = context.openConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, event.name());
+            statement.setString(2, matchId);
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to persist workflow event", e);

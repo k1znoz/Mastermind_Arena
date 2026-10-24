@@ -3,6 +3,7 @@ package io.mastermindarena.deduction.application.submitaction;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionCommand;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionOrchestrator;
 import io.mastermindarena.deduction.engine.workflow.SubmitActionResult;
+import io.mastermindarena.deduction.engine.workflow.ActionRejectedException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -32,8 +33,11 @@ public final class SubmitActionApplicationService {
         try {
             SubmitActionResult result = orchestrator.submit(command);
             return SubmitActionApplicationResponse.fromEngineResult(result);
-        } catch (IllegalStateException ex) {
+        } catch (ActionRejectedException ex) {
             return SubmitActionApplicationResponse.fromEngineError(ex.getMessage());
+        } catch (RuntimeException failure) {
+            // Request validation above is distinct from faults while reading or applying persisted state.
+            throw new IllegalStateException("SUBMIT_ACTION_FAILED", failure);
         }
     }
 }

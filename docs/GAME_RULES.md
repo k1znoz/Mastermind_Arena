@@ -37,3 +37,5 @@ Le résultat est recalculé à partir des indices effectifs : un point peut Êtr
 Après la fin de recherche, chacun peut proposer ou accepter une revanche. Deux consentements sont nécessaires. Les scores restent conservés et les secrets de la nouvelle manche doivent Être choisis à nouveau.
 
 Une déconnexion ne crée ni abandon automatique, ni délai. Le joueur peut reprendre avec son code privé. Ce code est distinct du code d'accès partagé qui protège l'entrée dans une partie ; il donne accès à une place précise, doit rester privé et peut Être utilisé sur un autre appareil.
+
+Conservation validée le 23 octobre ; commande administrative implémentée localement, aucune planification activée : les données d'une partie, même non terminée, seront supprimées après sept jours sans nouvelle action acceptée (création comme référence initiale). Lecture et reconnexion ne prolongeront pas ce délai ; le code privé ne permettra plus une reprise après suppression. Il s'agit d'une expiration des données, pas d'un abandon automatique attribuant un point. Voir [DATA_RETENTION](DATA_RETENTION.md).

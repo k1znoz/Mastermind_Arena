@@ -38,7 +38,7 @@ public final class JdbcMatchStateStore implements MatchStateStore {
                 }
                 return Optional.of(BoardPersistenceCodec.decodeState(resultSet.getString(1)));
             }
-        } catch (SQLException e) {
+        } catch (SQLException | IllegalArgumentException e) {
             throw new IllegalStateException("Unable to load match state", e);
         }
     }
@@ -55,8 +55,8 @@ public final class JdbcMatchStateStore implements MatchStateStore {
 
     private void savePostgres(String matchId, String payload) {
         String sql = "INSERT INTO " + context.table("match_state")
-                + " (match_id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)"
-                + " ON CONFLICT (match_id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = CURRENT_TIMESTAMP";
+                + " (match_id, payload, updated_at) VALUES (?, ?, clock_timestamp())"
+                + " ON CONFLICT (match_id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = clock_timestamp()";
         try (Connection connection = context.openConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, matchId);

@@ -9,7 +9,7 @@ function clock() {
     tick() { const [id, callback] = pending.entries().next().value; pending.delete(id); return callback() } }
 }
 
-test('start is idempotent and polling follows navigation without touching the welcome screen', async () => {
+test('start is idempotent and polling leaves welcome and recovery screens idle', async () => {
   const timer = clock()
   let view = 'welcome'
   const calls = []
@@ -17,7 +17,7 @@ test('start is idempotent and polling follows navigation without touching the we
     refreshWaiting: async () => { calls.push('waiting') }, refreshLobby: async () => { calls.push('lobby') } })
   poll.start(); poll.start()
   assert.equal(timer.pending.size, 1)
-  for (const next of ['welcome', 'lobby', 'waiting', 'game']) { view = next; timer.tick(); await Promise.resolve(); await Promise.resolve() }
+  for (const next of ['welcome', 'lobby', 'recovery', 'waiting', 'game', 'recovery']) { view = next; timer.tick(); await Promise.resolve(); await Promise.resolve() }
   assert.deepEqual(calls, ['lobby', 'waiting', 'game'])
   poll.stop()
   assert.equal(timer.pending.size, 0)

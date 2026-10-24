@@ -25,18 +25,6 @@ export function buildUrl(baseUrl, path) {
 }
 
 /**
- * @param {string} text
- * @returns {unknown}
- */
-export function safeJsonParse(text) {
-  try {
-    return text ? JSON.parse(text) : null
-  } catch {
-    return null
-  }
-}
-
-/**
  * @param {unknown} body
  * @param {string} fallbackCode
  * @returns {string}
@@ -107,6 +95,16 @@ export function assertAuthConfig(headerName, apiKeyValue) {
  */
 export async function requestJson(url, options = {}, timeoutMs = 15000) {
   const response = await fetchWithTimeout(url, options, timeoutMs)
-  const body = safeJsonParse(await response.text())
+  const text = await response.text()
+  let body = null
+  let responseBodyState = text.trim() ? 'unreadable' : 'empty'
+  try {
+    body = JSON.parse(text)
+    responseBodyState = 'json'
+  } catch { /* Endpoint-specific HTTP errors retain their existing fallback. */ }
+  if (response.ok && responseBodyState !== 'json') {
+    // Keep the existing replay trigger: a successful write may already be committed.
+    throw Object.assign(new Error('HTTP:INVALID_RESPONSE_BODY'), { responseBodyState })
+  }
   return { response, body }
 }

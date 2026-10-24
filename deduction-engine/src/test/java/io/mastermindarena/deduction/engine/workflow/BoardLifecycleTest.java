@@ -131,7 +131,8 @@ class BoardLifecycleTest {
             assertThrows(IllegalStateException.class, () -> act("p1", "SEND_FEEDBACK", null, invalid));
         }
         assertEquals(4, state().version());
-        assertThrows(IllegalStateException.class, () -> act("p1", "DECLARE_DISCOVERY", null, null));
+        assertThrows(IllegalArgumentException.class, () -> act("p1", "DECLARE_DISCOVERY", null, null));
+        assertEquals(4, state().version());
     }
 
     private String target(long version) { return "{\"feedbackVersion\":" + version + "}"; }

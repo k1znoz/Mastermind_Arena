@@ -50,6 +50,8 @@ Définir des contrôles d'abus sur création/jointure et tentatives de codes ava
 
 Les handlers traduisent HTTP, le service coordonne, le métier décide et les adaptateurs persistent. Les erreurs métier attendues ont un code explicite ; éviter les captures génériques sans traitement adapté.
 
+Les refus attendus du plateau utilisent `ActionRejectedException` avec un code public constant. Ne pas utiliser ce type pour publier un diagnostic JDBC ou de stockage. Le service ne traduit que ces refus ; une panne pendant l'exécution reste un incident 500. La validation de commande à l'entrée reste distincte, et un document persistant invalide n'est pas une erreur de saisie du joueur. Conserver les tests de panne de lecture, de décodage et de rollback d'écriture avant toute modification de cette frontière.
+
 Préserver une transaction commune état/événements/idempotence. Tester rollback et concurrence entre deux instances. Ne pas retirer le `synchronized` global sans examiner les adaptateurs et protéger leurs accès.
 
 Les migrations ont une identité et une trace d'application. Préparer la transition du migrateur actuel ; ne pas rejouer une transformation non idempotente au démarrage ni modifier rétroactivement une migration publiée.

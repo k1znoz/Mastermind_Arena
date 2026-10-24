@@ -14,6 +14,7 @@ public final class JdbcPersistenceContext {
     private final String dbPassword;
     private final String schema;
     private final ThreadLocal<Connection> transaction = new ThreadLocal<>();
+    private final ThreadLocal<String> transactionMatch = new ThreadLocal<>();
 
     public JdbcPersistenceContext(String dbUrl, String dbUser, String dbPassword, String schema) {
         this.dbUrl = Objects.requireNonNull(dbUrl, "dbUrl is required");
@@ -64,6 +65,7 @@ public final class JdbcPersistenceContext {
                     }
                 }
                 transaction.set(connection);
+                transactionMatch.set(matchId);
                 T result = operation.get();
                 connection.commit();
                 return result;
@@ -72,10 +74,18 @@ public final class JdbcPersistenceContext {
                 throw failure;
             } finally {
                 transaction.remove();
+                transactionMatch.remove();
             }
         } catch (SQLException failure) {
             throw new IllegalStateException("MATCH_PERSISTENCE_FAILED", failure);
         }
+    }
+
+    /** Association for writes emitted inside the match transaction. */
+    public String transactionMatchId() {
+        String matchId = transactionMatch.get();
+        if (matchId == null) throw new IllegalStateException("MATCH_TRANSACTION_REQUIRED");
+        return matchId;
     }
 
     private static final class ListHolder {

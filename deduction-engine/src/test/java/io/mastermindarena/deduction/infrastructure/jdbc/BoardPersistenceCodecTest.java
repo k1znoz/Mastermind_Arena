@@ -20,11 +20,20 @@ class BoardPersistenceCodecTest {
         assertEquals(CODE, BoardPersistenceCodec.decodeState(encoded).actionLog().getFirst().guess());
     }
 
-    @Test void idempotencyResultRoundTripsWithoutLegacyResolution() {
+    @Test void compactReceiptRoundTripsWithoutStateOrSecret() {
         var state = new MatchRuntimeState("board", List.of("p1", "p2"));
         var command = new SubmitActionCommand("board", "p1", 0, "exact-key", "READY_SECRET", CODE, null);
         var result = new SubmitActionResult(state, command, List.of("GAME_STARTED"), null);
-        assertEquals(result, BoardPersistenceCodec.decodeResult(BoardPersistenceCodec.encodeResult(result)));
+        String encoded = BoardPersistenceCodec.encodeReceipt(result.receipt());
+        assertEquals(result.receipt(), BoardPersistenceCodec.decodeReceipt(encoded));
+        assertFalse(encoded.contains("actionLog"));
+        assertFalse(encoded.contains("READY_SECRET"));
+        assertFalse(encoded.contains("exact-key"));
+        assertFalse(encoded.contains("state"));
+        assertThrows(IllegalArgumentException.class, () -> BoardPersistenceCodec.decodeReceipt(encoded.replace("\"formatVersion\":2", "\"formatVersion\":1")));
+        assertThrows(IllegalArgumentException.class, () -> BoardPersistenceCodec.decodeReceipt(encoded.replace("\"version\":0,", "")));
+        assertThrows(IllegalArgumentException.class, () -> BoardPersistenceCodec.decodeReceipt(encoded.replace("GAME_STARTED", "UNKNOWN_EVENT")));
+        assertThrows(IllegalArgumentException.class, () -> BoardPersistenceCodec.decodeReceipt("{\"formatVersion\":1,\"result\":{}}"));
     }
 
     @Test void unknownVersionMissingFieldsAndOldFormatAreRejected() {

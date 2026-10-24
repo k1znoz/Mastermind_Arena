@@ -1,9 +1,23 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fetchWithTimeout } from '../src/lib/api/httpClientUtils.js'
+import { fetchWithTimeout, requestJson } from '../src/lib/api/httpClientUtils.js'
 import { createSubmitActionClient } from '../src/lib/api/submitActionClient.js'
 import { createMatchStateClient } from '../src/lib/api/matchStateClient.js'
 import { createRoomClient } from '../src/lib/api/roomClient.js'
+
+test('successful empty and unreadable bodies remain replayable but are distinct from valid JSON', async t => {
+  let text = ''
+  t.mock.method(globalThis, 'fetch', async () => new Response(text))
+  for (const [raw, state] of [['', 'empty'], [' \n ', 'empty'], ['private upstream payload', 'unreadable']]) {
+    text = raw
+    await assert.rejects(requestJson('http://test'), error =>
+      error.message === 'HTTP:INVALID_RESPONSE_BODY' && error.responseBodyState === state && !('body' in error))
+  }
+  text = 'null'
+  assert.equal((await requestJson('http://test')).body, null)
+  text = '{"rooms":[]}'
+  assert.deepEqual((await requestJson('http://test')).body, { rooms: [] })
+})
 
 test('read clients preserve their error codes and do not expose invalid response text', async t => {
   let response

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
-import io.mastermindarena.deduction.engine.workflow.SubmitActionResult;
+import io.mastermindarena.deduction.engine.workflow.ActionReceipt;
 
 /** Explicitly versioned JSON for new JDBC installations. No legacy game imports. */
 public final class BoardPersistenceCodec {
@@ -15,7 +15,7 @@ public final class BoardPersistenceCodec {
             .build();
     private BoardPersistenceCodec() {}
     public record StateDocument(int formatVersion, MatchRuntimeState state) {}
-    public record ResultDocument(int formatVersion, SubmitActionResult result) {}
+    public record ReceiptDocument(int formatVersion, ActionReceipt receipt) {}
 
     public static String encodeState(MatchRuntimeState state) {
         validate(state);
@@ -27,16 +27,15 @@ public final class BoardPersistenceCodec {
         validate(document.state());
         return document.state();
     }
-    public static String encodeResult(SubmitActionResult result) {
-        validate(result.state());
-        return write(new ResultDocument(1, result));
+    public static String encodeReceipt(ActionReceipt receipt) {
+        java.util.Objects.requireNonNull(receipt, "receipt is required");
+        return write(new ReceiptDocument(2, receipt));
     }
-    public static SubmitActionResult decodeResult(String payload) {
-        ResultDocument document = read(payload, ResultDocument.class);
-        requireVersion(document.formatVersion());
-        if (document.result() == null) throw new IllegalArgumentException("INVALID_STORAGE_DOCUMENT");
-        validate(document.result().state());
-        return document.result();
+    public static ActionReceipt decodeReceipt(String payload) {
+        ReceiptDocument document = read(payload, ReceiptDocument.class);
+        if (document.formatVersion() != 2) throw new IllegalArgumentException("UNSUPPORTED_STORAGE_VERSION");
+        if (document.receipt() == null) throw new IllegalArgumentException("INVALID_STORAGE_DOCUMENT");
+        return document.receipt();
     }
     private static void requireVersion(int version) {
         if (version != 1) throw new IllegalArgumentException("UNSUPPORTED_STORAGE_VERSION");
@@ -60,8 +59,8 @@ public final class BoardPersistenceCodec {
             if (tree == null || !tree.isObject() || !tree.path("formatVersion").isInt()) {
                 throw new IllegalArgumentException("INVALID_STORAGE_DOCUMENT");
             }
-            var state = type == StateDocument.class ? tree.path("state") : tree.path("result").path("state");
-            if (!state.path("gameNumber").isInt() || state.path("gameNumber").asInt() < 1) {
+            if (type == StateDocument.class && (!tree.path("state").path("gameNumber").isInt()
+                    || tree.path("state").path("gameNumber").asInt() < 1)) {
                 throw new IllegalArgumentException("INVALID_STORED_MATCH");
             }
             T document = JSON.treeToValue(tree, type);

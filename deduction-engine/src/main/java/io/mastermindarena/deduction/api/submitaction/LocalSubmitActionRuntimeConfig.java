@@ -21,7 +21,8 @@ public record LocalSubmitActionRuntimeConfig(
     String dbSchema,
         String seedMatchId,
         String seedActorId,
-        String seedOpponentId
+        String seedOpponentId,
+        boolean migrateOnStart
 ) {
     public LocalSubmitActionRuntimeConfig {
         Objects.requireNonNull(path, "path is required");
@@ -95,12 +96,21 @@ public record LocalSubmitActionRuntimeConfig(
                 stringValue("submitAction.db.schema", new String[]{"APP_DB_SCHEMA", "SUBMIT_ACTION_DB_SCHEMA"}, "public"),
                 stringValue("submitAction.seed.matchId", new String[]{"SUBMIT_ACTION_SEED_MATCH_ID"}, "local-match"),
                 stringValue("submitAction.seed.actorId", new String[]{"SUBMIT_ACTION_SEED_ACTOR_ID"}, "p1"),
-                stringValue("submitAction.seed.opponentId", new String[]{"SUBMIT_ACTION_SEED_OPPONENT_ID"}, "p2")
+                stringValue("submitAction.seed.opponentId", new String[]{"SUBMIT_ACTION_SEED_OPPONENT_ID"}, "p2"),
+                parseMigrationMode(stringValue("submitAction.db.migrateOnStart", new String[]{"APP_DB_MIGRATE_ON_START"}, "true"))
         );
     }
 
     public static String resolutionRule() {
         return "system property first, then known environment aliases, then default value";
+    }
+
+    static boolean parseMigrationMode(String raw) {
+        return switch (raw) {
+            case "true" -> true;
+            case "false" -> false;
+            default -> throw new IllegalArgumentException("APP_DB_MIGRATE_ON_START must be true or false");
+        };
     }
 
     private static int intValue(String propertyName, String[] envNames, int defaultValue) {

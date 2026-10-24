@@ -21,9 +21,9 @@ public final class MastermindBoardRules {
 
     public static void validateCode(String raw) {
         JsonNode code = read(raw, "INVALID_CODE");
-        if (!code.isArray() || code.size() != 4) throw new IllegalStateException("INVALID_CODE");
+        if (!code.isArray() || code.size() != 4) throw new ActionRejectedException("INVALID_CODE");
         for (JsonNode color : code) {
-            if (!color.isTextual() || !COLORS.contains(color.textValue())) throw new IllegalStateException("INVALID_CODE");
+            if (!color.isTextual() || !COLORS.contains(color.textValue())) throw new ActionRejectedException("INVALID_CODE");
         }
     }
 
@@ -31,11 +31,11 @@ public final class MastermindBoardRules {
         JsonNode node = read(raw, "INVALID_FEEDBACK");
         if (!node.isObject() || !node.path("bienPlaces").isIntegralNumber()
                 || !node.path("bienPlaces").canConvertToInt() || !node.path("malPlaces").isIntegralNumber()
-                || !node.path("malPlaces").canConvertToInt()) throw new IllegalStateException("INVALID_FEEDBACK");
+                || !node.path("malPlaces").canConvertToInt()) throw new ActionRejectedException("INVALID_FEEDBACK");
         int black = node.path("bienPlaces").intValue();
         int white = node.path("malPlaces").intValue();
         if (black < 0 || black > 4 || white < 0 || white > 4 || black + white > 4) {
-            throw new IllegalStateException("INVALID_FEEDBACK");
+            throw new ActionRejectedException("INVALID_FEEDBACK");
         }
         return black;
     }
@@ -43,7 +43,7 @@ public final class MastermindBoardRules {
     public static long feedbackTarget(String raw) {
         JsonNode target = read(raw, "INVALID_FEEDBACK_TARGET").path("feedbackVersion");
         if (!target.isIntegralNumber() || !target.canConvertToLong() || target.longValue() <= 0) {
-            throw new IllegalStateException("INVALID_FEEDBACK_TARGET");
+            throw new ActionRejectedException("INVALID_FEEDBACK_TARGET");
         }
         return target.longValue();
     }
@@ -52,10 +52,10 @@ public final class MastermindBoardRules {
         try {
             JsonNode node = raw == null ? null : JSON.reader().with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
                     .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).readTree(raw);
-            if (node == null) throw new IllegalStateException(error);
+            if (node == null) throw new ActionRejectedException(error);
             return node;
         } catch (IOException failure) {
-            throw new IllegalStateException(error, failure);
+            throw new ActionRejectedException(error, failure);
         }
     }
 
@@ -133,6 +133,6 @@ public final class MastermindBoardRules {
         return effectiveActions(state).stream().filter(action -> action.version() == version
                         && SubmitActionCommand.SEND_FEEDBACK.equals(action.actionType())
                         && action.roundNumber() == state.turnNumber() - 1)
-                .findFirst().orElseThrow(() -> new IllegalStateException("FEEDBACK_NOT_EDITABLE"));
+                .findFirst().orElseThrow(() -> new ActionRejectedException("FEEDBACK_NOT_EDITABLE"));
     }
 }

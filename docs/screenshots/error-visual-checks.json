@@ -1,0 +1,240 @@
+{
+  "date": "2026-10-24",
+  "environment": "Chrome, Vite local, synthetic API; timeout message injected as HTTP code, not a measured browser timeout",
+  "viewports": {
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "desktop": {
+      "width": 1280,
+      "height": 900
+    }
+  },
+  "checks": [
+    {
+      "profile": "mobile-light",
+      "name": "access",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "empty",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "unreadable",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "contract",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "server",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "unknown",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "network",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-light",
+      "name": "timeout",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "access",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "empty",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "unreadable",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "contract",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "server",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "unknown",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "network",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "mobile-dark",
+      "name": "timeout",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "access",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "empty",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "unreadable",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "contract",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "server",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "unknown",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "network",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-dark",
+      "name": "timeout",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "access",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "empty",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "unreadable",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "contract",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "server",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "unknown",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "network",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    },
+    {
+      "profile": "desktop-light",
+      "name": "timeout",
+      "fits": true,
+      "noHorizontalOverflow": true,
+      "retainedPegs": 4
+    }
+  ]
+}

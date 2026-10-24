@@ -51,7 +51,7 @@ class PostgresWorkflowTest {
         try (var connection = context.openConnection(); var sql = connection.createStatement();
              var rows = sql.executeQuery("SELECT count(*) FROM " + context.table("schema_version"))) {
             assertTrue(rows.next());
-            assertEquals(5, rows.getInt(1));
+            assertEquals(8, rows.getInt(1));
         } catch (java.sql.SQLException failure) { fail(failure); }
         assertEquals("p2", reopened.resume(id + ".p2." + guest.token()).actorId());
         assertFalse(reopened.authorize(id, "p1", guest.token()));
@@ -188,7 +188,7 @@ class PostgresWorkflowTest {
                 "local-http-validation-only-123", "X-Request-Id", "http://localhost:5175",
                 "GET,POST,OPTIONS", "Content-Type,X-API-Key,X-Room-Token", 60,
                 System.getenv("ARENA_TEST_DB_URL"), System.getenv("ARENA_TEST_DB_USER"),
-                System.getenv("ARENA_TEST_DB_PASSWORD"), context.schema(), "seed", "p1", "p2");
+                System.getenv("ARENA_TEST_DB_PASSWORD"), context.schema(), "seed", "p1", "p2", true);
         try (var server = LocalSubmitActionHttpServer.create(config); var client = HttpClient.newHttpClient()) {
             server.start();
             String base = "http://127.0.0.1:" + server.port();
@@ -325,12 +325,16 @@ class PostgresWorkflowTest {
                 }
             }
             assertEquals(0, new JdbcMatchStateStore(context).findById(id).orElseThrow().version());
+            rooms.join(id, "Bob", "");
             try (var connection = context.openConnection(); var sql = connection.createStatement()) {
                 sql.execute("ALTER TABLE " + context.table("match_state") + " RENAME TO unavailable_match_state");
             }
             var brokenState = http(client, base + "/local/match-state?matchId=" + id + "&actorId=p1", "GET", null, host.token());
             assertEquals(500, brokenState.statusCode());
             assertEquals("{\"code\":\"SERVER_ERROR\"}", brokenState.body());
+            var brokenSubmit = submitHttp(client, base, id, "p1", host.token(), 0, "READY_SECRET", CODE, null);
+            assertEquals(500, brokenSubmit.statusCode(), "A persistence failure is not a player rejection");
+            assertEquals("{\"code\":\"SERVER_ERROR\"}", brokenSubmit.body());
             try (var connection = context.openConnection(); var sql = connection.createStatement()) {
                 sql.execute("ALTER TABLE " + context.table("rooms") + " RENAME TO unavailable_rooms");
             }
@@ -344,6 +348,72 @@ class PostgresWorkflowTest {
             assertEquals(500, brokenResume.statusCode());
             assertEquals("{\"code\":\"ROOM_SERVER_ERROR\"}", brokenResume.body());
             assertEquals(200, http(client, base + "/health", "GET", null, null).statusCode());
+        }
+    }
+
+    @Test void realHttpMasksInvalidStoredDocumentsAndRollsBackEveryWriteStage() throws Exception {
+        var host = rooms.create("Persistence classification", "Alice", "");
+        String id = host.room().roomId();
+        rooms.join(id, "Bob", "");
+        String original;
+        java.time.Instant originalActivity;
+        try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                "SELECT payload,updated_at FROM " + context.table("match_state") + " WHERE match_id=?")) {
+            sql.setString(1, id);
+            try (var rows = sql.executeQuery()) {
+                rows.next(); original = rows.getString(1); originalActivity = rows.getTimestamp(2).toInstant();
+            }
+        }
+        try (var server = LocalSubmitActionHttpServer.create(httpConfig()); var client = HttpClient.newHttpClient()) {
+            server.start();
+            String base = "http://127.0.0.1:" + server.port();
+            try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                    "UPDATE " + context.table("match_state") + " SET payload=? WHERE match_id=?")) {
+                sql.setString(1, "{\"formatVersion\":1,\"state\":null}");
+                sql.setString(2, id);
+                sql.executeUpdate();
+            }
+            try {
+                var read = http(client, base + "/local/match-state?matchId=" + id + "&actorId=p1", "GET", null, host.token());
+                assertEquals(500, read.statusCode());
+                assertEquals("{\"code\":\"SERVER_ERROR\"}", read.body());
+                var submit = submitHttp(client, base, id, "p1", host.token(), 0, "READY_SECRET", CODE, null);
+                assertEquals(500, submit.statusCode());
+                assertEquals("{\"code\":\"SERVER_ERROR\"}", submit.body());
+            } finally {
+                try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                        "UPDATE " + context.table("match_state") + " SET payload=? WHERE match_id=?")) {
+                    sql.setString(1, original); sql.setString(2, id); sql.executeUpdate();
+                }
+            }
+            for (String table : java.util.List.of("match_state", "workflow_event", "idempotency")) {
+                try (var connection = context.openConnection(); var sql = connection.createStatement()) {
+                    sql.execute("ALTER TABLE " + context.table(table) + " ADD CONSTRAINT test_write_failure CHECK (false) NOT VALID");
+                }
+                try {
+                    var submit = submitHttp(client, base, id, "p1", host.token(), 0, "READY_SECRET", CODE, null);
+                    assertEquals(500, submit.statusCode(), table);
+                    assertEquals("{\"code\":\"SERVER_ERROR\"}", submit.body());
+                } finally {
+                    try (var connection = context.openConnection(); var sql = connection.createStatement()) {
+                        sql.execute("ALTER TABLE " + context.table(table) + " DROP CONSTRAINT test_write_failure");
+                    }
+                }
+                try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                        "SELECT payload,updated_at FROM " + context.table("match_state") + " WHERE match_id=?")) {
+                    sql.setString(1, id);
+                    try (var rows = sql.executeQuery()) {
+                        rows.next(); assertEquals(original, rows.getString(1));
+                        assertEquals(originalActivity, rows.getTimestamp(2).toInstant());
+                    }
+                }
+                assertTrue(new JdbcWorkflowEventSink(context).allEvents().isEmpty());
+                try (var connection = context.openConnection(); var sql = connection.createStatement();
+                     var rows = sql.executeQuery("SELECT count(*) FROM " + context.table("idempotency"))) {
+                    rows.next(); assertEquals(0, rows.getLong(1));
+                }
+            }
+            acceptedHttp(client, base, id, "p1", host.token(), 0, "READY_SECRET", CODE, null);
         }
     }
 
@@ -425,12 +495,215 @@ class PostgresWorkflowTest {
         }
     }
 
+    @Test void realHttpCountsEveryResponseExactlyOnceIncludingLobbyAndPreflights() throws Exception {
+        try (var server = LocalSubmitActionHttpServer.create(httpConfig()); var client = HttpClient.newHttpClient()) {
+            server.start();
+            String base = "http://127.0.0.1:" + server.port();
+            var json = new ObjectMapper();
+            var host = rooms.create("Metrics", "Alice", "");
+            String id = host.room().roomId();
+            long ok = 1, ko = 0;
+            var initial = json.readTree(http(client, base + "/health", "GET", null, null).body());
+            assertEquals(ok, initial.path("requestsOk").asLong());
+            assertEquals(ko, initial.path("requestsKo").asLong());
+            for (String[] spec : java.util.List.of(
+                    new String[]{"/local/rooms", "GET", "", "200"},
+                    new String[]{"/local/rooms?roomId=" + id, "GET", "", "200"},
+                    new String[]{"/local/rooms", "POST", "{\"name\":\"New\",\"pseudo\":\"Bob\"}", "201"},
+                    new String[]{"/local/rooms/join", "POST", "{\"roomId\":\"missing\",\"pseudo\":\"Bob\"}", "404"},
+                    new String[]{"/local/rooms/resume", "POST", "{\"recoveryCode\":\"invalid\"}", "403"},
+                    new String[]{"/local/rooms", "POST", "null", "400"},
+                    new String[]{"/local/rooms/join", "GET", "", "405"},
+                    new String[]{"/local/match-state?matchId=" + id + "&actorId=p2", "GET", "", "403"},
+                    new String[]{"/local/submit-action", "POST", json.writeValueAsString(java.util.Map.of(
+                            "matchId", id, "actorId", "p1", "expectedVersion", 0, "idempotencyKey", "metrics-test",
+                            "actionPayload", java.util.Map.of("actionType", "READY_SECRET", "payload", CODE))), "409"},
+                    new String[]{"/local/rooms", "OPTIONS", "", "204"},
+                    new String[]{"/local/rooms/join", "OPTIONS", "", "204"},
+                    new String[]{"/local/rooms/resume", "OPTIONS", "", "204"},
+                    new String[]{"/local/match-state", "OPTIONS", "", "204"},
+                    new String[]{"/local/submit-action", "OPTIONS", "", "204"},
+                    new String[]{"/health", "OPTIONS", "", "204"})) {
+                var response = http(client, base + spec[0], spec[1], spec[2].isEmpty() ? null : spec[2], host.token());
+                int status = Integer.parseInt(spec[3]);
+                assertEquals(status, response.statusCode(), spec[0]);
+                if (status < 400) ok++; else ko++;
+                // The health request itself is included, as in the existing health contract.
+                ok++;
+                var totals = json.readTree(http(client, base + "/health", "GET", null, null).body());
+                assertEquals(ok, totals.path("requestsOk").asLong(), spec[0]);
+                assertEquals(ko, totals.path("requestsKo").asLong(), spec[0]);
+            }
+        }
+    }
+
+    @Test void restrictedRuntimeCanPlayButCannotMigrateDeleteOrChangePermissions() throws Exception {
+        String role = "runtime_" + UUID.randomUUID().toString().replace("-", "");
+        try (var connection = context.openConnection(); var sql = connection.createStatement()) {
+            sql.execute("CREATE ROLE " + role + " LOGIN PASSWORD 'runtime_validation_only' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS");
+        }
+        var migrator = new JdbcSchemaMigrator(context);
+        assertThrows(IllegalArgumentException.class, () -> migrator.grantRuntimeAccess("anon"));
+        assertThrows(IllegalArgumentException.class, () -> migrator.grantRuntimeAccess(System.getenv("ARENA_TEST_DB_USER")));
+        migrator.grantRuntimeAccess(role);
+        migrator.grantRuntimeAccess(role);
+        var runtime = new JdbcPersistenceContext(System.getenv("ARENA_TEST_DB_URL"), role, "runtime_validation_only", context.schema());
+        new JdbcSchemaMigrator(runtime).verifyLatest();
+        for (String sqlText : java.util.List.of("CREATE TABLE " + context.table("forbidden") + " (id int)",
+                "ALTER TABLE " + context.table("rooms") + " DISABLE ROW LEVEL SECURITY",
+                "DELETE FROM " + context.table("rooms"), "DELETE FROM " + context.table("match_state"),
+                "CALL " + context.table("purge_expired_matches") + "()",
+                "CALL " + context.table("purge_expired_matches") + "(clock_timestamp(), 0)",
+                "UPDATE " + context.table("schema_version") + " SET version=99",
+                "UPDATE " + context.table("idempotency") + " SET fingerprint='changed'")) {
+            try (var connection = runtime.openConnection(); var sql = connection.createStatement()) {
+                assertEquals("42501", assertThrows(java.sql.SQLException.class, () -> sql.execute(sqlText)).getSQLState());
+            }
+        }
+        var config = new LocalSubmitActionRuntimeConfig(0, "/local/submit-action", "X-API-Key",
+                "local-http-validation-only-123", "X-Request-Id", "http://localhost:5175",
+                "GET,POST,OPTIONS", "Content-Type,X-API-Key,X-Room-Token", 60,
+                System.getenv("ARENA_TEST_DB_URL"), role, "runtime_validation_only", context.schema(), "seed", "p1", "p2", false);
+        try (var server = LocalSubmitActionHttpServer.create(config); var client = HttpClient.newHttpClient()) {
+            server.start();
+            String base = "http://127.0.0.1:" + server.port();
+            var json = new ObjectMapper();
+            var hostResponse = http(client, base + "/local/rooms", "POST", "{\"name\":\"Limited role\",\"pseudo\":\"Alice\"}", null);
+            assertEquals(201, hostResponse.statusCode());
+            var host = json.readTree(hostResponse.body());
+            String id = host.path("room").path("roomId").asText(), token = host.path("token").asText();
+            var joined = http(client, base + "/local/rooms/join", "POST", "{\"roomId\":\"" + id + "\",\"pseudo\":\"Bob\"}", null);
+            assertEquals(200, joined.statusCode());
+            String guestToken = json.readTree(joined.body()).path("token").asText();
+            acceptedHttp(client, base, id, "p1", token, 0, "READY_SECRET", CODE, null);
+            acceptedHttp(client, base, id, "p2", guestToken, 1, "READY_SECRET", CODE, null);
+            acceptedHttp(client, base, id, "p2", guestToken, 2, "ABANDON", null, null);
+            var read = http(client, base + "/local/match-state?matchId=" + id + "&actorId=p1", "GET", null, token);
+            assertEquals(200, read.statusCode());
+            assertEquals(1, json.readTree(read.body()).path("scores").path("p1").asInt());
+            assertEquals(200, http(client, base + "/local/rooms/resume", "POST",
+                    json.writeValueAsString(java.util.Map.of("recoveryCode", id + ".p1." + token)), null).statusCode());
+        }
+        try (var connection = context.openConnection(); var sql = connection.createStatement()) {
+            sql.execute("DELETE FROM " + context.table("schema_version") + " WHERE version=5");
+        }
+        assertThrows(IllegalStateException.class, () -> new JdbcSchemaMigrator(runtime).verifyLatest());
+        assertThrows(IllegalStateException.class, () -> LocalSubmitActionHttpServer.create(config));
+    }
+
+    @Test void removedDiscoveryCommandIsInvalidBeforeAnyPersistence() throws Exception {
+        var host = rooms.create("Removed command", "Alice", "");
+        String id = host.room().roomId();
+        rooms.join(id, "Bob", "");
+        try (var server = LocalSubmitActionHttpServer.create(httpConfig()); var client = HttpClient.newHttpClient()) {
+            server.start();
+            String base = "http://127.0.0.1:" + server.port();
+            var before = new JdbcMatchStateStore(context).findById(id).orElseThrow();
+            java.time.Instant activity;
+            try (var connection = context.openConnection(); var query = connection.prepareStatement(
+                    "SELECT updated_at FROM " + context.table("match_state") + " WHERE match_id=?")) {
+                query.setString(1, id);
+                try (var rows = query.executeQuery()) { rows.next(); activity = rows.getTimestamp(1).toInstant(); }
+            }
+            var denied = submitHttp(client, base, id, "p1", host.token(), 0, "DECLARE_DISCOVERY", null, null);
+            assertEquals(400, denied.statusCode());
+            assertEquals("{\"code\":\"INVALID_REQUEST\"}", denied.body());
+            assertEquals(before, new JdbcMatchStateStore(context).findById(id).orElseThrow());
+            assertTrue(new JdbcWorkflowEventSink(context).allEvents().isEmpty());
+            try (var connection = context.openConnection(); var query = connection.prepareStatement(
+                    "SELECT updated_at, (SELECT count(*) FROM " + context.table("idempotency")
+                            + " WHERE match_id=?) FROM " + context.table("match_state") + " WHERE match_id=?")) {
+                query.setString(1, id); query.setString(2, id);
+                try (var rows = query.executeQuery()) {
+                    assertTrue(rows.next());
+                    assertEquals(activity, rows.getTimestamp(1).toInstant());
+                    assertEquals(0, rows.getLong(2));
+                }
+            }
+            acceptedHttp(client, base, id, "p1", host.token(), 0, "READY_SECRET", CODE, null);
+        }
+    }
+
+    @Test void compactHttpReceiptStaysExactAfterLaterActionsCorrectionAndRematch() throws Exception {
+        var host = rooms.create("Compact replay", "Alice", "");
+        String id = host.room().roomId(), token = host.token();
+        var guest = rooms.join(id, "Bob", "");
+        var json = new ObjectMapper();
+        String first = json.writeValueAsString(java.util.Map.of("matchId", id, "actorId", "p1",
+                "expectedVersion", 0, "idempotencyKey", "original-receipt",
+                "actionPayload", java.util.Map.of("actionType", "READY_SECRET", "payload", CODE)));
+        try (var server = LocalSubmitActionHttpServer.create(httpConfig()); var client = HttpClient.newHttpClient()) {
+            server.start();
+            String base = "http://127.0.0.1:" + server.port();
+            var original = http(client, base + "/local/submit-action", "POST", first, token);
+            assertEquals(200, original.statusCode());
+            acceptedHttp(client, base, id, "p2", guest.token(), 1, "READY_SECRET", CODE, null);
+            assertExactReplay(client, base, id, token, first, original.body());
+            acceptedHttp(client, base, id, "p1", token, 2, "PLAY_GUESS", CODE, null);
+            acceptedHttp(client, base, id, "p2", guest.token(), 3, "PLAY_GUESS", CODE, null);
+            acceptedHttp(client, base, id, "p1", token, 4, "SEND_FEEDBACK", null, "{\"bienPlaces\":0,\"malPlaces\":0}");
+            acceptedHttp(client, base, id, "p2", guest.token(), 5, "SEND_FEEDBACK", null, "{\"bienPlaces\":4,\"malPlaces\":0}");
+            assertExactReplay(client, base, id, token, first, original.body());
+            acceptedHttp(client, base, id, "p2", guest.token(), 6, "CORRECT_FEEDBACK", "{\"feedbackVersion\":6}", "{\"bienPlaces\":3,\"malPlaces\":0}");
+            assertTrue(new JdbcMatchStateStore(context).findById(id).orElseThrow().scores().isEmpty());
+            assertExactReplay(client, base, id, token, first, original.body());
+            acceptedHttp(client, base, id, "p2", guest.token(), 7, "ABANDON", null, null);
+            acceptedHttp(client, base, id, "p1", token, 8, "REQUEST_REMATCH", null, null);
+            acceptedHttp(client, base, id, "p2", guest.token(), 9, "REQUEST_REMATCH", null, null);
+            assertEquals(2, new JdbcMatchStateStore(context).findById(id).orElseThrow().gameNumber());
+            assertExactReplay(client, base, id, token, first, original.body());
+            var conflict = http(client, base + "/local/submit-action", "POST", first.replace("READY_SECRET", "PLAY_GUESS"), token);
+            assertEquals(409, conflict.statusCode());
+            assertEquals("IDEMPOTENCY_CONFLICT", json.readTree(conflict.body()).path("rejectionCode").asText());
+            try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                    "SELECT result_payload FROM " + context.table("idempotency") + " WHERE match_id=?")) {
+                sql.setString(1, id);
+                try (var rows = sql.executeQuery()) {
+                    int count = 0;
+                    while (rows.next()) {
+                        var stored = json.readTree(rows.getString(1));
+                        assertEquals(2, stored.path("formatVersion").asInt());
+                        assertFalse(stored.has("result"));
+                        assertFalse(stored.path("receipt").has("actionLog"));
+                        assertFalse(stored.path("receipt").has("action"));
+                        count++;
+                    }
+                    assertEquals(10, count);
+                }
+            }
+        }
+    }
+
+    private void assertExactReplay(HttpClient client, String base, String id, String token, String request, String original) throws Exception {
+        var state = new JdbcMatchStateStore(context).findById(id).orElseThrow();
+        int events = new JdbcWorkflowEventSink(context).allEvents().size();
+        java.time.Instant activity;
+        try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                "SELECT updated_at FROM " + context.table("match_state") + " WHERE match_id=?")) {
+            sql.setString(1, id);
+            try (var rows = sql.executeQuery()) { rows.next(); activity = rows.getTimestamp(1).toInstant(); }
+        }
+        var replay = http(client, base + "/local/submit-action", "POST", request, token);
+        assertEquals(200, replay.statusCode());
+        assertEquals(new ObjectMapper().readTree(original), new ObjectMapper().readTree(replay.body()));
+        assertEquals(state, new JdbcMatchStateStore(context).findById(id).orElseThrow());
+        assertEquals(events, new JdbcWorkflowEventSink(context).allEvents().size());
+        try (var connection = context.openConnection(); var sql = connection.prepareStatement(
+                "SELECT updated_at FROM " + context.table("match_state") + " WHERE match_id=?")) {
+            sql.setString(1, id);
+            try (var rows = sql.executeQuery()) { rows.next(); assertEquals(activity, rows.getTimestamp(1).toInstant()); }
+        }
+        var read = http(client, base + "/local/match-state?matchId=" + id + "&actorId=p1", "GET", null, token);
+        assertEquals(200, read.statusCode());
+        assertEquals(state.version(), new ObjectMapper().readTree(read.body()).path("version").asLong());
+    }
+
     private LocalSubmitActionRuntimeConfig httpConfig() {
         return new LocalSubmitActionRuntimeConfig(0, "/local/submit-action", "X-API-Key",
                 "local-http-validation-only-123", "X-Request-Id", "http://localhost:5175",
                 "GET,POST,OPTIONS", "Content-Type,X-API-Key,X-Room-Token", 60,
                 System.getenv("ARENA_TEST_DB_URL"), System.getenv("ARENA_TEST_DB_USER"),
-                System.getenv("ARENA_TEST_DB_PASSWORD"), context.schema(), "seed", "p1", "p2");
+                System.getenv("ARENA_TEST_DB_PASSWORD"), context.schema(), "seed", "p1", "p2", true);
     }
 
     private static void acceptedHttp(HttpClient client, String base, String id, String actor, String token,

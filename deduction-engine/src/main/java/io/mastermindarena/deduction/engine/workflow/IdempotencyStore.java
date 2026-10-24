@@ -7,6 +7,6 @@ public interface IdempotencyStore {
 
     void save(String key, Entry entry);
 
-    record Entry(String fingerprint, SubmitActionResult result) {
+    record Entry(String fingerprint, ActionReceipt receipt) {
     }
 }

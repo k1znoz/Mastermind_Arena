@@ -3,7 +3,7 @@ package io.mastermindarena.deduction.api.submitaction;
 import io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationRequest;
 import io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationResponse;
 import io.mastermindarena.deduction.engine.contract.RejectionOrigin;
-import io.mastermindarena.deduction.engine.workflow.MatchRuntimeState;
+import io.mastermindarena.deduction.engine.workflow.ActionReceipt;
 
 public final class SubmitActionHttpMapper {
     private SubmitActionHttpMapper() {
@@ -20,7 +20,7 @@ public final class SubmitActionHttpMapper {
     }
 
     public static SubmitActionHttpResponse.Envelope fromApplicationResponse(SubmitActionApplicationResponse response) {
-        MatchRuntimeState state = response.state();
+        ActionReceipt receipt = response.receipt();
 
         if (response.accepted()) {
             return new SubmitActionHttpResponse.Envelope(
@@ -29,9 +29,9 @@ public final class SubmitActionHttpMapper {
                             true,
                             null,
                             null,
-                            state == null ? null : state.matchId(),
-                            state == null ? null : state.version(),
-                            state == null ? null : state.status(),
+                            receipt == null ? null : receipt.matchId(),
+                            receipt == null ? null : receipt.version(),
+                            receipt == null ? null : receipt.status(),
                             response.emittedEvents()
                     )
             );
@@ -48,9 +48,9 @@ public final class SubmitActionHttpMapper {
                         false,
                         origin.name(),
                         response.rejection().code(),
-                        state == null ? null : state.matchId(),
-                        state == null ? null : state.version(),
-                        state == null ? null : state.status(),
+                        receipt == null ? null : receipt.matchId(),
+                        receipt == null ? null : receipt.version(),
+                        receipt == null ? null : receipt.status(),
                         response.emittedEvents()
                 )
         );
