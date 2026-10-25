@@ -94,6 +94,9 @@ const corrected = (await send(p2, 'CORRECT_FEEDBACK', JSON.stringify({feedbackVe
   JSON.stringify({bienPlaces:3, malPlaces:0}))).state
 assert.ok(!corrected.winnerId && (corrected.scores.p1 ?? 0) === 0, 'Correction must withdraw the point')
 assert.equal(corrected.requiredPlayers.length, 2)
+const correctedHints = corrected.turns.find(action => action.version === target)
+assert.deepEqual(correctedHints.feedback, ['BLACK','BLACK','BLACK'], 'Board must use the three corrected black hints sent above')
+assert.deepEqual(correctedHints.originalFeedback, ['BLACK','BLACK','BLACK','BLACK'], 'History must retain initial hints')
 await send(p2, 'PLAY_GUESS', otherCode)
 await send(p1, 'CONTEST_FEEDBACK', JSON.stringify({feedbackVersion:target}))
 await reject(p1, 'CONTEST_FEEDBACK', 'FEEDBACK_ALREADY_CONTESTED', 400, JSON.stringify({feedbackVersion:target}))

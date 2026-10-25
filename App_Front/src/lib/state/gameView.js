@@ -27,9 +27,23 @@ export function deriveGameView(options = {}) {
   const ownGuesses = byActor('PLAY_GUESS', actorId)
   const opponentGuesses = byActor('PLAY_GUESS', opponentActorId)
   const finished = state?.state === 'FINISHED'
+  const displayPlayerName = playerName.trim() || (actorId === 'p2' ? 'Joueur 2' : 'Joueur 1')
+  const researchSummaries = (state?.players ?? []).map(player => {
+    const solved = (state?.solvedPlayers ?? []).includes(player)
+    // Solved status comes from the server. Effective hints only locate its published attempt.
+    const discovery = solved ? turns.filter(entry => entry.actionType === 'SEND_FEEDBACK'
+      && entry.actorId !== player && entry.feedback?.length === CODE_LENGTH
+      && entry.feedback.every(peg => peg === 'BLACK')).sort((a, b) => a.turnNumber - b.turnNumber)[0] : null
+    const foundGuess = discovery ? turns.find(entry => entry.actionType === 'PLAY_GUESS'
+      && entry.actorId === player && entry.turnNumber === discovery.turnNumber) : null
+    return { actorId: player, name: player === actorId ? displayPlayerName : opponentName, solved,
+      winner: state?.winnerId === player, turnNumber: discovery?.turnNumber ?? null,
+      guess: foundGuess?.guess ?? [], abandoned: turns.some(entry => entry.actionType === 'ABANDON' && entry.actorId === player) }
+  })
 
   return {
     actorId, opponentActorId, opponentName, turns, round, finished,
+    researchSummaries,
     matchState: state,
     phaseKey: `${state?.matchId}:${state?.gameNumber}:${state?.state}`,
     feedbackKey: `${state?.matchId}:${state?.gameNumber}:${round}`,
@@ -41,7 +55,7 @@ export function deriveGameView(options = {}) {
     theirSolved: (state?.solvedPlayers ?? []).includes(opponentActorId),
     myRematchAsked: (state?.rematchRequestedPlayers ?? []).includes(actorId),
     theirRematchAsked: (state?.rematchRequestedPlayers ?? []).includes(opponentActorId),
-    notices: turns.filter(entry => ['CORRECT_FEEDBACK', 'CONTEST_FEEDBACK'].includes(entry.actionType)).slice(-3).reverse(),
+    notices: turns.filter(entry => ['CORRECT_FEEDBACK', 'CONTEST_FEEDBACK'].includes(entry.actionType)).reverse(),
     result: state?.winnerId === 'DRAW' ? 'Égalité dans le duel' : state?.winnerId === actorId
       ? 'Vous avez remporté le duel' : state?.winnerId ? `${opponentName} a remporté le duel` : '',
     isPrototype: !isBackendReady, isBackendReady, isMyTurn, canRespond, hasSecretSet, hasOpponentReady,
@@ -61,7 +75,7 @@ export function deriveGameView(options = {}) {
       : state?.state === 'WAITING_FEEDBACK' ? 'REPONDEZ A L ADVERSAIRE' : ownGuessSubmitted ? 'TENTATIVE ENVOYEE'
         : !completeDraft(guessDraft.slots) ? 'SEQUENCE INCOMPLETE' : 'ENVOYER TENTATIVE',
     historyRows: turns.slice().reverse(),
-    displayPlayerName: playerName.trim() || (actorId === 'p2' ? 'Joueur 2' : 'Joueur 1'),
+    displayPlayerName,
     displayRound: finished && !turns.some(entry => entry.actionType === 'ABANDON') ? Math.max(1, round) : round + 1
   }
 }

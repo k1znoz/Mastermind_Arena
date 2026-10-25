@@ -1,0 +1,170 @@
+[
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 320
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 390
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 650
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 768
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 850
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 851
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 1024
+  },
+  {
+    "enabled": true,
+    "overflow": false,
+    "phase": "guess",
+    "width": 1440
+  },
+  {
+    "comparisonColumns": "273px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 320
+  },
+  {
+    "comparisonColumns": "343px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 390
+  },
+  {
+    "comparisonColumns": "603px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 650
+  },
+  {
+    "comparisonColumns": "350.5px 350.5px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 768
+  },
+  {
+    "comparisonColumns": "370px 370px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 850
+  },
+  {
+    "comparisonColumns": "284px 284px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 851
+  },
+  {
+    "comparisonColumns": "370px 370px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 1024
+  },
+  {
+    "comparisonColumns": "370px 370px",
+    "counters": [
+      "2",
+      "1"
+    ],
+    "overflow": false,
+    "phase": "feedback",
+    "width": 1440
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 320
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 390
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 650
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 768
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 850
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 851
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 1024
+  },
+  {
+    "overflow": false,
+    "phase": "guess-final",
+    "width": 1440
+  }
+]

@@ -9,6 +9,7 @@ export function roomErrorText(error) {
  * @param {{getScope: () => string, getContext: () => {matchId: string, roomToken: string},
  * createClient: () => any, onRooms: (rooms: any[]) => void, onStatus: (room: any) => unknown,
  * onAdmission: (admission: any, recovered: boolean) => void, onBusy: (busy: boolean) => void,
+ * onStatusBusy?: (busy: boolean) => void,
  * onError: (message: string, recovery: boolean) => void}} options
  */
 export function createRoomConnection(options) {
@@ -21,6 +22,7 @@ export function createRoomConnection(options) {
     for (const entry of flights.values()) entry.controller.abort()
     flights.clear()
     options.onBusy(false)
+    options.onStatusBusy?.(false)
   }
 
   function run(lane, request, apply, recovery = false) {
@@ -31,6 +33,7 @@ export function createRoomConnection(options) {
     const entry = { scope, epoch, controller: new AbortController(), promise: null }
     flights.set(lane, entry)
     if (lane === 'admission') options.onBusy(true)
+    if (lane === 'status') options.onStatusBusy?.(true)
     options.onError('', recovery)
     entry.promise = (async () => {
       try {
@@ -45,6 +48,7 @@ export function createRoomConnection(options) {
         if (flights.get(lane) === entry) {
           flights.delete(lane)
           if (lane === 'admission') options.onBusy(false)
+          if (lane === 'status') options.onStatusBusy?.(false)
         }
       }
     })()

@@ -88,6 +88,27 @@ class BoardLifecycleTest {
         assertEquals(2, state().turnNumber());
     }
 
+    @Test void correctionHistoryPreservesInitialHintsAcrossMultipleCorrections() {
+        ready(); guesses();
+        MatchRuntimeState initial = act("p1", "SEND_FEEDBACK", null, ZERO);
+        long target = initial.actionLog().get(initial.actionLog().size() - 1).version();
+        assertTrue(MatchStateHttpMapper.fromRuntimeState(initial, "p2").turns().stream()
+                .noneMatch(action -> action.version() == target));
+        act("p2", "SEND_FEEDBACK", null, ZERO);
+        act("p1", "CORRECT_FEEDBACK", target(target), FOUND);
+        String partial = "{\"bienPlaces\":1,\"malPlaces\":1}";
+        MatchRuntimeState corrected = act("p1", "CORRECT_FEEDBACK", target(target), partial);
+        for (String reader : List.of("p1", "p2")) {
+            var response = MatchStateHttpMapper.fromRuntimeState(corrected, reader);
+            var feedback = response.turns().stream().filter(action -> action.version() == target).findFirst().orElseThrow();
+            assertEquals(partial, feedback.feedback());
+            assertEquals(ZERO, feedback.originalFeedback());
+            var changes = response.turns().stream().filter(action -> "CORRECT_FEEDBACK".equals(action.actionType())).toList();
+            assertEquals(List.of(FOUND, partial), changes.stream().map(action -> action.feedback()).toList());
+            assertTrue(changes.stream().allMatch(action -> action.originalFeedback() == null));
+        }
+    }
+
     @Test void correctionOfDrawChangesScoreAndRematchNeedsNewConsent() {
         ready(); guesses();
         act("p1", "SEND_FEEDBACK", null, FOUND);

@@ -33,6 +33,9 @@ public final class MatchStateHttpMapper {
             default -> List.of();
         };
         List<MatchActionRecord> actions = MastermindBoardRules.effectiveActions(state);
+        var originalFeedbacks = state.actionLog().stream()
+                .filter(action -> SubmitActionCommand.SEND_FEEDBACK.equals(action.actionType()))
+                .collect(java.util.stream.Collectors.toMap(MatchActionRecord::version, MatchActionRecord::feedback));
         List<String> ready = state.actorOrder().stream().filter(id -> state.actionLog().stream().anyMatch(a ->
                 SubmitActionCommand.READY_SECRET.equals(a.actionType()) && id.equals(a.actorId()))).toList();
         List<String> submitted = required.stream().filter(id -> SubmitActionCommand.READY_SECRET.equals(phase)
@@ -42,7 +45,7 @@ public final class MatchStateHttpMapper {
                 .filter(action -> !(phase.equals(action.actionType()) && action.roundNumber() == state.turnNumber()
                         && !actor.isOwner(action.actorId())))
                 .map(action -> new MatchStateHttpResponse.TurnEntry(action.roundNumber() + 1, action.actorId(), action.actionType(),
-                        action.guess(), action.feedback(), action.timestamp(), action.version())).toList();
+                        action.guess(), action.feedback(), action.timestamp(), action.version(), originalFeedbacks.get(action.version()))).toList();
         List<String> rematch = state.actorOrder().stream().filter(id -> state.actionLog().stream().anyMatch(action ->
                 SubmitActionCommand.REQUEST_REMATCH.equals(action.actionType()) && id.equals(action.actorId()))).toList();
         boolean reveal = state.isTerminal() && state.actionLog().stream().anyMatch(action -> SubmitActionCommand.ABANDON.equals(action.actionType()));

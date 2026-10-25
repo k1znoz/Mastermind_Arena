@@ -1,6 +1,6 @@
 # Tabler Icons
 
-Douze icônes SVG issues de Tabler Icons v3.35.0, conservées sans modification :
+Vingt icônes SVG issues de Tabler Icons v3.35.0, conservées sans modification :
 https://github.com/tabler/tabler-icons/tree/v3.35.0/icons/outline
 
 Licence MIT et attribution : voir `LICENSE` dans ce dossier.

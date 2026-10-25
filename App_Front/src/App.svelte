@@ -15,6 +15,7 @@
 	import { createPhaseFocus, browserFocusSurface } from './lib/state/phaseFocus.js'
 	import TopBar from './lib/components/TopBar.svelte'
 	import DuelNav from './lib/components/DuelNav.svelte'
+	import PrivateRecoveryPanel from './lib/components/PrivateRecoveryPanel.svelte'
 	import Icon from './lib/components/Icon.svelte'
 	import userCircle from './lib/assets/tabler/user-circle.svg'
 
@@ -34,6 +35,7 @@
 	/** @typedef {{ matchId?: string, state?: string, activePlayer?: string, feedbackGiver?: string, players?: string[], readyPlayers?: string[], turns?: Array<Record<string, unknown>>, version?: number, visibleSecretCode?: string[] }} MatchStateLike */
 
 	let activeTab = 'partie'
+	let noticeDismissals = { context: '', versions: [] }
 	let view = 'welcome'
 	let rooms = []
 	let roomBusy = false
@@ -66,6 +68,7 @@
 	let submitError = ''
 
 	let toast = /** @type {ToastState} */ (null)
+	let waitingRefreshing = false
 	let toastTimer = /** @type {ReturnType<typeof setTimeout> | null} */ (null)
 
 	let debugLastRequest = /** @type {unknown} */ (null)
@@ -124,6 +127,7 @@
 		roomConnection.invalidate()
 		view = 'lobby'
 		refreshRooms()
+		void focusAfterNavigation('lobby-title')
 	}
 
 	function enterRoom(admission) {
@@ -177,7 +181,16 @@
 		view = 'lobby'
 		activeTab = 'partie'
 		refreshRooms()
+		void focusAfterNavigation('lobby-title')
 	}
+
+    async function focusAfterNavigation(targetId) {
+        const context = getGameContext()
+        const destination = view
+        const tab = activeTab
+        await tick()
+        if (view === destination && activeTab === tab && sameContext(context, getGameContext())) document.getElementById(targetId)?.focus()
+    }
 
     function forgetRoom() {
         if (!sessionRepository?.forget()) {
@@ -270,6 +283,7 @@
             enterRoom(admission)
         },
         onBusy: busy => { roomBusy = busy },
+        onStatusBusy: busy => { waitingRefreshing = busy },
         onError: (message, recovery) => {
             if (recovery) recoveryError = message
             else lobbyError = message
@@ -280,6 +294,7 @@
         phaseFocus.cancel()
         roomConnection.invalidate()
         view = 'welcome'
+        void focusAfterNavigation('welcome-pseudo')
     }
 
     const gameConnection = createGameConnection({
@@ -407,6 +422,11 @@
 		activeTab = event.detail.tab
 	}
 
+    function openHistory(event) {
+        onNavChange(event)
+        void focusAfterNavigation('history-title')
+    }
+
 	/** @param {CustomEvent<{ index: number }>} event */
 	function onSelectSetupSlot(event) {
 		setSelectedSetupSlot(event.detail.index)
@@ -481,7 +501,7 @@
 			<RecoveryScreen bind:value={recoveryInput} busy={roomBusy} error={recoveryError} on:recover={recoverRoom} on:back={closeRecovery} />
 		{/if}
 		{#if view === 'waiting'}
-			<WaitingScreen {roomName} hostPseudo={roomInfo?.hostPseudo || playerName} locked={roomInfo?.locked ?? false} error={lobbyError} on:refresh={refreshRoomStatus} on:lobby={returnToLobby} on:forget={forgetRoom} />
+			<WaitingScreen {roomName} hostPseudo={roomInfo?.hostPseudo || playerName} locked={roomInfo?.locked ?? false} error={lobbyError} refreshing={waitingRefreshing} on:refresh={refreshRoomStatus} on:lobby={returnToLobby} on:forget={forgetRoom} />
 		{/if}
         {#if view === 'game'}
         <section class="match-overview">
@@ -493,12 +513,12 @@
                 <div class="match-player"><Icon src={userCircle} size={32} /><span>{gameView.opponentName}</span></div>
             </div>
             {#if syncStatus === 'error' && syncMessage}<div class="connection-error" role="alert"><p>{syncMessage}</p><button type="button" on:click={refreshMatchState}>Réessayer</button></div>{/if}
-            <details class="room-tools"><summary>Reprendre sur un autre appareil</summary><p>Ce code privé donne accès à votre place dans la partie. Conservez-le et ne le partagez pas avec votre adversaire.</p><label>Votre code de reprise<input readonly value={recoveryCode} on:focus={(event) => event.currentTarget.select()} /></label><p>Sur un appareil partagé, copiez votre code avant d’oublier cette place. La partie ne sera pas supprimée.</p><button type="button" on:click={forgetRoom}>Oublier ma place sur cet appareil</button></details>
+            <PrivateRecoveryPanel code={recoveryCode} playerName={gameView.displayPlayerName} opponentName={gameView.opponentName} on:forget={forgetRoom} />
         </section>
         {/if}
 
 		{#if view === 'game' && activeTab === 'partie'}
-			<PartieScreen view={gameView}
+			<PartieScreen view={gameView} bind:noticeDismissals on:history={openHistory}
 				on:selectsetupslot={onSelectSetupSlot}
 				on:selectguessslot={onSelectGuessSlot}
 				on:choosesetupsymbol={onChooseSetupSymbol}
@@ -517,8 +537,9 @@
 
 		{#if view === 'game' && activeTab === 'historique'}
 			<HistoryScreen
-				isPrototype={gameView.isPrototype}
+				syncing={syncStatus === 'syncing'}
 				historyRows={gameView.historyRows}
+				actorId={currentActorId} playerName={gameView.displayPlayerName} opponentName={gameView.opponentName}
 				onRefresh={refreshMatchState}
 			/>
 		{/if}
@@ -547,22 +568,18 @@
   @media(max-width:600px) { .screen { padding:16px 12px; } }
   .arrival-view { padding-top:104px; padding-bottom:32px; background:var(--bg); }
   .arrival-view .screen { max-width:1360px; padding:32px 48px; }
-  :global(:root:not([data-theme="light"])) .arrival-view { --bg:#10181f; --panel:#162129; --panel-strong:#202c36; --line:#2d3c48; --line-soft:#435461; --primary:#63d0d4; --primary-soft:#83dfdf; --on-primary:#10262d; --text:#f0f3f7; --muted:#b9c4d0; }
+  :global(:root:not([data-theme="light"])) .arrival-view,
+  :global(:root:not([data-theme="light"])) .duel-view { --bg:#10181f; --panel:#162129; --panel-strong:#202c36; --line:#2d3c48; --line-soft:#435461; --primary:#63d0d4; --primary-soft:#83dfdf; --on-primary:#10262d; --text:#f0f3f7; --muted:#b9c4d0; }
   @media(max-width:600px) { .arrival-view { padding-top:80px; padding-bottom:24px; } .arrival-view .screen { padding:20px 24px; } }
   @media(max-width:650px) { .compact-board .screen { padding:6px; gap:5px; } }
-  .duel-view { padding-bottom:calc(88px + env(safe-area-inset-bottom)); }
+  .duel-view { background:var(--bg); padding-bottom:calc(88px + env(safe-area-inset-bottom)); }
   @media(min-width:851px) { .duel-view { padding-left:216px; padding-bottom:32px; } }
-.match-overview { display:grid; gap:12px; width:100%; max-width:760px; margin:0 auto 10px; padding:8px 0; }
+.match-overview { position:relative; display:grid; gap:12px; width:100%; max-width:1048px; margin:0 auto 10px; padding:8px 0; }
 .match-round { margin:0; text-align:center; color:var(--muted); font-size:13px; }
 .match-heading { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:24px; align-items:center; max-width:600px; width:100%; margin:auto; }
 .match-player { display:flex; align-items:center; gap:12px; min-width:0; padding:12px 16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
 .match-player span { min-width:0; overflow-wrap:anywhere; font-size:15px; }
 .match-score { white-space:nowrap; font:600 30px Inter,sans-serif; }
-.room-tools { width:100%; }
-.room-tools summary { min-height:44px; padding:12px 0; cursor:pointer; font-size:13px; color:var(--muted); }
-.room-tools p { color:var(--muted); font-size:13px; line-height:1.6; }
-.room-tools label { display:grid; gap:8px; font-size:13px; }
-.room-tools input { min-width:0; width:100%; min-height:44px; padding:10px; color:var(--text); border:1px solid var(--line); background:var(--panel-strong); font-size:14px; }
 .connection-error { margin-top:12px; color:var(--error); font-size:14px; }
 .connection-error button { min-height:44px; border:1px solid var(--error); background:transparent; color:var(--error); padding:8px 12px; }
 @media(max-width:650px) {
@@ -571,7 +588,6 @@
   .match-player { gap:6px; padding:10px 8px; border-radius:12px; }
   .match-player span { font-size:13px; }
   .match-score { font-size:24px; }
-  .room-tools summary { text-align:center; }
 }
 
 </style>

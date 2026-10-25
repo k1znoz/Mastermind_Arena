@@ -1,0 +1,125 @@
+{
+  "waitingChecks": [
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 305,
+      "width": 320
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 375,
+      "width": 390
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 635,
+      "width": 650
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 753,
+      "width": 768
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 835,
+      "width": 850
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 836,
+      "width": 851
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 1009,
+      "width": 1024
+    },
+    {
+      "overflow": false,
+      "screen": "waiting-error-long-names",
+      "scrollWidth": 1425,
+      "width": 1440
+    }
+  ],
+  "historyChecks": [
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 305,
+      "width": 320
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 375,
+      "width": 390
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 635,
+      "width": 650
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 753,
+      "width": 768
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 835,
+      "width": 850
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 836,
+      "width": 851
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 1009,
+      "width": 1024
+    },
+    {
+      "lastTurn": "Tour 100",
+      "overflow": false,
+      "rows": 400,
+      "screen": "history-400-long-names",
+      "scrollWidth": 1425,
+      "width": 1440
+    }
+  ],
+  "keyboardBusy": "focus stays on refresh; Tab reaches Voir les parties",
+  "navigation": "lobby remains after delayed waiting response",
+  "focusAfterWaiting": {
+    "id": "lobby-title",
+    "tabindex": -1,
+    "nextTab": "Changer de pseudo"
+  }
+}

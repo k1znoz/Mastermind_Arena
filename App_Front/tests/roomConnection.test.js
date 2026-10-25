@@ -8,14 +8,15 @@ function deferred() {
   return { promise, resolve, reject }
 }
 function harness(client) {
-  const events = { rooms: [], statuses: [], admissions: [], busy: [], errors: [] }
+  const events = { rooms: [], statuses: [], admissions: [], busy: [], statusBusy: [], errors: [] }
   let scope = 'lobby:first-seat'
   const connection = createRoomConnection({
     getScope: () => scope, getContext: () => ({ matchId: 'board', roomToken: 'test-seat' }),
     createClient: () => client, onRooms: value => events.rooms.push(value),
     onStatus: value => events.statuses.push(value),
     onAdmission: (value, recovered) => events.admissions.push({ value, recovered }),
-    onBusy: value => events.busy.push(value), onError: (message, recovery) => events.errors.push({ message, recovery })
+    onBusy: value => events.busy.push(value), onStatusBusy: value => events.statusBusy.push(value),
+    onError: (message, recovery) => events.errors.push({ message, recovery })
   })
   return { connection, events, scope: value => { scope = value } }
 }
@@ -124,4 +125,54 @@ test('admission errors leave the operation retryable and never disclose unknown 
   assert.equal(h.events.admissions.length, 1)
   assert.ok(!roomErrorText(new Error('private payload')).includes('private payload'))
   assert.equal(roomErrorText(new Error('constructor')), 'Impossible de charger cette partie. Réessayez.')
+})
+
+test('failed shared waiting reads preserve the last status and allow retry', async () => {
+  const pending = deferred()
+  let attempts = 0
+  const h = harness({ status: () => ++attempts === 1 ? pending.promise : Promise.resolve({ joined: true }) })
+  const first = h.connection.refreshStatus()
+  assert.equal(h.connection.refreshStatus(), first)
+  assert.equal(attempts, 1)
+  assert.deepEqual(h.events.statusBusy, [true])
+  pending.reject(new Error('private database diagnostic'))
+  await first
+  assert.deepEqual(h.events.statuses, [])
+  assert.equal(h.events.errors.at(-1).message, 'Impossible de charger cette partie. Réessayez.')
+  await h.connection.refreshStatus()
+  assert.deepEqual(h.events.statuses, [{ joined: true }])
+  assert.equal(attempts, 2)
+  assert.equal(h.events.errors.at(-1).message, '')
+  assert.deepEqual(h.events.statusBusy, [true, false, true, false])
+})
+
+test('late waiting failures cannot replace the error of a newer screen', async () => {
+  const pending = deferred()
+  const h = harness({ status: () => pending.promise, list: () => Promise.reject(new Error('HTTP:NETWORK_ERROR')) })
+  h.scope('waiting:first-seat')
+  const waiting = h.connection.refreshStatus()
+  h.connection.invalidate()
+  h.scope('lobby:first-seat')
+  await h.connection.refreshRooms()
+  const errors = [...h.events.errors]
+  pending.reject(new Error('ROOM_NOT_FOUND'))
+  await waiting
+  assert.deepEqual(h.events.errors, errors)
+  assert.deepEqual(h.events.statuses, [])
+})
+
+test('an old waiting finally cannot clear a new waiting loading indicator', async () => {
+  const old = deferred(), next = deferred()
+  let calls = 0
+  const h = harness({ status: () => calls++ === 0 ? old.promise : next.promise })
+  const previous = h.connection.refreshStatus()
+  h.connection.invalidate()
+  const current = h.connection.refreshStatus()
+  old.resolve({ joined: false })
+  await previous
+  assert.deepEqual(h.events.statusBusy, [true, false, true])
+  next.resolve({ joined: true })
+  await current
+  assert.deepEqual(h.events.statusBusy, [true, false, true, false])
+  assert.deepEqual(h.events.statuses, [{ joined: true }])
 })

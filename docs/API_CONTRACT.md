@@ -1,5 +1,9 @@
 # Contrat HTTP courant
 
+Extension additive du 25 octobre : `turns[].originalFeedback` contient les compteurs JSON initialement enregistrés pour SEND_FEEDBACK, ou null pour les autres actions. `feedback` reste la valeur effective utilisée par le plateau après corrections. Les CORRECT_FEEDBACK successifs conservent leurs nouvelles valeurs dans `feedback`. Le champ initial est ajouté uniquement aux entrées ayant déjà franchi le filtre de confidentialité ; ni actions cachées ni secrets supplémentaires ne sont publiés. Aucun changement de stockage ou migration.
+
+Le front accepte l'absence/null de ce champ pour un ancien backend. Lorsqu'il existe, ses compteurs sont validés et décodés sans fabriquer de valeur de remplacement. L'historique utilise la valeur initiale ; les plateaux gardent la valeur effective. Si un ancien backend ne fournit pas l'original après correction, l'historique signale explicitement les valeurs actuelles.
+
 Version de travail du 14 octobre 2026. Source : handlers JDK, mappers et validateurs front. Toutes les requêtes métier utilisent `X-API-Key` (nom configurable). Cette clé est publique côté navigateur ; l'accès à une place exige en plus `X-Room-Token`.
 
 Découpage du 15 octobre sans évolution de format : routes câblées par `LocalSubmitActionHttpServer`, handlers dans `GameHttpHandlers` et `RoomHttpHandlers`, outils de transport dans `HttpExchangeSupport`. Les tests PostgreSQL/HTTP caractérisent le masquage des actions en cours, le refus des corrections par un autre auteur, CORS/OPTIONS, clé d'API et identifiant de requête.

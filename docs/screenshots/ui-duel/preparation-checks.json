@@ -1,0 +1,58 @@
+[
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "85.6562px 85.6719px 85.6562px",
+    "slotWidth": 273,
+    "width": 320
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "109px 109px 109px",
+    "slotWidth": 343,
+    "width": 390
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "195.656px 195.672px 195.672px",
+    "slotWidth": 600,
+    "width": 650
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "111.828px 111.828px 111.844px 111.828px 111.828px 111.844px",
+    "slotWidth": 600,
+    "width": 768
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "118.328px 118.328px 118.344px 118.328px 118.328px 118.344px",
+    "slotWidth": 600,
+    "width": 850
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "89.6562px 89.6719px 89.6562px 89.6719px 89.6719px 89.6562px",
+    "slotWidth": 588,
+    "width": 851
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "118.328px 118.328px 118.344px 118.328px 118.328px 118.344px",
+    "slotWidth": 600,
+    "width": 1024
+  },
+  {
+    "confirmDisabled": true,
+    "overflow": false,
+    "paletteColumns": "118.328px 118.328px 118.344px 118.328px 118.328px 118.344px",
+    "slotWidth": 600,
+    "width": 1440
+  }
+]

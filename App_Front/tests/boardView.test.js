@@ -63,3 +63,37 @@ test('draw, abandonment round and rematch use server facts without calculating a
   assert.equal(restarted.result, '')
   assert.deepEqual(restarted.setupSlots, ['_', '_', '_', '_'])
 })
+
+test('research summaries trust solved flags and only display an authorized published guess', () => {
+  const turns = [
+    { actionType: 'PLAY_GUESS', actorId: 'p1', turnNumber: 1, guess: ['A','A','C','B'] },
+    { actionType: 'SEND_FEEDBACK', actorId: 'p2', turnNumber: 1, feedback: ['BLACK','BLACK','BLACK','BLACK'] },
+    { actionType: 'PLAY_GUESS', actorId: 'p2', turnNumber: 2, guess: ['F','F','F','F'] },
+    { actionType: 'SEND_FEEDBACK', actorId: 'p1', turnNumber: 2, feedback: ['BLACK','BLACK','BLACK','BLACK'] }
+  ]
+  const state = { ...ready(), turns, roundNumber: 1, winnerId: 'p1', solvedPlayers: ['p1'] }
+  const summaries = deriveGameView({state, playerName:'Alice', roomInfo:{guestPseudo:'Bob'}}).researchSummaries
+  assert.equal(summaries[0].name, 'Alice')
+  assert.equal(summaries[0].turnNumber, 1)
+  assert.deepEqual(summaries[0].guess, ['A','A','C','B'])
+  assert.equal(summaries[1].solved, false)
+  assert.deepEqual(summaries[1].guess, [], 'private hints must not anticipate a server discovery')
+  const reopened = deriveGameView({state:{...state, winnerId:null,solvedPlayers:[]}}).researchSummaries
+  assert.ok(reopened.every(research => !research.solved && research.guess.length === 0))
+})
+
+test('abandonment and missing discovery records never fabricate a result combination', () => {
+  const state = snapshot({state:'FINISHED',solvedPlayers:['p2'],winnerId:'p2',turns:[{actionType:'ABANDON',actorId:'p1'}]})
+  const summaries = deriveGameView({state,actorId:'p2',playerName:'Bob',roomInfo:{hostPseudo:'Alice'}}).researchSummaries
+  assert.equal(summaries[0].name,'Alice')
+  assert.equal(summaries[0].abandoned,true)
+  assert.deepEqual(summaries[0].guess,[])
+  assert.equal(summaries[1].winner,true)
+  assert.equal(summaries[1].turnNumber,null)
+  assert.deepEqual(summaries[1].guess,[])
+})
+
+test('persistent notices are not silently limited to the last three events', () => {
+  const turns = Array.from({length:5},(_,index)=>({actionType:'CONTEST_FEEDBACK',version:index+1}))
+  assert.deepEqual(deriveGameView({state:snapshot({turns})}).notices.map(entry=>entry.version),[5,4,3,2,1])
+})

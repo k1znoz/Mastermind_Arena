@@ -43,7 +43,8 @@ public record MatchStateHttpResponse(
             String guess,
             String feedback,
             long timestamp,
-            long version
+            long version,
+            String originalFeedback
     ) {
     }
 

@@ -1,9 +1,22 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { validateMatchResponse, validateAdmission } from '../src/lib/api/responseContract.js'
+import { validateMatchResponse, validateAdmission, decodeTurnContent } from '../src/lib/api/responseContract.js'
 import { readFile } from 'node:fs/promises'
 import { createMatchStateClient } from '../src/lib/api/matchStateClient.js'
 import { createGameConnection } from '../src/lib/state/gameConnection.js'
+
+test('initial hints stay distinct from effective hints and older responses remain readable', () => {
+  const action = {actionType:'SEND_FEEDBACK',guess:null,feedback:'{"bienPlaces":0,"malPlaces":0}',originalFeedback:'{"bienPlaces":4,"malPlaces":0}'}
+  const decoded = decodeTurnContent(action)
+  assert.deepEqual(decoded.feedback,[])
+  assert.deepEqual(decoded.originalFeedback,['BLACK','BLACK','BLACK','BLACK'])
+  assert.equal(decodeTurnContent({...action,originalFeedback:undefined}).originalFeedback,undefined)
+  assert.equal(decodeTurnContent({...action,originalFeedback:null}).originalFeedback,undefined)
+  for(const bad of ['{}','null','{"bienPlaces":5,"malPlaces":0}','{"bienPlaces":1.5,"malPlaces":0}','{"bienPlaces":0,"malPlaces":0} {}']) {
+    assert.throws(()=>decodeTurnContent({...action,originalFeedback:bad}),/INVALID_MATCH_RESPONSE/)
+  }
+  assert.throws(()=>decodeTurnContent({...action,actionType:'PLAY_GUESS',guess:'["A","B","C","D"]',feedback:null}),/INVALID_MATCH_RESPONSE/)
+})
 
 test('additive public response fields work, incompatible deployment preserves the last valid board', async t => {
   const baseline = JSON.parse(await readFile(new URL('../../deduction-engine/src/test/resources/contracts/match-preparation.json', import.meta.url), 'utf8'))

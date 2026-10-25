@@ -25,7 +25,7 @@
 
 <section class="lobby-screen">
   <header class="lobby-header">
-    <div><h1>Bonjour {playerName}</h1><button class="change-name" type="button" on:click={() => dispatch('back')}>Changer de pseudo</button></div>
+    <div><h1 id="lobby-title" tabindex="-1">Bonjour {playerName}</h1><button class="change-name" type="button" on:click={() => dispatch('back')}>Changer de pseudo</button></div>
   </header>
   {#if error}<p class="lobby-error" role="alert">{error}</p>{/if}
   <div class="lobby-grid">

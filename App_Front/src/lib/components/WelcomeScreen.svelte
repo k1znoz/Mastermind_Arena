@@ -10,7 +10,7 @@
 <section class="welcome-screen">
   <h1>Deux plateaux. Un duel.</h1>
   <p>Cherchez le code adverse en même temps.<br />Donnez ensuite les indices à la main.</p>
-  <label><span>Votre pseudo</span><span class="pseudo-input"><Icon src={userCircle} /><input type="text" maxlength="24" autocomplete="nickname" placeholder="Ex. Alex" bind:value={playerName} on:keydown={(event) => { if (event.key === 'Enter' && playerName.trim()) dispatch('continue') }} /></span></label>
+  <label><span>Votre pseudo</span><span class="pseudo-input"><Icon src={userCircle} /><input id="welcome-pseudo" type="text" maxlength="24" autocomplete="nickname" placeholder="Ex. Alex" bind:value={playerName} on:keydown={(event) => { if (event.key === 'Enter' && playerName.trim()) dispatch('continue') }} /></span></label>
   <button type="button" class="arrival-primary" disabled={!playerName.trim()} on:click={() => dispatch('continue')}>Voir les parties</button>
   {#if canResume}<button type="button" class="arrival-secondary" on:click={() => dispatch('resume')}>Reprendre ma partie</button>{/if}
   <div class="recovery-entry"><button id="open-recovery" type="button" on:click={() => dispatch('openrecovery')}>Reprendre une partie</button></div>

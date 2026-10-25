@@ -8,6 +8,7 @@
   export let hostPseudo = ''
   export let locked = false
   export let error = ''
+  export let refreshing = false
   const dispatch = createEventDispatcher()
 </script>
 
@@ -22,7 +23,7 @@
     <div class="waiting-error" role="alert"><p>{error}</p><button type="button" on:click={() => dispatch('forget')}>Oublier cette reprise sur cet appareil</button></div>
   {/if}
   <div class="actions">
-    <button class="primary" type="button" on:click={() => dispatch('refresh')}><Icon src={refresh} />Actualiser</button>
+    <button class="primary" type="button" aria-label={refreshing ? 'Actualisation…' : 'Actualiser'} aria-disabled={refreshing} on:click={() => { if (!refreshing) dispatch('refresh') }}><Icon src={refresh} /><span role="status">{refreshing ? 'Actualisation…' : 'Actualiser'}</span></button>
     <button type="button" on:click={() => dispatch('lobby')}><Icon src={list} />Voir les parties</button>
   </div>
 </section>

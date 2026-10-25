@@ -2,6 +2,8 @@
 
 `scripts/verify-local-contract.mjs` utilise les vrais clients JavaScript contre un serveur Java/JDBC local déjà démarré. Il crée deux parties de test et joue les deux places ; il ne pilote pas de navigateur.
 
+Depuis le 25 octobre, le scénario de correction vérifie également que les indices effectifs restent ceux de la correction (trois noirs) et que `originalFeedback` conserve les quatre noirs initiaux. Ce champ HTTP additif n'altère pas le plateau ni les règles de publication. Exécution réelle réussie sur PostgreSQL isolé ; le parcours navigateur à deux onglets, distinct de ce script, est consigné dans [VALIDATION](VALIDATION.md).
+
 ## Préparation
 
 Démarrer une instance API dédiée sur un port libre, par exemple 8082, avec `APP_DB_URL`, `APP_DB_USER`, `APP_DB_PASSWORD` et `APP_DB_SCHEMA` pointant vers un PostgreSQL jetable. Utiliser une clé d'API dédiée dans `APP_API_KEY` et `APP_HTTP_PORT=8082`. Ne pas charger le profil de développement habituel pour cette instance. Les migrations sont appliquées au schéma de test par le serveur.

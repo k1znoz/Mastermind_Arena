@@ -1,0 +1,98 @@
+[
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 320
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 390
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 650
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 768
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 850
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 851
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 1024
+  },
+  {
+    "masked": true,
+    "overflow": false,
+    "panelFits": true,
+    "phase": "private-panel",
+    "width": 1440
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 320
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 390
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 650
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 768
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 850
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 851
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 1024
+  },
+  {
+    "overflow": false,
+    "phase": "history",
+    "width": 1440
+  }
+]

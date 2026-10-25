@@ -10,7 +10,7 @@ class SharedContractTest {
     @Test void correctionAndConflictMatchTheFrontendFixtures() throws Exception {
         var json = new ObjectMapper();
         var action = new MatchStateHttpResponse.TurnEntry(2, "p1", "CORRECT_FEEDBACK",
-                "{\"feedbackVersion\":5}", "{\"bienPlaces\":2,\"malPlaces\":1}", 1000L, 8L);
+                "{\"feedbackVersion\":5}", "{\"bienPlaces\":2,\"malPlaces\":1}", 1000L, 8L, null);
         var rejection = SubmitActionHttpMapper.fromApplicationResponse(
                 io.mastermindarena.deduction.application.submitaction.SubmitActionApplicationResponse.fromEngineError("VERSION_CONFLICT"));
         assertEquals(409, rejection.statusCode());

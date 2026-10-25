@@ -1,1 +1,1 @@
-{"turnNumber":2,"actorId":"p1","actionType":"CORRECT_FEEDBACK","guess":"{\"feedbackVersion\":5}","feedback":"{\"bienPlaces\":2,\"malPlaces\":1}","timestamp":1000,"version":8}
+{"turnNumber":2,"actorId":"p1","actionType":"CORRECT_FEEDBACK","guess":"{\"feedbackVersion\":5}","feedback":"{\"bienPlaces\":2,\"malPlaces\":1}","timestamp":1000,"version":8,"originalFeedback":null}

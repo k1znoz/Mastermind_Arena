@@ -68,6 +68,24 @@ test('wrong-match response is a contract failure', async () => {
   assert.equal(f.changes.length, 0)
 })
 
+test('failed refresh preserves the last board and retry distinguishes loading from error', async () => {
+  const retry = deferred()
+  let calls = 0
+  const failure = new Error('HTTP:INTERNAL_ERROR')
+  const f = fixture({ fetchState: () => ++calls === 1 ? Promise.reject(failure) : retry.promise })
+  const previous = f.state()
+  assert.equal(await f.connection.refresh(), null)
+  assert.equal(f.state(), previous)
+  assert.deepEqual(f.sync.at(-1), ['error', failure])
+  const loading = f.connection.refresh()
+  assert.deepEqual(f.sync.at(-1), ['syncing', undefined])
+  assert.equal(f.state(), previous)
+  retry.resolve({ ...previous, version: previous.version + 1 })
+  await loading
+  assert.equal(f.state().version, previous.version + 1)
+  assert.deepEqual(f.sync.at(-1), ['ok', undefined])
+})
+
 test('lost response replays the exact operation and its idempotency key', async () => {
   const requests = []
   const f = fixture({ sendAction: async (_context, request) => {

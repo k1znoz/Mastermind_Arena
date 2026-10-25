@@ -1,5 +1,7 @@
 # Compatibilité des publications front et backend
 
+Extension du 25 octobre : `turns[].originalFeedback` est nullable/optionnel et ne change aucune commande, phase, migration ou donnée persistée. Le nouveau front lit encore les réponses sans ce champ ; l'ancien front ignore les propriétés additionnelles. Publier le backend avant le front permet l'historique avant/après dès la nouvelle interface. Cette compatibilité locale ne prouve pas les versions réellement publiées.
+
 Procédure préparée le 23 octobre 2026. Les deux projets Vercel suivent `main` d'après le concepteur ; aucun réglage distant ni déploiement n'a été vérifié ici. Un push peut déclencher les deux projets, sans garantir leur ordre ou leur simultanéité. Une ancienne page peut rester ouverte après une publication du front.
 
 ## Contrats à préserver
@@ -35,7 +37,7 @@ V8 ajoute la procédure de purge commune sans changer les formats d'état/reçu 
 
 - Incident front seul : revenir au déploiement front précédent seulement s'il est compatible avec le backend et les données présents ; vérifier reprise et lecture avant réouverture.
 - Incident backend : revenir au backend précédent seulement s'il lit les données écrites depuis la bascule et accepte les commandes des pages encore ouvertes. Sinon, maintenir l'interruption et corriger en avant ; ne pas rejouer un ancien binaire sur un format inconnu.
-- Changement de schéma/format : pas de rollback SQL automatique ni de suppression de parties actives. Restaurer uniquement selon une procédure éprouvée sur base isolée, avec identification des écritures qui seraient perdues et autorisation correspondante. La restauration reste à valider au lot 4.
+- Changement de schéma/format : pas de rollback SQL automatique ni de suppression de parties actives. Restaurer uniquement selon une procédure éprouvée sur base isolée, avec identification des écritures qui seraient perdues et autorisation correspondante. La restauration isolée est validée dans [DATABASE_RECOVERY](DATABASE_RECOVERY.md) et [VALIDATION](VALIDATION.md) ; l'adaptation à Supabase et le repli des versions candidates restent ouverts en B3/C2 de [ROADMAP](ROADMAP.md).
 
 ## Preuves encore ouvertes avant production
 

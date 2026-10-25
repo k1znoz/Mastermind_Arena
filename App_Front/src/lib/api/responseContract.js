@@ -14,6 +14,12 @@ export function decodeTurnContent(action) {
     if (typeof raw !== 'string') return invalid()
     try { return JSON.parse(raw) } catch { return invalid() }
   }
+  const decodeFeedback = raw => {
+    const counts = parse(raw)
+    if (!counts || !integer(counts.bienPlaces) || !integer(counts.malPlaces)
+        || counts.bienPlaces + counts.malPlaces > 4) invalid()
+    return [...Array(counts.bienPlaces).fill('BLACK'), ...Array(counts.malPlaces).fill('WHITE')]
+  }
   let guess = [], feedback = [], feedbackVersion = 0
   if (action.actionType === 'PLAY_GUESS') {
     guess = parse(action.guess)
@@ -25,12 +31,13 @@ export function decodeTurnContent(action) {
       feedbackVersion = target.feedbackVersion
     } else if (action.guess !== null) invalid()
     if (action.actionType !== 'CONTEST_FEEDBACK') {
-      const counts = parse(action.feedback)
-      if (!counts || !integer(counts.bienPlaces) || !integer(counts.malPlaces)
-          || counts.bienPlaces + counts.malPlaces > 4) invalid()
-      feedback = [...Array(counts.bienPlaces).fill('BLACK'), ...Array(counts.malPlaces).fill('WHITE')]
+      feedback = decodeFeedback(action.feedback)
     } else if (action.feedback !== null) invalid()
   } else if (!['ABANDON', 'REQUEST_REMATCH'].includes(action.actionType) || action.guess !== null || action.feedback !== null) invalid()
+  if (action.originalFeedback != null) {
+    if (action.actionType !== 'SEND_FEEDBACK') invalid()
+    return { guess, feedback, feedbackVersion, originalFeedback: decodeFeedback(action.originalFeedback) }
+  }
   return { guess, feedback, feedbackVersion }
 }
 

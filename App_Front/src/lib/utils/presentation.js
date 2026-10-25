@@ -12,3 +12,8 @@ export function asTimestamp(value) {
 export function formatTimestamp(value) {
   return value ? new Date(value).toLocaleTimeString('fr-FR') : '--:--:--'
 }
+
+/** Notifications refer to an earlier feedback action, not the request's current round. */
+export function referencedTurnNumber(action, actions) {
+  return actions.find(entry => entry.version === action.feedbackVersion)?.turnNumber ?? action.turnNumber
+}

@@ -1,0 +1,122 @@
+{
+  "responsive": [
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 320
+    },
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 390
+    },
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 650
+    },
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 768
+    },
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 851
+    },
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 1024
+    },
+    {
+      "overflow": false,
+      "phase": "correction",
+      "width": 1440
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 320
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 390
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 650
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 768
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 851
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 1024
+    },
+    {
+      "dialogFits": true,
+      "modal": true,
+      "overflow": false,
+      "phase": "abandon",
+      "width": 1440
+    }
+  ],
+  "abandon": [
+    {
+      "dialogWidth": 620,
+      "height": 1024,
+      "initialFocus": true,
+      "modal": true,
+      "width": 1440,
+      "focusRestored": true
+    },
+    {
+      "dialogWidth": 375,
+      "height": 844,
+      "initialFocus": true,
+      "modal": true,
+      "width": 390,
+      "focusRestored": true
+    },
+    {
+      "dialogWidth": 620,
+      "height": 1024,
+      "initialFocus": true,
+      "modal": true,
+      "width": 1440,
+      "focusRestored": true
+    },
+    {
+      "dialogWidth": 375,
+      "height": 844,
+      "initialFocus": true,
+      "modal": true,
+      "width": 390,
+      "focusRestored": true
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "navChecks": [
+    {
+      "focus": "lobby-title",
+      "step": "game-to-lobby"
+    },
+    {
+      "focus": "welcome-pseudo",
+      "step": "change-name"
+    },
+    {
+      "focus": "lobby-title",
+      "step": "welcome-to-lobby"
+    },
+    {
+      "focus": "history-title",
+      "rows": 400,
+      "step": "result-to-history"
+    },
+    {
+      "focusText": "Actualiser",
+      "step": "history-heading-next-tab"
+    },
+    {
+      "focusText": "Plateau",
+      "step": "plateau-tab"
+    },
+    {
+      "focusText": "Historique",
+      "step": "history-tab"
+    }
+  ],
+  "syncChecks": [
+    {
+      "error": null,
+      "rows": 400,
+      "status": "Connexion en cours. Les dernières actions reçues restent affichées.",
+      "step": "loading"
+    },
+    {
+      "error": "Actualisation impossible. Le dernier plateau reçu reste affiché.",
+      "rows": 400,
+      "status": null,
+      "step": "error"
+    },
+    {
+      "error": null,
+      "focusText": "Actualiser",
+      "rows": 400,
+      "status": null,
+      "step": "recovered"
+    }
+  ]
+}
