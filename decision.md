@@ -4,6 +4,10 @@ Validées avec le concepteur le 13 octobre 2026. Les réflexions initiales sur u
 
 ## Produit et livraison
 
+Décision du 26 octobre — rôle JDBC : créer arena_runtime, avec uniquement les lectures/écritures nécessaires aux cinq tables arena_v1, sans propriété, privilège administratif, suppression ou exécution de purge. Le concepteur valide ce nom et cette séparation. Il choisit le SQL Editor pour définir le mot de passe en privé après information sur sa présence possible dans l'historique/logs ; aucun mot de passe n'est transmis à l'agent. La création distante, l'activation du login et la bascule Vercel restent à effectuer, puis à vérifier.
+
+Décision du 26 octobre : laisser la Data API Supabase désactivée pour Mastermind, qui accède à PostgreSQL via le backend Java/JDBC. Le concepteur confirme l'avoir remise sur OFF après une réactivation temporaire. Conserver pour le moment les logs connus PostgREST « pg_pgrst_no_exposed_schemas » ; ne pas appliquer le contournement de schéma vide/configuration authenticator proposé. Cette décision ne règle ni la séparation du rôle JDBC ni l'activation du cron.
+
 Décisions du 25 octobre : afficher les notifications de correction/vérification jusqu'à fermeture manuelle, sans disparition automatique. Ajouter près du code de reprise uniquement « Partie supprimée après 7 jours sans action de jeu. » ; la seconde phrase proposée est retirée à la demande du concepteur. Compléter le contrat HTTP pour conserver les indices initiaux dans l'historique, distinctement des indices effectifs des plateaux et des événements de correction. Aucun changement des règles ni activation distante de purge n'est autorisé par ces décisions.
 
 Décision du 24 octobre — retour de reprise : conserver le nom de partie et le code d'accès saisis dans le salon pendant l'aller-retour vers la page de reprise, uniquement en mémoire. Aucun enregistrement de ce brouillon sur disque. Les autres sorties du salon conservent leur comportement de remise à zéro ; la sauvegarde de la place privée reste indépendante.

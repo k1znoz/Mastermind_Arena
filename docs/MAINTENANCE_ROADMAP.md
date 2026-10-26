@@ -45,9 +45,11 @@ Le [suivi UI](UI_REDESIGN.md) et [design-qa](../design-qa.md) précisent les ré
 
 ## Limites de production et autorisations
 
+Le 25 octobre, après préparation de la cible Supabase, le concepteur confirme sur la version déployée : création/jointure depuis un second client, tour complet avec indices manuels, reprise privée et absence de nouvelles erreurs Vercel. Le 26 octobre, il confirme également correction du résultat, poursuite, revanche avec scores conservés et confidentialité. Validations déclarées, non observées par l'agent ; révisions exactes à relever après les autres étapes selon sa demande, support du second client non précisé. arena_v1 et activation RLS déclarés ; droits effectifs, Data API, nettoyage de public et cron restent ouverts. Horaire de purge approuvé : 03 h UTC par jour, non activé.
+
 Les versions Vercel réellement publiées, la Data API, les propriétaires et droits Supabase, les sauvegardes disponibles et la configuration de promotion restent à vérifier. Préparer une procédure n'active pas une protection distante.
 
-Le concepteur autorise une reconstruction initiale sans conservation des anciennes parties de test, à effectuer lorsque la version sera prête. Le reset n'est pas réalisé. Cette exception ne dispense pas de protéger les futures parties, sauf expiration selon la règle validée.
+Le concepteur autorise une reconstruction initiale sans conservation des anciennes parties de test. Le fonctionnement après la bascule proposée vers la cible propre est confirmé par lui ; l'état SQL effectif et la suppression des anciennes tables ne sont pas relevés. Cette exception ne dispense pas de protéger les futures parties, sauf expiration selon la règle validée.
 
 Un push sur main peut publier les deux projets. La réconciliation de ces documents n'autorise aucun push, déploiement, changement Supabase ou déclenchement de purge. Les tâches C/D nécessitent leurs autorisations correspondantes. [DEPLOYMENT_COMPATIBILITY](DEPLOYMENT_COMPATIBILITY.md) décrit les conditions de bascule et de repli.
 

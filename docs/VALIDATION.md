@@ -1,5 +1,82 @@
 # Plan de validation de la finalisation
 
+## 26 octobre — rôle créé/activé et variables Vercel déclarées à jour
+
+Le concepteur fournit d'abord le résultat de création : arena_runtime, rolcanlogin/rolsuper/rolcreatedb/rolcreaterole/rolinherit/rolreplication/rolbypassrls tous false. Il confirme ensuite rolcanlogin true après définition privée du mot de passe et les variables Vercel à jour. Aucun mot de passe reçu ou lu par l'agent.
+
+Création et activation déclarées acquises ; la prise en compte des variables par un nouveau déploiement et la connexion effective du backend sous arena_runtime restent à vérifier. Les essais antérieurs sous postgres ne valident pas automatiquement cette nouvelle identité. Prochaine preuve : redéploiement backend, création/jointure, tour et reprise, puis constat d'une connexion JDBC sous arena_runtime. Cron et nettoyage non confirmés. Documentation seule, aucune action distante par l'agent.
+
+## 26 octobre — valeurs du pooler fournies pour Vercel
+
+Hôte du Transaction pooler fourni par le concepteur : aws-0-eu-west-1.pooler.supabase.com. Configuration cible consignée dans RUNTIME_ROLE_SETUP : port 6543, base postgres, utilisateur arena_runtime avec suffixe du Project Ref, schéma arena_v1, migrations au démarrage désactivées, sslmode=require et prepareThreshold=0. APP_DB_PASSWORD reste une saisie privée du concepteur. Les noms et priorités des variables sont vérifiés dans LocalSubmitActionRuntimeConfig ; aucune valeur de credential existant n'est lue ou affichée.
+
+Documentation seule : pas de nouvelle connexion distante, modification Vercel ou suite applicative. La création/activation du rôle et le résultat du redéploiement ne sont pas confirmés à ce stade ; les contrôles de bascule décrits dans RUNTIME_ROLE_SETUP restent ouverts.
+
+## 26 octobre — endpoint de connexion pour la bascule du rôle
+
+Le concepteur fournit les métadonnées de connexion directe depuis Connect : hôte db du projet, port 5432, base postgres et utilisateur administrateur par défaut postgres. Aucun mot de passe reçu. Contrôle DNS en lecture seule : IPv6 présent, IPv4 absent. Aucun test de connexion JDBC distant effectué et aucune variable modifiée. La documentation officielle distingue cet endpoint direct du pooler partagé IPv4 et recommande le mode transaction pour les fonctions serverless : [connexion Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres).
+
+Hôte du Transaction pooler demandé pour finaliser APP_DB_URL et APP_DB_USER avec suffixe de projet, sans inventer la région ou l'index du pooler. Les fichiers SQL et la procédure restent préparés ; aucune création/activation distante de arena_runtime ni bascule Vercel n'est confirmée par cet échange.
+
+## 26 octobre — préparation et tests de arena_runtime
+
+Le concepteur approuve le nom arena_runtime et les droits limités proposés, puis choisit le SQL Editor pour définir le mot de passe en privé. Ajout de prepare-runtime-role.mjs : lecture du runtime_access.sql existant, transaction avec garde V1–V8 et refus d'un rôle déjà présent, création NOLOGIN sans privilège administratif ni membership, grants/politiques réservés au rôle. Fichiers générés sous target ignoré : supabase-arena-runtime.sql et modèle de mot de passe supabase-arena-runtime-password.sql. Aucun credential utilisé ou affiché par le générateur ; aucune nouvelle dépendance.
+
+PostgreSQL 16 jetable, conteneur mastermind-bootstrap-validation-20261025 sans réseau ni port exposé : provisionnement réussi. Régression exécutable scripts/tests/verify-runtime-role.sql : lecture des huit versions, INSERT/UPDATE/SELECT autorisés sur état/salon, INSERT/SELECT sur événements et idempotence, séquence utilisable. Huit opérations refusées en insufficient_privilege : DELETE état, UPDATE reçu, UPDATE événement, UPDATE historique de migration, CREATE TABLE, désactivation RLS, TRUNCATE et CALL purge. Lignes synthétiques annulées par rollback. Deuxième provisionnement refusé avant modification avec ARENA_RUNTIME_ROLE_ALREADY_EXISTS, code psql 3 attendu.
+
+Modèle d'activation : placeholder et valeur courte refusés avec PRIVATE_PASSWORD_REQUIRED ; mot de passe aléatoire uniquement local accepté, sans affichage des requêtes ou secrets. LOGIN activé tout en conservant les autres indicateurs limités, puis rôle de test remis NOLOGIN/PASSWORD NULL. Aucun mot de passe du concepteur utilisé. Syntaxe Node et diff contrôlés. Les droits de base CONNECT/TEMP et droits PUBLIC des autres objets ne sont pas présentés comme entièrement audités.
+
+Documentation de bascule, variables APP_DB_* prioritaires, nom du pooler et repli dans RUNTIME_ROLE_SETUP. Hôte/port/mode/project ref demandés pour ne pas deviner la connexion Vercel. Limites : tests de ces nouveaux fichiers sur PostgreSQL 16, pas Supabase 17.6 ; création/activation et connexion réelle de arena_runtime dans Supabase/Vercel non exécutées. Preuve HTTP/JDBC du rôle restreint déjà existante dans DATABASE_ROLES, non répétée dans ce lot de préparation SQL. Pas de changement applicatif, pas de nouvelle suite front/Java ; totaux antérieurs inchangés.
+
+## 26 octobre — Data API désactivée, contournement refusé
+
+Le concepteur confirme avoir remis Enable Data API sur OFF après l'avoir temporairement activé. Les logs « schema pg_pgrst_no_exposed_schemas does not exist » correspondent au comportement documenté par Supabase lorsque PostgREST reste actif avec la Data API désactivée : [article officiel](https://supabase.com/kb/troubleshooting/schema-pg_pgrst_no_exposed_schemas-does-not-exist). Le concepteur choisit de conserver les logs ; aucun schéma technique ni override de rôle authenticator n'est appliqué. État déclaré par le concepteur, pas nouvelle lecture du Dashboard par l'agent. Ne pas confondre ce message et une preuve de mise en pause du projet.
+
+Prochaine étape proposée : rôle JDBC de jeu dédié à arena_v1, puis bascule des credentials backend et vérification du parcours. Le nom arena_runtime et la séparation sont soumis au concepteur avant préparation du SQL dépendant. Cron et suppression des anciennes tables restent non confirmés ; révisions déployées à relever en fin de séquence selon le choix déjà exprimé.
+
+## 26 octobre — rapport Supabase fourni par le concepteur
+
+Rapport JSON du diagnostic reçu via pièce jointe, analysé comme résultat fourni par le concepteur et non comme accès distant de l'agent. PostgreSQL 17.6, arena_v1 présent ; cinq tables appartenant à postgres avec RLS activée, FORCE RLS false et aucun privilège PUBLIC. Pour anon/authenticated : aucun USAGE sur le schéma et aucun droit de table, y compris MAINTAIN ; ni superuser ni BYPASSRLS. Aucune politique sur arena_v1. Ces contrôles ciblés sont acquis ; ils ne constituent pas un audit de tous les rôles/objets du projet.
+
+Procédure de purge appartenant à postgres, SECURITY INVOKER, aucun EXECUTE pour anon/authenticated. Cron extension null : pg_cron non installé au moment du rapport ; fuseau cron.timezone GMT, compatible avec l'horaire approuvé de 03 h UTC. Aucune activation attestée.
+
+Une connexion portant application_name PostgreSQL JDBC Driver est observée sous postgres. Ce rôle est propriétaire et BYPASSRLS, CREATEROLE, CREATEDB : indice fort de l'identité JDBC actuelle dans ce projet, mais la configuration Vercel n'a pas été lue. Le passage à un rôle de jeu restreint reste ouvert ; ne pas activer FORCE RLS pour compenser ce rôle propriétaire.
+
+Les cinq anciennes tables Mastermind existent encore dans public, RLS activée ; aucune clé étrangère les impliquant dans le rapport. Autres dépendances et usage éventuel non établis par ce seul contrôle : nettoyage ciblé encore ouvert. Des sessions PostgREST existent ; cela ne donne pas la liste effective des schémas exposés ni le réglage Enable Data API, qui restent à relever dans le Dashboard. Aucun secret ni contenu de partie copié dans ce document.
+
+## 26 octobre — essais déployés et préparation du diagnostic Supabase
+
+Le concepteur confirme la valeur backend arena_v1, l'activation RLS sur les cinq tables et les quatre scénarios en ligne supplémentaires : correction avec modification du résultat, poursuite après victoire, revanche avec scores conservés et masquage des secrets/actions. Ce sont des validations déclarées ; pas de nouvelle observation distante par l'agent. La relève des révisions est explicitement différée par le concepteur jusqu'à la fin des autres étapes.
+
+Purge quotidienne à 03 h UTC approuvée ; cron non activé. Les droits anon/authenticated, le rôle JDBC, la Data API et le nettoyage restent ouverts. L'intégration Vercel fournit POSTGRES_USER masqué ; le code peut prioriser l'utilisateur inclus dans POSTGRES_URL. Aucun nom de rôle effectif n'est donc inféré de la seule présence de cette variable.
+
+Ajout de scripts/audit-supabase.sql : SELECT de métadonnées, sans payload de jeu, mot de passe, jeton, requête de session ou adresse client. Rapport JSON des tables/RLS/propriétaires, droits API/PUBLIC, politiques, procédure, rôles candidats, indices de connexions, anciennes tables public et clés étrangères, disponibilité cron. Le rôle de SQL Editor n'est pas présenté comme le rôle du backend ; la liste des schémas exposés par la Data API reste à contrôler dans le Dashboard.
+
+PostgreSQL 16 jetable, sans réseau ni port exposé : exécution réussie dans BEGIN READ ONLY/ROLLBACK ; cinq tables protégées et dix couples rôle/table sans droits. Test transactionnel d'exposition synthétique : SELECT accordé à anon et RLS désactivée sur rooms, correctement signalés par le rapport, puis rollback. Champ MAINTAIN conditionnel pour PostgreSQL 17 ajouté ; branche PostgreSQL 16 contrôlée, branche 17 non exécutée ici. Aucun changement Supabase ou Vercel. Aucune suite applicative répétée pour ce script de diagnostic.
+## 25 octobre — contrôles sur la version déployée confirmés par le concepteur
+
+Après la procédure de préparation Supabase et de configuration du backend proposée, le concepteur indique que le fonctionnement est rétabli, puis confirme les quatre contrôles demandés : création et jointure depuis un autre navigateur ou appareil ; tour complet avec indices manuels ; reprise d'une place par code privé ; absence de nouvelles erreurs dans les logs Vercel pendant ces essais.
+
+Il s'agit de validations déclarées par le concepteur sur la version déployée, pas de nouvelles exécutions observées par l'agent. URL exacte du front testé, révisions front/back, support du second client et paramètres SQL effectifs non relevés. Ne pas en déduire un test sur téléphone physique ou un audit des permissions. La cause Java initiale de FUNCTION_INVOCATION_FAILED n'est pas établie faute d'exception de démarrage.
+
+Création/jointure, tour et reprise en ligne sont désormais acquis dans ce périmètre. Restent à confirmer en ligne : confidentialité détaillée, correction modifiant le résultat, poursuite et revanche ; versions et droits Supabase ; cron quotidien ; suppression des anciennes tables. D1/D2 restent partiels et D3 ouvert. Documentation seule, aucune nouvelle suite ni action distante.
+
+## 25 octobre — fichier SQL Supabase validé sur PostgreSQL isolé
+
+Après démarrage de Docker par le concepteur, conteneur dédié `mastermind-bootstrap-validation-20261025`, image postgres:16, network none et aucun port exposé. Aucune connexion Supabase ni lecture des credentials. Exécution de `target/supabase-arena_v1.sql` par psql avec ON_ERROR_STOP : transaction validée et huit versions présentes, propriétaire postgres.
+
+Contrôles SQL réussis : RLS sur rooms/match_state/idempotency/workflow_event/schema_version ; aucun droit de table pour anon/authenticated, malgré des privilèges par défaut initialement permissifs dans ce scénario ; procédure de purge non exécutable par ces rôles. Tables témoins dans public, auth et storage avec valeurs intactes. Deuxième lancement : refus attendu ARENA_SCHEMA_ALREADY_EXISTS, code psql 3 ; marqueur dans arena_v1 et huit versions conservés.
+
+Test de rollback dans une seconde base jetable : division par zéro injectée dans une copie du fichier juste avant V8, après V1–V7. Code psql 3 attendu ; to_regnamespace('arena_v1') IS NULL ensuite, confirmant l'annulation de l'installation entière. Le fichier SQL à livrer n'a pas reçu cette injection.
+
+Génération, structure et syntaxe Node déjà contrôlées. Aucun changement applicatif ni nouvelle suite front/Java ; ces contrôles SQL complètent les preuves antérieures sans en modifier les totaux. La cible réelle, le rôle JDBC, l'installation dans Supabase, le redéploiement et le parcours en ligne restent non vérifiés ; D1/D2 non cochés. La section précédente chronologiquement sur la préparation décrit l'indisponibilité initiale de Docker, levée ici.
+
+## 25 octobre — préparation SQL de la cible Supabase
+
+Déploiement signalé en échec par le concepteur : OPTIONS /local/rooms renvoie 500/FUNCTION_INVOCATION_FAILED ; l'exception de démarrage reste inconnue. La valeur Vercel APP_DB_SCHEMA est masquée. La procédure de reconstruction prévoyant arena_v1, ajout de `scripts/prepare-supabase.mjs` pour assembler V1–V8 et les révocations API dans `target/supabase-arena_v1.sql`, sans connexion distante, mot de passe ou nouvelle dépendance. Garde sur schéma déjà existant et transaction d'installation ; aucune suppression de public/auth/storage, aucun cron activé.
+
+Générateur exécuté avec succès ; syntaxe Node, présence des huit ressources, absence de placeholders restants et diff contrôlés. PostgreSQL n'a pas été relancé pour ce fichier assemblé : Docker ne dispose pas de moteur local actif. Les migrations disposent de leurs preuves isolées antérieures, mais ce wrapper SQL n'a pas de nouvelle preuve d'exécution. Aucune installation, permission ou variable de production modifiée. D1 reste ouvert ; après installation, le rôle JDBC doit encore être propriétaire ou provisionné et le backend redéployé/vérifié.
+
 ## 25 octobre — réconciliation des roadmaps
 
 Travail documentaire uniquement : ROADMAP devient la liste de référence des actions restantes A1–E3, avec critères de sortie et dépendances. MAINTENANCE_ROADMAP conserve le bilan des anciens lots, les acquis et leurs limites, sans second planning concurrent. UI_REDESIGN distingue historique long/focus déjà vérifiés et scénarios encore ouverts ; une ancienne mention de restauration isolée « à valider » est corrigée dans DEPLOYMENT_COMPATIBILITY.

@@ -12,6 +12,20 @@ Les migrations enregistrent leur version et ne rejouent pas les transformations 
 
 ## Préparation de Supabase
 
+### Installation depuis le SQL Editor
+
+Si la valeur précédente de APP_DB_SCHEMA est masquée dans Vercel, il n'est pas nécessaire de la deviner : la cible dédiée prévue ici est explicitement `arena_v1`. Préparer le SQL depuis les migrations du dépôt :
+
+```powershell
+node scripts/prepare-supabase.mjs
+```
+
+Le fichier généré `target/supabase-arena_v1.sql`, ignoré par Git, contient V1–V8 et les révocations des rôles API lorsqu'ils existent. Le générateur ne se connecte à aucune base. Le SQL s'exécute avec le propriétaire dans le SQL Editor Supabase, dans une transaction ; il refuse un schéma arena_v1 déjà présent et ne touche pas à public, auth ou storage. Il n'active pas le cron et ne provisionne pas un rôle d'exécution distinct.
+
+Après réussite, contrôler les huit versions et le propriétaire retournés, puis régler explicitement `APP_DB_SCHEMA=arena_v1` et `APP_DB_MIGRATE_ON_START=false` dans le backend Vercel. Le rôle JDBC du backend doit être le propriétaire ou un rôle provisionné selon [DATABASE_ROLES](DATABASE_ROLES.md). Redéployer le backend, vérifier le démarrage et l'admission avant le nettoyage des anciennes tables. Une connexion JDBC erronée n'est pas réparée par le seul choix du schéma.
+
+Validation du 25 octobre après démarrage de Docker : fichier assemblé exécuté avec succès sur PostgreSQL 16 jetable, sans réseau ni port exposé. Versions 1–8, RLS des cinq tables, absence de droits des rôles API et interdiction d'exécution de la purge contrôlées ; tables témoins public/auth/storage intactes. Second lancement refusé sans modification ; erreur injectée avant V8 annulant toute l'installation. Aucune installation Supabase n'est attestée par ces tests isolés.
+
 La candidate exige désormais V1–V8. V8 ajoute la procédure de purge commune sans effacer les parties au format V7. Le reset initial reste lié aux anciennes transitions V5–V7 ; V8 n'ajoute aucun reset. La procédure est réservée au propriétaire, sans EXECUTE pour PUBLIC ou le rôle API. L'installation de pg_cron et son activation quotidienne seront vérifiées séparément au déploiement.
 
 Rien n'a été appliqué à Supabase par ce chantier. Avant publication :

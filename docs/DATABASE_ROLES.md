@@ -2,6 +2,8 @@
 
 Implémentation locale du 23 octobre 2026. Aucun rôle ou réglage Supabase n'a été modifié. Le mode historique conserve les migrations au démarrage par défaut ; la séparation exige une configuration explicite avant publication.
 
+Constat du 26 octobre, rapport du concepteur : les cinq tables arena_v1 sont bien protégées contre PUBLIC/anon/authenticated. Une connexion JDBC est observée sous postgres, qui possède BYPASSRLS, CREATEROLE et CREATEDB et reste propriétaire. La séparation de rôle décrite ci-dessous n'est donc pas attestée en production. Le rôle sql_editor_role n'est pas utilisé à lui seul pour identifier le backend.
+
 ## Deux responsabilités
 
 Le propriétaire du schéma exécute `DatabaseMigrationMain` dans une étape administrative distincte. L'API utilise ensuite un rôle dédié, non propriétaire, sans superuser, BYPASSRLS, CREATEDB, CREATEROLE ni appartenance à d'autres rôles. Ce rôle doit être nouvellement créé avec des credentials privés ; le provisionnement ci-dessous ne révoque pas des droits préexistants sur une base entière.
@@ -19,6 +21,10 @@ Aucun DELETE, TRUNCATE, droit de modification des tables/politiques ou d'écritu
 RLS reste activée. Les politiques ajoutées concernent uniquement le rôle serveur nommé et vérifient `current_user` ; elles ne donnent aucun accès à PUBLIC, anon ou authenticated. Le serveur doit pouvoir accéder aux parties des deux joueurs : RLS isole ici le rôle serveur des rôles navigateur, et l'autorisation par place reste appliquée par l'API. La confidentialité dépend aussi de la protection du credential JDBC serveur.
 
 ## Préparer et migrer
+
+Pour la bascule du concepteur via SQL Editor, la procédure courante est [RUNTIME_ROLE_SETUP](RUNTIME_ROLE_SETUP.md). `node scripts/prepare-runtime-role.mjs` produit un SQL sans credentials créant le rôle approuvé arena_runtime en NOLOGIN, avec le script de droits existant, puis un modèle séparé d'activation par mot de passe privé. Création refusée si le rôle existe déjà ; aucun remplacement aveugle d'un compte ou de son mot de passe. Le chemin Java administratif ci-dessous reste disponible et conserve ses gardes de rôle.
+
+Pour contrôler d'abord l'installation existante dans Supabase SQL Editor, exécuter [audit-supabase.sql](../scripts/audit-supabase.sql). Ce script ne modifie rien et n'affiche pas les données de jeu ou credentials. Il produit un rapport JSON de métadonnées. Le rôle sql_editor_role n'identifie pas le rôle JDBC ; les indices de connexions ne sont pas une preuve suffisante à eux seuls. La valeur masquée POSTGRES_USER dans Vercel ne permet pas de conclure : le backend peut lire en priorité l'utilisateur inclus dans POSTGRES_URL. Ne pas partager cette URL ou un fichier .env pour retrouver le nom.
 
 1. Avec l'administration PostgreSQL, créer un rôle dédié de nom simple en minuscules (40 caractères maximum), sans privilège élevé, propriétaire ou membership. Renseigner son mot de passe par un canal privé ; ne pas le mettre dans une commande versionnée ou un diagnostic. Les noms PUBLIC, anon, authenticated et service_role sont refusés.
 2. Dans un processus administratif séparé, fournir APP_DB_URL au format JDBC, APP_DB_USER et APP_DB_PASSWORD du propriétaire, APP_DB_SCHEMA du jeu, puis APP_DB_RUNTIME_ROLE avec le nom du rôle dédié. Ne pas copier ces credentials de propriétaire dans le processus API.

@@ -2,7 +2,7 @@
 
 État réconcilié le **25 octobre 2026** à partir de [VALIDATION](VALIDATION.md), [UI_REDESIGN](UI_REDESIGN.md) et des décisions du concepteur. Ce fichier est la liste de référence des travaux restants. [MAINTENANCE_ROADMAP](MAINTENANCE_ROADMAP.md) décrit le bilan technique et les limites ; les preuves datées restent dans VALIDATION.
 
-Une case cochée indique une preuve obtenue dans le périmètre nommé. Une préparation locale ne vaut ni validation distante ni publication. Les changements locaux sont encore dans l'arbre de travail ; aucune version candidate publiée n'est attestée.
+Une case cochée indique une preuve obtenue dans le périmètre nommé. Une préparation locale ne vaut ni validation distante ni publication. Le 25 octobre, le concepteur confirme création/jointure, tour manuel, reprise privée et logs sans nouvelles erreurs sur la version déployée. Les révisions effectives et la configuration distante restent à relever ; ces essais ne clôturent pas le contrôle de publication.
 
 ## Ce qui est déjà acquis
 
@@ -52,6 +52,18 @@ Les lectures de configuration distante peuvent être engagées en parallèle de 
 ## D — Publication et vérification en ligne
 
 À exécuter après validation de la candidate et autorisation de publication. L'accord sur les règles ou sur les travaux locaux ne vaut pas publication.
+
+**Avancement déclaré le 25 octobre :** fonctionnement rétabli après la préparation Supabase proposée ; création/jointure via second client, tour complet avec indices manuels, reprise privée et absence de nouvelles erreurs Vercel confirmés par le concepteur. Ces scénarios ne sont plus à refaire comme tâches entièrement non vérifiées ; les révisions, droits et scénarios supplémentaires ci-dessous restent ouverts. Preuve et limites dans VALIDATION.
+
+**Complément déclaré le 26 octobre :** arena_v1 confirmé côté backend, RLS activée sur les cinq tables ; correction du résultat, poursuite, revanche avec scores conservés et confidentialité confirmées par le concepteur. Les scénarios fonctionnels de D2 sont acquis dans ce périmètre déclaré ; révisions exactes à relever après les autres étapes, selon sa demande. Audit des droits/Data API, nettoyage de l'ancien public et cron restent ouverts. Horaire de purge fixé à 03 h UTC ; pas encore activé.
+
+**Rapport SQL reçu le 26 octobre :** RLS des cinq tables, absence de droits PUBLIC/anon/authenticated et procédure de purge non exécutable par les rôles API vérifiés dans le résultat fourni. Connexion JDBC observée sous postgres, rôle privilégié : séparation du rôle de jeu encore à réaliser. Data API et schémas exposés toujours à relever ; pg_cron non installé, fuseau GMT ; anciennes tables public toujours présentes. D1 reste partiel, D3 ouvert.
+
+**Décision Data API du 26 octobre :** concepteur confirmant Enable Data API remis sur OFF ; logs PostgREST connus conservés, contournement décliné. La séparation du rôle JDBC est la prochaine étape proposée ; le cron et le nettoyage restent ouverts. Ce réglage déclaré ne vaut pas audit indépendant de tous les accès du projet.
+
+**Rôle de jeu approuvé le 26 octobre :** arena_runtime, préparation SQL et droits/politiques testés sur PostgreSQL isolé ; modèle privé d'activation et procédure [RUNTIME_ROLE_SETUP](RUNTIME_ROLE_SETUP.md) prêts. Création et bascule Supabase/Vercel restent à effectuer ; D1 non clôturé. Cron et anciennes tables inchangés.
+
+**Progression du rôle le 26 octobre :** résultat de création fourni avec tous les indicateurs désactivés, puis LOGIN activé et variables Vercel déclarées à jour par le concepteur. Restent le redéploiement et la vérification du backend avec cette identité ; D1 non clôturé avant cette preuve. Aucun mot de passe reçu par l'agent.
 
 - [ ] **D1 — Reset initial et configuration.** Effectuer la remise à zéro des anciennes données de test au moment convenu, installer le schéma et les rôles vérifiés ; contrôler accès serveur et refus des accès non autorisés. Aucune reprise des anciens historiques n'est requise. Cette exception ne concerne pas les futures parties.
 - [ ] **D2 — Déployer et contrôler les deux projets.** Publier dans l'ordre préparé ; relever les révisions effectives. Jouer sur les URL de production avec deux places et vérifier confidentialité, correction, poursuite, revanche et reprise ; vérifier aussi l'absence de diagnostic ou secret exposé.
