@@ -11,8 +11,8 @@ export function apiErrorText(error, context) {
   const messages = {
     ROOM_CODE_INVALID: 'Code d’accès incorrect.',
     ROOM_FULL: 'Cette partie a déjà deux joueurs.',
-    ROOM_NOT_FOUND: 'Cette partie n’existe plus.',
-    MATCH_NOT_FOUND: 'Cette partie n’existe plus.',
+    ROOM_NOT_FOUND: 'Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu.',
+    MATCH_NOT_FOUND: 'Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu.',
     ROOM_ACCESS_DENIED: context === 'room' ? 'Ce code de reprise n’est plus valide.' : 'Vous n’avez plus accès à cette place. Utilisez votre code de reprise.',
     ACTOR_NOT_AUTHORIZED: 'Vous n’avez plus accès à cette place. Utilisez votre code de reprise.',
     ROOM_RESUME_INVALID: 'Ce code de reprise est incorrect ou n’est plus valide.',

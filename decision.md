@@ -1,8 +1,28 @@
 # Décisions actuelles à Mastermind Arena
 
+## Diffusion et perte de données — 28 octobre 2026
+
+Première protection contre les abus approuvée ensuite : règle WAF Vercel pour les POST d'admission (création, jointure et reprise), budget partagé de 20 requêtes par fenêtre fixe de 60 secondes et par IP ; compteurs régionaux et partage du budget entre joueurs d'un même réseau explicités. Lectures et actions du duel hors de cette règle. Vérifier l'offre et les conditions d'activation avant toute modification distante ; aucun coût ou changement d'abonnement accepté par cette décision. Activation et preuve encore ouvertes dans ROADMAP.
+
+Le concepteur retient un portfolio public avec lien librement diffusé. Pour les futures parties et scores, il accepte la perte en cas d'incident : aucune sauvegarde récupérable à organiser comme exigence de cette livraison. Ce choix ne désactive pas d'éventuelles sauvegardes du fournisseur, n'affirme pas leur présence et n'autorise aucune suppression supplémentaire. Les contrôles d'atomicité, de concurrence et de confidentialité restent requis. La purge après sept jours depuis la dernière action acceptée est inchangée.
+
+## État d'exécution au 27 octobre 2026
+
+Les résultats fournis confirment arena_runtime activé avec les droits limités prévus, un parcours déployé avec reprise sur téléphone et le premier appel automatique réussi de la purge le 27 octobre à 03 h UTC. Les mentions contraires ci-dessous décrivent les décisions avant leur exécution. Nombre supprimé non établi par « 1 row ». Nettoyage public engagé par inventaire, sans suppression effectuée. Preuves dans [VALIDATION](docs/VALIDATION.md).
+
 Validées avec le concepteur le 13 octobre 2026. Les réflexions initiales sur une plateforme générique sont conservées dans [les archives](docs/archive/decision-initiale.md).
 
 ## Produit et livraison
+
+Message de partie indisponible approuvé le 27 octobre : « Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu. » À utiliser pour ROOM_NOT_FOUND et MATCH_NOT_FOUND, sans changer les codes HTTP ni attribuer une expiration précise à une partie introuvable.
+
+Décisions UX du 27 octobre après audit : séparer erreurs de liste et d'admission, contextualiser création/jointure/reprise sans conclure à un refus lorsque la réponse est incertaine ; conserver les refus métier précis. Garder le bouton d'envoi focalisé et empêcher les doubles actions pendant la requête ; conserver le repère au refus et viser le titre de la phase suivante après succès uniquement si le joueur n'a pas déplacé son focus. Un polling ne déplace pas le focus clavier.
+
+Annoncer les envois du code, de l'essai, des indices, de la correction et de la revanche ; distinguer envoi de revanche et attente de l'accord adverse. Garder l'éditeur et le brouillon de correction pendant l'enregistrement et au refus tant que la cible reste modifiable ; fermer après confirmation. Erreurs de notification visibles jusqu'à fermeture, succès temporaires 2,4 secondes, notifications de correction/vérification persistantes inchangées. Complément validé après essai mobile : erreurs dans un bandeau dans le flux avant le contenu, pour ne pas masquer l'action ; succès restant flottants.
+
+Décision du 27 octobre — états du salon : distinguer « Création en cours… », « Connexion à la partie… » sur la ligne concernée et « Actualisation… », avec annonce accessible et requêtes actuelles conservées. Une jointure ne doit pas afficher un état de création. Les règles, routes et mécanismes de partage/annulation des requêtes restent inchangés.
+
+Complément responsive approuvé le 27 octobre : entre 851 et 1 100 pixels, placer le bouton Rejoindre sous l'identité et le badge pour que son état long ne comprime pas le nom de la partie. Les dispositions mobile et grand écran restent celles prévues.
 
 Décision du 26 octobre — rôle JDBC : créer arena_runtime, avec uniquement les lectures/écritures nécessaires aux cinq tables arena_v1, sans propriété, privilège administratif, suppression ou exécution de purge. Le concepteur valide ce nom et cette séparation. Il choisit le SQL Editor pour définir le mot de passe en privé après information sur sa présence possible dans l'historique/logs ; aucun mot de passe n'est transmis à l'agent. La création distante, l'activation du login et la bascule Vercel restent à effectuer, puis à vérifier.
 

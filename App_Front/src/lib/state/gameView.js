@@ -61,7 +61,12 @@ export function deriveGameView(options = {}) {
     isPrototype: !isBackendReady, isBackendReady, isMyTurn, canRespond, hasSecretSet, hasOpponentReady,
     ownGuessSubmitted, ownFeedbackSubmitted,
     opponentStepDone: Boolean(opponentActorId && (state?.submittedPlayers ?? []).includes(opponentActorId)),
-    busy: submitStatus === 'loading', isSecretSubmitting, isGuessSubmitting,
+    busy: submitStatus === 'loading', isSecretSubmitting, isGuessSubmitting, pendingActionType,
+    submissionMessage: submitStatus === 'loading' ? {
+      READY_SECRET: 'Envoi du code…', PLAY_GUESS: 'Envoi de l’essai…', SEND_FEEDBACK: 'Envoi des indices…',
+      CORRECT_FEEDBACK: 'Enregistrement de la correction…', REQUEST_REMATCH: 'Envoi de la demande de revanche…',
+      CONTEST_FEEDBACK: 'Envoi de la demande de vérification…', ABANDON: 'Envoi de l’abandon…'
+    }[pendingActionType] ?? 'Envoi…' : '',
     setupSequence: setupDraft.slots,
     setupSlots: Array.from({ length: CODE_LENGTH }, (_, index) =>
       (hasSecretSet && state?.visibleSecretCode?.length === CODE_LENGTH ? state.visibleSecretCode : setupDraft.slots)[index] || '_'),

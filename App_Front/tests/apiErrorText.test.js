@@ -3,6 +3,19 @@ import assert from 'node:assert/strict'
 import { apiErrorText } from '../src/lib/utils/apiErrorText.js'
 import { createSubmitActionClient } from '../src/lib/api/submitActionClient.js'
 
+test('missing games explain availability and retention without claiming that this game expired', () => {
+  const expected = 'Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu.'
+  for (const context of ['room', 'sync', 'submit']) {
+    for (const code of ['ROOM_NOT_FOUND', 'MATCH_NOT_FOUND', 'HTTP:ROOM_NOT_FOUND', 'ENGINE:MATCH_NOT_FOUND']) {
+      const error = Object.freeze(Object.assign(new Error(code), { status: 404 }))
+      assert.equal(apiErrorText(error, context), expected)
+      assert.equal(error.message, code)
+      assert.equal(error.status, 404)
+    }
+  }
+  assert.equal(apiErrorText(new Error('ROOM_RESUME_INVALID'), 'room'), 'Ce code de reprise est incorrect ou n’est plus valide.')
+})
+
 test('messages distinguish network, timeout, access, contract and business errors without exposing payloads', () => {
   const errors = [new TypeError('NetworkError'), new Error('REQUEST_TIMEOUT'), new Error('ROOM_ACCESS_DENIED'),
     new Error('HTTP:INVALID_MATCH_RESPONSE'), new Error('ENGINE:VERSION_CONFLICT'), new Error('RULESET:INVALID_FEEDBACK')]

@@ -2,6 +2,16 @@
 
 final result: passed
 
+## Audit UX distinct du 27 octobre — défauts ouverts
+
+Contre-vérification après accord : les quatre défauts nommés sont corrigés localement et documentés dans [UX_FIXES](docs/UX_FIXES_2026-10-27.md), avec 11 captures finales. Les constats avant correction ci-dessous sont conservés comme historique ; les autres critères A2/A4 restent ouverts.
+
+Le verdict de fidélité historique ci-dessous ne vaut pas clôture de l'UX. [Audit Product Design ciblé](docs/UX_AUDIT_2026-10-27.md) sur l'application complète locale, avec 22 captures : quatre défauts P2 de messages/focus/attente/correction restent ouverts. Les contrastes échantillonnés et quelques parcours clavier sont vérifiés, pas la conformité globale. Aucune nouvelle refonte ni correction applicative exécutée pendant cet audit.
+
+## Complément du 27 octobre — états du salon
+
+Contrôle Chrome local du composant LobbyScreen avec données synthétiques, sans backend : création/jointure/actualisation distinctes, arbre accessible et captures. Mobile 390 × 844 en clair sans débordement ; focus visible conservé sur Actualisation avec aria-disabled, région status renseignée. Rendus sombres à largeur native 958 et jointure à 1440 contrôlés. Compression du nom à 958 corrigée après accord par bouton sur sa propre ligne entre 851 et 1 100 pixels ; seuils 850/851/1100/1101 sans débordement et rendu 958 clair/sombre relu. Captures locales sous App_Front/target/qa-lobby-*.png, ignorées par Git. Ce complément ne vaut ni parcours complet d'admission lente, ni test audio de lecteur d'écran, ni validation de production. Les autres vérifications A2 restent ouvertes dans ROADMAP.
+
 ## Complément du 25 octobre — focus et erreur d'historique
 
 Périmètre fonctionnel : destinations approuvées vérifiées sur Chrome, titre du salon depuis accueil/duel, champ du pseudo après changement du nom, titre de l'historique depuis le résultat. Tab atteint ensuite Actualiser ; onglets Plateau/Historique gardent leur focus. Aucun changement de composition visuelle, de palette ou d'assets. Le message de synchronisation de l'historique n'apparaît plus après échec : défaut reproduit avant changement, puis lecture lente, HTTP 500 et retry contrôlés sur API synthétique isolée. 400 actions conservées dans les trois états ; focus sur Actualiser conservé après retry.

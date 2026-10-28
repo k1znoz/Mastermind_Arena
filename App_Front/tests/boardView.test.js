@@ -9,6 +9,16 @@ const snapshot = (overrides = {}) => ({ matchId: 'board', state: 'PREPARATION', 
 const ready = () => snapshot({ state: 'WAITING_GUESS', readyPlayers: ['p1', 'p2'], visibleSecretCode: ['A', 'B', 'C', 'D'] })
 const fullDraft = () => ({ slots: ['A', 'B', 'E', 'F'], selected: 3 })
 
+test('submission status distinguishes saving, sending and waiting for the opponent', () => {
+  const pending = action => deriveGameView({ state: snapshot(), submitStatus: 'loading', pendingActionType: action }).submissionMessage
+  assert.equal(pending('READY_SECRET'), 'Envoi du code…')
+  assert.equal(pending('PLAY_GUESS'), 'Envoi de l’essai…')
+  assert.equal(pending('SEND_FEEDBACK'), 'Envoi des indices…')
+  assert.equal(pending('CORRECT_FEEDBACK'), 'Enregistrement de la correction…')
+  assert.equal(pending('REQUEST_REMATCH'), 'Envoi de la demande de revanche…')
+  assert.equal(deriveGameView({ state: snapshot(), submitStatus: 'success', pendingActionType: 'REQUEST_REMATCH' }).submissionMessage, '')
+})
+
 test('filling the last case first retains its position and requires the other three', () => {
   const original = createBoardDraft()
   let draft = placeDraftColor(selectDraftSlot(original, 3), 'F')

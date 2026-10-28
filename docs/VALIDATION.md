@@ -1,5 +1,173 @@
 # Plan de validation de la finalisation
 
+## 28 octobre — règle saisie et parcours normal confirmés par le concepteur
+
+Le concepteur choisit de faire le réglage Vercel lui-même. Capture reçue : arena-admissions, Method Equals POST ET Request Path Starts with /local/rooms, Fixed Window 60 seconds, 20 requests, IP Address et Too Many Requests (429). Paramètres visuels conformes à la règle approuvée. Instructions d'ajout/revue/publication données, sans manipulation distante par l'agent.
+
+Après le protocole de création dans un navigateur et jointure depuis un second client, le concepteur confirme « ok ça marche ». Ce parcours normal est acquis dans ce périmètre déclaré. Il ne prouve pas un blocage au-delà du seuil ; état Active, offre/règles préexistantes, dépassement et rétablissement non relevés. Aucun test de charge exécuté. ROADMAP distingue ce parcours réussi de la preuve de limitation encore ouverte.
+
+## 28 octobre — règle d'admission approuvée, accès Vercel indisponible
+
+Accord explicite : retenir la règle WAF Vercel de 20 POST d'admission par fenêtre fixe de 60 secondes et par IP, budget commun création/jointure/reprise, limites régionales et réseau partagé explicités. ROADMAP distingue désormais le choix acquis de la configuration/preuve encore ouvertes.
+
+Aucun outil Vercel direct disponible dans les outils exposés ; tentative d'ouverture de la page Firewall du backend via Chrome. Connexion Chrome indisponible : reconnexion de la seule page demandée, sans contrôle global du navigateur ni autre accès de contournement. Offre/règles existantes non vérifiées ; aucune règle créée/activée, aucun prix accepté, aucun test de trafic effectué. Le lot distant attend cet accès ; aucune nouvelle suite applicative pour ces seuls documents.
+
+## 28 octobre — diffusion et perte acceptée, proposition anti-abus
+
+Réponses explicites du concepteur : portfolio public, lien librement diffusé ; perte des futures parties/scores acceptable en cas d'incident. Roadmap, decision.md, DATA_RETENTION et DATABASE_RECOVERY actualisés : pas de sauvegarde récupérable à organiser comme exigence de livraison, aucune promesse de restauration ; purge régulière inchangée. Cette décision ne modifie aucune donnée ni sauvegarde du fournisseur.
+
+Documentation primaire Vercel consultée : WAF Rate Limiting disponible sur tous les plans, Hobby limité à une règle, fenêtres fixes et compteurs régionaux. Proposition locale [VERCEL_RATE_LIMIT_SETUP](VERCEL_RATE_LIMIT_SETUP.md) préparée avec seuil à approuver, portée, limites, contrôle du prix et protocole de preuve sans partie réelle. Point cross-origin explicite : réponse WAF avant Java et CORS à observer, aucun message 429 précis promis. Aucun changement applicatif, règle distante ou activation effectué ; aucune nouvelle suite de tests nécessaire pour cette préparation documentaire.
+
+## 28 octobre — roadmap réconciliée et candidate front préparée
+
+Vérification finale : empreintes des 81 fichiers du manifeste relues, aucune différence ; git diff --check réussi. Inventaire indépendant [ABUSE_PROTECTION](ABUSE_PROTECTION.md) préparé par lecture des handlers salon, du support HTTP et des credentials : taille/champs, dérivation et autorisation présents ; aucun contrôle de fréquence appelé dans les handlers inspectés. Aucune règle Vercel distante attestée. Pas d'implémentation, de test de charge ou d'ajout de dépendance en attendant la décision de diffusion.
+
+ROADMAP réécrite en acquis, nécessaires L1–L6 et compléments reportables ; anciennes preuves A–E conservées dans ce journal. A4-01/A4-02 restent corrigés, le test audio demeure non réalisé et ne relance pas une revue générale. Les droits SQL/cron déjà acquis ne sont plus répétés dans plusieurs lots.
+
+Périmètre lu dans Git : HEAD fd500eb, aucun diff dans deduction-engine/pom.xml/vercel.json/quality.yml ; aucun diff dans les clients HTTP front, session.js, package.json/package-lock.json/vite.config.js. Les seuls nouveaux fichiers applicatifs/tests non suivis sont submissionFocus.js et son test, explicitement recensés dans le [dossier candidat](RELEASE_CANDIDATE_2026-10-28.md). Manifeste SHA-256 de 81 fichiers front publics/source/tests/config préparé sans .env, secret ou cible ignorée. Pas de changement applicatif dans ce lot : les 83 tests et lint/check/build du 27 octobre sont réutilisés, sans nouvelle suite inutile.
+
+Publication et repli adaptés à ce lot front : pas de reset ni de migration, déploiement front précédent à identifier avant publication ; compatibilité source constatée, repli distant non exécuté. Candidate non commitée, aucune CI de candidate ni production nouvelle revendiquée. Questions de diffusion et de sauvegarde/perte acceptable posées au concepteur ; travail dépendant en attente de réponse.
+
+## 27 octobre — A4-02, focus conservé aux bornes des compteurs
+
+Accord du concepteur obtenu. PartieScreen remplace disabled par aria-disabled sur les huit commandes des indices/corrections ; adjust refuse les changements pendant busy et conserve ses bornes existantes. Contre-vérifié à 200 % : focus maintenu au minimum et au total maximal dans les deux séries, activation forcée sans dépassement, valeurs inchangées pendant une correction retardée de huit secondes. Tab atteint la commande indisponible. Rendu clair/sombre contrôlé sans débordement. [Trois captures et protocole](UX_A4_2026-10-27.md).
+
+Incident d'encodage local détecté par lint et rendu puis corrigé en UTF-8 ; npm test répété sur le fichier final : 83 réussis, 0 ignoré. Lint/check/build répétés avec succès, Svelte Check 0 erreur/avertissement, 176 modules, JS index-C7AQeOyX.js et CSS index-pd-AsOAG.css. Aucun changement métier/HTTP, aucune suite backend répétée, aucun déploiement. Test audio non réalisé : aucun lecteur d'écran prêt côté concepteur ; aucune installation. A4-02 corrigé localement, A4 conserve ses critères non prouvés.
+
+## 27 octobre — A4 clavier, correction et abandon
+
+Contrôles locaux à 200 % sombre : correction ouverte par Entrée, focus sur le titre, Annuler rend le focus au déclencheur ; aucun enregistrement. Défaut A4-02 reproduit aux deux bornes des compteurs : activation portant le total à 4 ou une couleur à 0, bouton désactivé, focus sur BODY. Proposition de maintien du focus soumise, réponse attendue.
+
+Sur une partie active synthétique distincte, dialogue d'abandon entièrement visible ; focus initial Continuer à jouer, Tab vers Confirmer l'abandon, Échap ou Continuer rendent le focus au déclencheur. Aucun abandon envoyé. Plateaux et navigation Historique/Plateau contrôlés par Entrée avec focus conservé. [Deux captures, mesures et limites](UX_A4_2026-10-27.md). Pas de changement applicatif ni de nouvelle suite automatisée ; test audio toujours ouvert. A4 reste non clôturé.
+
+## 27 octobre — A4-01 corrigé après accord du concepteur
+
+RecoveryScreen conserve le focus sur son titre et fait défiler celui-ci avec une marge réservant le bandeau fixe. Contre-vérification depuis salon défilé en clair et accueil en sombre à 200 % : titre actif à 96–132 px, bandeau à 80 px ; Tab vers le champ et Retour vers le déclencheur conservés. Surface desktop de 900 px : titre actif à 124 px, bandeau à 104 px. Aucun débordement horizontal dans ces cas. [Captures et détails](UX_A4_2026-10-27.md).
+
+Commandes capturées : npm test 83 réussis, 0 ignoré ; npm run lint réussi ; npm run check 0 erreur/avertissement après répétition avec chargement Vite autorisé ; npm run build réussi, 176 modules, JS index-Bw6gDduX.js et CSS index-pd-AsOAG.css. git diff --check réussi. Aucun changement HTTP/métier, aucune suite backend répétée, aucun commit/push/déploiement. A4-01 clôturé localement ; A4 conserve ses autres critères ouverts.
+
+## 27 octobre — A4, autres surfaces au zoom réel et défaut de titre
+
+Zoom local conservé à 200 %, ratio 2 et fenêtre 479 × 515 CSS. Accueil/salon/historique sombres, reprise claire et sombre, attente/éditeur secret clairs contrôlés directement dans l'onglet : contenu de 471 px pour une largeur utile de 471 px. Entrée et Tab utilisés sur les contrôles ; focus de retour au salon, champ du pseudo et titre d'historique confirmé. Le bouton Confirmer mon code reste entièrement au-dessus de la navigation fixe après Tab, sans soumission.
+
+Défaut reproduit **A4-01** : titre de reprise focalisé entre 17,5 et 53,5 px, masqué par le bandeau fixe de 80 px. Cause localisée à l'action focusHeading de RecoveryScreen ; correction de visibilité proposée, en attente de réponse. Aucun changement applicatif. [Mesures, limites et huit captures complémentaires](UX_A4_2026-10-27.md). A4 reste ouvert ; aucune suite automatisée répétée pour ces seules preuves.
+
+## 27 octobre — A4, noms maximaux et zoom réel sur résultat/reprise
+
+[Relevé détaillé et sept captures](UX_A4_2026-10-27.md). Partie synthétique terminée via les clients HTTP sur PostgreSQL isolé : pseudos de 24 caractères, salon de 60 caractères, score 1–0. Contrôles du résultat et du panneau privé à 320 px clair, 390 et 900 px sombre : aucun débordement horizontal mesuré, noms complets, badge et code masqué conservés. À 320 px, les pseudos occupent six lignes dans l'en-tête : lisibilité dense, aucune nouvelle présentation décidée.
+
+Zoom de cet onglet réglé manuellement à 200 % par le concepteur : fenêtre CSS 958 → 479, devicePixelRatio 1 → 2. Résultat sans débordement ; panneau défilant de 424 px pour 660 px de contenu, bouton final atteint par Tab sans activation. Échap rend le focus au déclencheur. Aucune copie, révélation de code ni suppression. La boucle complète du focus n'est pas validée.
+
+Aucun changement applicatif : suites automatisées A3 non répétées ; git diff --check réussi. Aucun accès Supabase, commit, push ou déploiement. A4 reste ouvert pour les autres surfaces, commandes clavier et lecteur d'écran réel ; A5 reste ouvert pour la coupure physique du réseau.
+
+## 27 octobre — message de partie indisponible, A3 clôturé localement
+
+Le concepteur approuve le message complet incluant la règle des sept jours. Deux entrées de apiErrorText modifiées, ROOM_NOT_FOUND et MATCH_NOT_FOUND ; aucune logique HTTP, autorisation ou rétention changée. Test ajouté sur les trois contextes et les préfixes de code, avec métadonnées figées ; distinction de reprise invalide préservée.
+
+Commandes capturées : npm test 83 réussis, 0 ignoré ; npm run lint réussi ; npm run check 0 erreur/avertissement ; npm run build réussi, 176 modules, JS index-D23qrvTq.js et CSS index-Bamz1RjX.css. Suites backend non répétées pour ces deux libellés. Pas de commit, push ou publication.
+
+Contrôle de la seule page Chrome locale, sans pilotage global du navigateur : application réelle rendue dans un iframe de 390 × 844, état clair, proxy local fournissant ROOM_NOT_FOUND/404 à une lecture. L'alerte porte exactement le texte approuvé ; largeur utile 291 pixels et scrollWidth 291, aucun débordement interne. Réponse synthétique stabilisée pour la capture, après disparition d'une première erreur ponctuelle au polling. Capture pleine page expirée et première vue sans le bon état rejetées ; capture combinant état accessible et rendu enregistrée puis fichier ouvert/inspecté avant acceptation : [preuve](screenshots/ux-message-20261027/partie-introuvable-mobile.png). Ce test ne prouve pas une purge réelle ni l'affichage de chaque contexte.
+
+A3 clôturé localement. A4 reste ouvert pour zoom réel, noms maximaux et lecteurs d'écran ; A5 pour la coupure réseau physique. Aucun autre chantier déclenché par ce changement.
+
+Nettoyage effectué : page de QA fermée, montage iframe temporaire retiré, trois processus locaux et conteneur PostgreSQL arrêtés. Capture conservée dans le dépôt. Diff vérifié sans nouvelle suite inutile pour ces seuls compléments documentaires.
+
+## 27 octobre — jointure lente réussie, clôture ciblée A2
+
+Dernier scénario nommé A2 contrôlé depuis la seule page Chrome locale, conformément à la restriction du concepteur : aucun contrôle natif du navigateur ni lecture des autres onglets pendant cet essai. Base PostgreSQL jetable et proxy existants relancés ; Protected audit, accès protégé et identités synthétiques. Depuis le salon, ouverture du champ avec focus, saisie masquée du code valide et appui Entrée. POST retardé de huit secondes avant transmission au vrai backend local.
+
+Pendant le vol : bouton « Connexion à la partie… », document.activeElement sur ce bouton, disabled absent et aria-disabled=true ; région status portant le même message. Le bouton de création conserve « Créer et attendre ». Après confirmation : partie Protected audit, Bob audit face à Creator audit, phase PREPARATION et titre H2 « Choisissez votre code secret » actif ; aucun alert ni débordement horizontal constaté dans la vue native examinée. Captures enregistrées puis ouvertes : [envoi](screenshots/ux-join-20261027/01-jointure-lente.png), [confirmation](screenshots/ux-join-20261027/02-jointure-confirmee.png). La capture pleine page de confirmation a expiré ; une capture de la vue courante a été acceptée à sa place après inspection.
+
+A2 clôturé dans le périmètre de ses parcours ciblés, en réutilisant les preuves encore actuelles d'UX_FIXES. Aucune nouvelle modification applicative, aucun test complet répété, aucun déploiement ou accès Supabase. Cette clôture ne vaut pas essai audio de lecteur d'écran, zoom réel, tous les refus possibles ou panne réseau physique : critères A4/A5 toujours ouverts. Le message de partie indisponible reste à décider en A3.
+
+Fin de contrôle : trois processus locaux et conteneur de test arrêtés, seul onglet de QA créé pour cet essai fermé. Les deux captures sont présentes et git diff --check est passé.
+
+## 27 octobre — corrections UX-01 à UX-04 validées localement
+
+Décisions explicites du concepteur après audit : erreurs contextualisées séparées, maintien du focus d'envoi et transfert conditionnel après réussite, annonces par action, éditeur de correction maintenu jusqu'à confirmation, erreurs persistantes et succès à 2,4 secondes. Le test mobile révèle une erreur flottante masquant l'action ; placement dans le flux avant le contenu approuvé puis appliqué. Preuves et 11 captures acceptées dans [UX_FIXES_2026-10-27](UX_FIXES_2026-10-27.md).
+
+roomConnection conserve ses vols partagés/annulations et distingue les sources d'erreurs ; une liste actualisée ne remplace plus l'erreur d'admission. submissionFocus isole le DOM des coordinateurs : garde de contexte/vue/identité, annulation des anciens travaux, déplacement clavier ou clic ailleurs empêchant la reprise du focus, respect du focus navigateur. Les boutons utilisent aria-disabled avec garde d'action, sans perdre leur focus pendant l'envoi. Requête/réponse HTTP, idempotence et moteur inchangés. Le callback de confirmation de correction ne ferme que l'édition ciblée ; une cible devenue non modifiable n'est pas réappliquée. La dernière erreur reste prioritaire sur les succès jusqu'à fermeture, sans nouvelle file de messages.
+
+Tests capturés : npm test 82 réussis, 0 ignoré ; npm run lint réussi ; npm run check 0 erreur/avertissement ; npm run build réussi, 176 modules, JS index-WEFgO-kS.js et CSS index-Bamz1RjX.css. Neuf régressions ajoutées depuis les 73 tests précédents : messages d'opération, sources d'erreur séparées, annonces d'action et six cas de suivi de focus. Plusieurs contrôles intermédiaires ont précédé les ajustements issus du navigateur ; seuls les résultats finaux nommés sont retenus pour la version livrée. Aucun assouplissement de règle ou assertion.
+
+Chrome, API Java et PostgreSQL jetable déjà isolés : refus de création, jointure technique puis vrai code d'accès incorrect, reprise technique refusée puis valide ; focus conservé au refus et titre atteint après création/reprise. Envois retardés de six/huit secondes : code, essai, indices, correction et revanche annoncés ; deuxième Entrée sur l'essai sans deuxième action acceptée (version 3 vers 4). Clic volontaire sur le thème pendant la réponse : focus restant sur ce contrôle après passage aux indices. Indices confirmés : titre de résultat actif. Correction refusée : éditeur ouvert et compteurs 3/0 conservés, erreur en bandeau, bouton Enregistrer actif. Retry : éditeur présent pendant l'enregistrement puis fermé à confirmation ; correction suivante vers égalité avec titre H2 focalisé. Revanche : libellé d'envoi distinct, puis titre H3 « Vous proposez une revanche. » actif et attente adverse ; nouvelle manche accessible ensuite par reprise synthétique de p2.
+
+Erreur encore présente bien après 2,4 secondes puis fermée manuellement, retour au bouton initial ; succès temporaire absent après son délai. Captures précédant le placement final ou ne montrant pas le bon état rejetées. Délais de capture Chrome ponctuels : vues stabilisées reprises, pas de faux PASS visuel. Tests effectués avec Vite servant les sources actuelles ; build final compilé séparément. Aucune donnée réelle ou code privé révélé dans les images, aucune requête Supabase. Pas de modification Java, pas de nouvelle suite backend complète ni de preuve CI distante ; total backend antérieur inchangé.
+
+Les quatre défauts précis sont clôturés localement. A2 garde la jointure lente réussie depuis l'interface et des combinaisons de refus/navigation encore non vérifiées ; A3 garde le message de partie indisponible ; A4 garde zoom réel, noms maximaux et lecteurs d'écran. Aucun commit, push ou déploiement effectué.
+
+Dernier ajustement de balisage : statut de reprise placé hors du formulaire aria-busy pour ne pas en différer l'annonce. Check, lint et build repassés après cette modification ; les 82 tests JS sont ceux du passage final précédent, sans changement de logique depuis. Onglet local fermé, viewport rétabli, trois processus de QA et PostgreSQL jetable arrêtés. Les 11 liens de captures du rapport de corrections sont présents ; aucun test ou diagnostic ne publie les admissions privées synthétiques.
+
+## 27 octobre — audit Product Design des parcours UX restants
+
+Rapport et 22 captures acceptées : [UX_AUDIT_2026-10-27](UX_AUDIT_2026-10-27.md). Version locale actuelle, Java recompilé par mvn -pl deduction-engine compile -q, PostgreSQL 16 jetable sur loopback 54331 (conteneur mastermind-ux-audit-local-20261027), proxy local de lenteur 8088 et Vite 5180. Aucun profil .env lu pour la configuration de l'audit et aucune requête de test dirigée vers Supabase. Premier port Docker 55439 refusé car réservé par Windows ; conteneur non démarré, remplacé par celui indiqué. Premier proxy de test incomplet pour X-Request-Id corrigé avant de retenir les observations de soumission.
+
+Huit étapes capturées : entrée, salon/création avec HTTP 500 puis retry, secret, essai/indices, résultat/correction, reprise privée, revanche/nouvelle manche, petits écrans/desktop. Vrais clients et backend utilisés ; adversaire synthétique piloté par script local. Lenteurs POST/GET de six secondes. Résultat initial nul, correction des indices rouvrant la recherche de Bob et donnant 1–0, recherche terminée puis revanche mutuelle menant à manche 2 avec score conservé. Focus sur titre à l'ouverture de correction et retour au bouton de reprise après Échap confirmés.
+
+Quatre défauts P2 documentés, aucune correction applicative dans ce lot : erreur de création attribuée aussi à la liste ; perte du focus lors de désactivation du bouton d'envoi (également reproduite par Entrée) ; annonce d'envoi absente/incomplète et revanche sans libellé transitoire ; correction fermée avant confirmation. Les destinations de focus, textes et comportement de correction restent à approuver avant implémentation.
+
+Mesures sur état de poursuite : 22 éléments par thème, minimum 5,21:1 clair et 8,60:1 sombre dans cet échantillon ; compteurs actifs 44 × 46 pixels. Pas de débordement horizontal observé aux largeurs 390 et 320 dans les états examinés. Résultat desktop 1440 × 1024 relu. Zoom par raccourci non confirmé (capture rejetée), lecteur d'écran et confinement complet du dialogue non validés, noms maximaux et jointure lente côté navigateur non couverts. Les images pleine page peuvent montrer une barre fixe au niveau de défilement de la capture : aucune anomalie de recouvrement ne lui est imputée sans observation supplémentaire.
+
+A2/A4 restent partiels avec défauts nommés ; A1/A3/A5 non clôturés. Aucune suite front/Java complète répétée pour cet audit sans changement applicatif ; les 73/57 tests précédents ne sont pas présentés comme rejoués. Pas de publication. Diff et liens locaux du rapport contrôlés.
+
+Fin d'audit : trois processus locaux arrêtés, conteneur PostgreSQL arrêté, onglet de QA fermé et viewport rétabli. Les 23 liens locaux du rapport existent (22 images et le relevé de contraste). Le conteneur du premier port réservé reste non démarré ; aucune donnée de production effacée.
+
+## 27 octobre — contrôle Chrome des états du salon
+
+Chrome ensuite ouvert et connecté par le concepteur : contrôle local du composant LobbyScreen avec données synthétiques, sans montage d'App ni client API. États création/jointure/actualisation lus dans l'arbre accessible et examinés par captures. Rendu mobile 390 × 844 en clair (trois états) et arbre accessible en sombre ; rendu sombre desktop 1440 × 1024 pour la jointure, largeur native 958 pour les trois états. Aucun état de création affiché pendant la jointure. Sur actualisation mobile claire, Tab depuis « Changer de pseudo » atteint « Actualisation… », aria-disabled=true et focus-visible=true ; largeur document 390 pour fenêtre 390, aucun débordement horizontal. La région status contient le message attendu ; aucune annonce audio de lecteur d'écran testée.
+
+Limite révélée à 958 pixels : bouton de jointure long comprimant le nom du salon. Après accord du concepteur, bouton placé sur une ligne séparée entre 851 et 1 100 pixels. Rendu relu à 958 en clair/sombre ; géométrie contrôlée à 850/851/1100/1101, aucun débordement horizontal, bouton sur sa propre ligne uniquement dans la plage approuvée (comportement mobile antérieur conservé). Captures locales ignorées par Git : App_Front/target/qa-lobby-refresh-mobile-light.png et qa-lobby-join-evidence.png. La limite Firefox précédente est levée pour ce contrôle Chrome ; le parcours réel d'admission lente et les autres soumissions/focus restent ouverts dans A2. Aucune preuve de production ni conformité globale déduite du montage isolé.
+
+Après ajustement CSS : Svelte Check 0 erreur/avertissement et build réussis ; lint initialement gêné par les fichiers du montage temporaire, supprimés après inspection puis lint relancé sans assouplissement de règle. Les 73 tests front précédents restent la preuve du comportement JS inchangé par ce seul complément CSS. Onglet de QA fermé et viewport Chrome rétabli ; aucun onglet de production modifié.
+
+## 27 octobre — distinction des chargements du salon (A2 partiel)
+
+Défaut lu dans les appelants : roomBusy couvrait toutes les admissions mais le bouton de création affichait « Création en cours… » pour chacune ; les lectures de liste n'avaient aucun indicateur. Décision approuvée : trois états distincts et annonce accessible. createRoomConnection expose maintenant le type d'admission et la partie ciblée au callback existant, plus le chargement de liste. Le partage de promesse conserve les métadonnées de la première opération ; invalidate et les gardes de vol empêchent une réponse ancienne d'effacer l'état courant.
+
+App transmet ces données à LobbyScreen : création signalée sur son bouton uniquement, jointure sur la ligne/bouton Entrer concerné, actualisation sur le bouton dédié et région role=status. Le bouton d'actualisation garde sa place au clavier avec aria-disabled et ignore le clic pendant le vol partagé. Une première lecture en cours affiche « Chargement des parties… » plutôt qu'une liste prétendument vide. Aucun changement de règle, de contrat HTTP ou de polling.
+
+Avant modification : 15 tests roomConnection/phaseFocus réussis après relance identique hors sandbox (spawn EPERM initial). Après : npm test, 73 tests réussis, aucun ignoré ; npm run lint réussi ; npm run check hors sandbox, 0 erreur/avertissement ; npm run build réussi, 175 modules. Le premier check sandbox rapportait un échec de chargement Vite malgré 0 diagnostic : seule la relance propre est retenue. Deux régressions ajoutées : identité de l'admission partagée après clic concurrent ; état de liste face à une réponse tardive, erreur puis retry.
+
+Contrôle navigateur tenté via un montage synthétique local du composant, sans client API : Computer Use refuse l'accès à Firefox. Aucun contrôle visuel, mobile ou lecteur d'écran acquis par cette tentative. Fichiers temporaires du montage supprimés et serveur Vite arrêté. A2 reste partiel pour le rendu, les admissions lentes au clavier et les autres soumissions/focus. Pas de déploiement ; tests backend non répétés car code Java inchangé. Diff et absence de secrets dans les changements vérifiés.
+
+## 27 octobre — identité JDBC, révisions publiées et contrôle du cron
+
+Résultat pg_stat_activity fourni : arena_runtime, application PostgreSQL JDBC Driver, une connexion. Ce constat confirme l'identité JDBC observée après sollicitation du jeu. Le concepteur confirme également le contrôle de désactivation du cron demandé (désactivation puis réactivation) ; aucune lecture directe du planificateur par l'agent.
+
+Captures Vercel fournies : backend mastermind-arena-backend.vercel.app et front mastermind-arena.vercel.app, tous deux Ready sur main, commit abrégé fd500eb. Le front indique Latest ; la capture backend est celle du Production Deployment. SHA complet et CI distante non consultés. L'aperçu backend affiche une 404 à la racine ; le serveur déclare /health, sans page d'accueil à fournir sur /. Ce visuel ne remplace pas les contrôles de routes et de jeu déjà déclarés réussis.
+
+D1–D3 clôturés dans le périmètre des preuves fournies et des essais de production précédents : configuration et nettoyage, publications identifiées, parcours déclaré, cron automatique et contrôle de désactivation. Pas de nouvelle exécution de toute la matrice fonctionnelle sur fd500eb ; pas d'audit exhaustif de production, pas de validation CI déduite du statut Ready. Les tâches B/C/A/E restantes conservent leurs critères propres. Documentation seulement, git diff --check réussi ; aucune suite applicative répétée.
+
+## 27 octobre — nettoyage public confirmé et jeu fonctionnel
+
+Après exécution du nettoyage par le concepteur, le résultat fourni contient uniquement les cinq tables arena_v1 : idempotency, match_state, rooms, schema_version et workflow_event. Les cinq anciennes tables public ne figurent plus dans le contrôle. Le concepteur confirme ensuite que le jeu fonctionne après le contrôle demandé. Nettoyage initial clôturé dans ce périmètre ; aucune nouvelle manche complète ni nouvelle suite de tests n'est revendiquée. Les preuves préparatoires ci-dessous restent historiques. L'identité de session JDBC et les révisions publiées restent à relever séparément.
+
+## 27 octobre — revue des dépendances public et nettoyage préparé
+
+Rapport legacy_public_audit fourni : cinq tables public appartenant à postgres ; dépendances internes uniquement (types, TOAST, défauts, contraintes, index et séquence workflow_event_event_id_seq). Aucune vue ou clé étrangère externe signalée. Seule routine candidate : arena_v1.purge_expired_matches ; la migration V8 confirme ses références qualifiées par le schéma cible. Les clients externes et SQL dynamique restent hors de la preuve catalogue.
+
+Ajout de scripts/remove-legacy-public.sql : garde des cinq tables arena_v1 et versions exactes 1–8, transaction, lock_timeout 5 s, DROP des cinq noms public qualifiés avec RESTRICT, aucun CASCADE. Résultat attendu après commit : uniquement les cinq lignes arena_v1. Ce nettoyage détruit les anciennes données autorisées, pas les parties du nouveau schéma.
+
+PostgreSQL 16 isolé, conteneur mastermind-cleanup-validation-20261027 sans réseau ni port : fixture synthétique avec cinq anciennes et cinq nouvelles tables, séquence identity et vue externe bloquante. Premier appel refusé par dépendance ; connexion fermée et transaction annulée, anciennes tables toujours présentes. Après retrait de la seule vue de test : suppression réussie, cinq tables arena_v1 restantes, séquence ancienne absente et marqueur arena_v1=42 intact. Assertions psql réussies, conteneur arrêté. Aucun essai dirigé vers Supabase, aucune suppression distante encore confirmée. Diff vérifié ; suites front/Java non répétées pour ce script administratif.
+
+## 27 octobre — droits distants et premier passage automatique de purge
+
+Résultats fournis : arena_runtime LOGIN true ; SUPERUSER, CREATEDB, CREATEROLE, INHERIT, REPLICATION et BYPASSRLS false. Cinq tables arena_v1 appartenant à postgres avec RLS activée. Grants : SELECT/INSERT/UPDATE sur rooms et match_state ; SELECT/INSERT sur idempotency et workflow_event ; SELECT sur schema_version. CREATE dans arena_v1 et EXECUTE sur la purge false. Cela ne couvre pas tous les memberships et objets de la base.
+
+Après correction des variables puis erreur ECIRCUITBREAKER, le concepteur confirme le retour du jeu : Firefox/Chrome, deux échanges, fermeture Firefox, reprise sur téléphone jusqu'à la fin. Parcours réel déclaré ; aucune capture de session JDBC ne prouve indépendamment l'identité du backend. Révisions et coupure réseau physique restent non vérifiées.
+
+Job 1, nom exact mastermind-arena-purgE, actif, postgres, 0 3 * * *, CALL arena_v1.purge_expired_matches();. Passage fourni : 2026-10-27 03:00:00.38319+00 à 03:00:00.429319+00, succeeded, return_message « 1 row ». Appel réussi, nombre supprimé non établi. Désactivation restant à contrôler.
+
+Préparation de scripts/audit-legacy-public.sql : inventaire en lecture seule des cinq noms public, dépendances catalogue des tables/séquences possédées et routines candidates par recherche textuelle. Aucun contenu de partie ou corps de routine retourné. Résultat distant attendu avant suppression ; aucun DROP fourni ou exécuté. Script non encore exécuté sur PostgreSQL ; aucune nouvelle suite applicative revendiquée.
+
+## 26 octobre — échec de démarrage après changement des variables
+
+Le concepteur signale CORS manquant avec HTTP 500 après préparation de la connexion arena_runtime. Contrôle GET /health sans Origin : 500/FUNCTION_INVOCATION_FAILED, ce qui confirme que le refus ne dépend pas d'un contrôle CORS du navigateur. Le concepteur fournit ensuite l'exception « java.lang.IllegalArgumentException: schema must be a valid SQL identifier ».
+
+Le message correspond à JdbcPersistenceContext : validation de dbSchema par [A-Za-z_][A-Za-z0-9_]*, avant toute ouverture JDBC et avant création du serveur HTTP. Cause établie : valeur effective de schéma incompatible avec cet identifiant. Valeur exacte distante non lue ; guillemets, copie d'une affectation entière ou caractère parasite sont des hypothèses, pas des faits. arena_v1 est une valeur valide. Correction proposée : ressaisir uniquement arena_v1 dans le champ Value de APP_DB_SCHEMA du backend Production, sauvegarder puis redéployer. Aucune validation de configuration assouplie ; aucune modification applicative ou de permissions SQL.
+
+Nouvelle connexion, droits de arena_runtime et résultat après correction restent à vérifier. L'erreur observée survient avant authentification PostgreSQL : elle ne prouve ni mot de passe erroné ni panne de Supabase. Aucun credential lu ou affiché.
+
 ## 26 octobre — rôle créé/activé et variables Vercel déclarées à jour
 
 Le concepteur fournit d'abord le résultat de création : arena_runtime, rolcanlogin/rolsuper/rolcreatedb/rolcreaterole/rolinherit/rolreplication/rolbypassrls tous false. Il confirme ensuite rolcanlogin true après définition privée du mot de passe et les variables Vercel à jour. Aucun mot de passe reçu ou lu par l'agent.

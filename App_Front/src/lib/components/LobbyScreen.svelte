@@ -7,7 +7,10 @@
   export let playerName = ''
   export let rooms = []
   export let busy = false
+  export let operation = /** @type {{type: string, roomId?: string} | null} */ (null)
+  export let refreshing = false
   export let error = ''
+  export let listError = ''
   export let canResume = false
   export let ownRoomId = ''
   export let newName = ''
@@ -17,6 +20,7 @@
   const dispatch = createEventDispatcher()
   function focusCodeInput(input) { input.focus() }
   function join(room) {
+    if (busy) return
     if (room.roomId === ownRoomId) { dispatch('resume'); return }
     if (room.locked) { joinRoomId = room.roomId; joinCode = ''; return }
     dispatch('joinroom', { roomId: room.roomId, accessCode: '' })
@@ -28,20 +32,22 @@
     <div><h1 id="lobby-title" tabindex="-1">Bonjour {playerName}</h1><button class="change-name" type="button" on:click={() => dispatch('back')}>Changer de pseudo</button></div>
   </header>
   {#if error}<p class="lobby-error" role="alert">{error}</p>{/if}
+  <p class="sr-only" role="status">{busy && operation?.type === 'create' ? 'Création en cours…' : busy && operation?.type === 'join' ? 'Connexion à la partie…' : refreshing ? 'Actualisation…' : ''}</p>
   <div class="lobby-grid">
     <section class="room-list">
-      <div class="section-title"><h2>Parties en attente</h2><button type="button" on:click={() => dispatch('refresh')}><Icon src={refresh} size={18} />Actualiser</button></div>
+      <div class="section-title"><h2>Parties en attente</h2><button type="button" aria-disabled={refreshing} on:click={() => { if (!refreshing) dispatch('refresh') }}><Icon src={refresh} size={18} />{refreshing ? 'Actualisation…' : 'Actualiser'}</button></div>
+      {#if listError}<p class="lobby-error" role="alert">{listError}</p>{/if}
       {#each rooms as room (room.roomId)}
         <div class="room-table-row">
           <div class="room-identity"><span class="player-avatar"><Icon src={userCircle} size={40} /></span><div><strong>{room.name}</strong><span>Créée par {room.hostPseudo}</span></div></div>
           <span class="access-badge" class:locked={room.locked}>{#if room.locked}<Icon src={lock} size={14} />{/if}{room.locked ? 'Code requis' : 'Ouverte'}</span>
-          {#if joinRoomId !== room.roomId}<button class="join-button" type="button" disabled={busy} on:click={() => join(room)}>{room.roomId === ownRoomId ? "Reprendre" : "Rejoindre"}</button>{/if}
+          {#if joinRoomId !== room.roomId}<button class="join-button" type="button" aria-disabled={busy} on:click={() => join(room)}>{busy && operation?.type === 'join' && operation.roomId === room.roomId ? 'Connexion à la partie…' : room.roomId === ownRoomId ? "Reprendre" : "Rejoindre"}</button>{/if}
         </div>
         {#if joinRoomId === room.roomId}
-          <div class="room-code-entry"><label><span>Code d’accès</span><input type="password" maxlength="64" autocomplete="off" bind:value={joinCode} use:focusCodeInput /></label><button class="join-button" type="button" disabled={busy || !joinCode.trim()} on:click={() => dispatch('joinroom', { roomId: room.roomId, accessCode: joinCode })}>Entrer</button></div>
+          <div class="room-code-entry"><label><span>Code d’accès</span><input type="password" maxlength="64" autocomplete="off" bind:value={joinCode} use:focusCodeInput /></label><button class="join-button" type="button" disabled={!busy && !joinCode.trim()} aria-disabled={busy} on:click={() => { if (!busy) dispatch('joinroom', { roomId: room.roomId, accessCode: joinCode }) }}>{busy && operation?.type === 'join' && operation.roomId === room.roomId ? 'Connexion à la partie…' : 'Entrer'}</button></div>
         {/if}
       {:else}
-        <p class="empty-list">{error ? 'La liste des parties n’a pas pu être chargée. Réessayez dans un instant.' : 'Aucune partie n’attend un deuxième joueur. Créez la vôtre.'}</p>
+        {#if !listError}<p class="empty-list">{refreshing ? 'Chargement des parties…' : 'Aucune partie n’attend un deuxième joueur. Créez la vôtre.'}</p>{/if}
       {/each}
     </section>
 
@@ -50,7 +56,7 @@
       <label><span>Nom de la partie</span><input type="text" maxlength="60" placeholder="Ex. Duel du soir" bind:value={newName} /></label>
       <label><span>Code d’accès (optionnel)</span><input type="password" maxlength="64" autocomplete="new-password" bind:value={newCode} /></label>
       <p>Laissez vide pour une partie ouverte.</p>
-      <button type="button" class="create-button" disabled={busy || !newName.trim()} on:click={() => dispatch('createroom', { name: newName, accessCode: newCode })}>{busy ? 'Création en cours…' : 'Créer et attendre'}</button>
+      <button type="button" class="create-button" disabled={!busy && !newName.trim()} aria-disabled={busy} on:click={() => { if (!busy) dispatch('createroom', { name: newName, accessCode: newCode }) }}>{busy && operation?.type === 'create' ? 'Création en cours…' : 'Créer et attendre'}</button>
     </section>
   </div>
   {#if canResume}<button type="button" class="resume-button" on:click={() => dispatch('resume')}>Reprendre ma partie en cours</button>{/if}
@@ -64,7 +70,7 @@
   h1 { margin:0 0 8px; font:600 clamp(30px,4vw,48px)/1.2 Inter,sans-serif; letter-spacing:-.03em; overflow-wrap:anywhere; }
   p { margin:0; color:var(--muted); font-size:14px; line-height:1.5; }
   button { min-height:48px; padding:10px 18px; border:1px solid var(--line-soft); border-radius:10px; background:transparent; color:var(--text); cursor:pointer; font:500 15px Inter,sans-serif; }
-  button:disabled { opacity:.4; cursor:default; }
+  button:disabled,button[aria-disabled="true"] { opacity:.4; cursor:default; }
   .change-name { min-height:44px; padding:0; border:0; border-radius:0; color:var(--muted); text-decoration:underline; text-underline-offset:4px; }
   .lobby-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(300px,1fr); gap:24px; align-items:start; }
   .room-list,.create-room { min-width:0; padding:28px; border:1px solid var(--line); border-radius:18px; background:var(--panel); }
@@ -95,6 +101,10 @@
   .recovery-entry button { padding:8px; border:0; color:var(--primary-soft); text-decoration:underline; text-underline-offset:4px; font-weight:400; }
   @media (max-width:850px) {
     .lobby-grid { grid-template-columns:1fr; }
+  }
+  @media (min-width:851px) and (max-width:1100px) {
+    .room-table-row { grid-template-columns:minmax(0,1fr) auto; }
+    .room-table-row .join-button { grid-column:1 / -1; width:100%; }
   }
   @media(max-width:600px) {
     .lobby-screen { gap:16px; padding-top:0; }

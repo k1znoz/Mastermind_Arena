@@ -13,7 +13,7 @@
 </script>
 
 <section class="waiting-screen">
-  <header><p>Partie créée</p><h1>{roomName}</h1></header>
+  <header><p>Partie créée</p><h1 id="waiting-title" tabindex="-1">{roomName}</h1></header>
   <div class="players">
     <div class="player-card"><Icon src={userCircle} size={72} /><div><strong>{hostPseudo}</strong><p>Créateur de la partie</p></div></div>
     <div class="player-card available"><Icon src={userCircle} size={72} /><div><strong>Place disponible</strong><p>En attente d’un deuxième joueur</p></div></div>

@@ -1,5 +1,11 @@
 # Bascule Supabase vers arena_runtime
 
+## État courant — 27 octobre 2026
+
+Complément reçu : pg_stat_activity indique une connexion arena_runtime / PostgreSQL JDBC Driver. Identité de connexion observée, en plus des droits déjà contrôlés. Capture backend Ready sur main/fd500eb. Les réserves historiques ci-dessous sur l'absence de constat JDBC sont levées par ce résultat ; aucune nouvelle connexion par l'agent.
+
+Rôle créé et activé selon les résultats fournis ; indicateurs administratifs désactivés, grants conformes au périmètre prévu, CREATE et purge interdits. Jeu et reprise Firefox vers téléphone jusqu'à la fin confirmés par le concepteur. Session JDBC effective non relevée indépendamment. Les étapes ci-dessous restent une procédure reproductible ; ne pas recréer le rôle existant. Preuves dans [VALIDATION](VALIDATION.md).
+
 Nom et droits approuvés le 26 octobre 2026. Le concepteur choisit le SQL Editor pour définir le mot de passe en privé, après information sur l'historique des requêtes. Ce document ne prouve aucune création ou bascule distante.
 
 ## 1. Préparer puis créer le rôle
@@ -27,6 +33,8 @@ Résultat attendu : rolcanlogin true. Conserver le mot de passe pour Vercel sans
 ## 3. Configurer uniquement le backend Vercel
 
 Relever les variables déjà présentes avant toute modification, en gardant leurs valeurs privées. Conserver les variables POSTGRES_* gérées par l'intégration ; créer les overrides APP_DB_* explicites ci-dessous pour le backend, dans l'environnement effectivement utilisé.
+
+Dans Vercel, renseigner séparément le nom et la valeur de chaque variable. Exemple : Name APP_DB_SCHEMA, Value arena_v1, sans guillemets ni préfixe APP_DB_SCHEMA= dans Value. Le 26 octobre, une valeur de schéma invalide a empêché le démarrage avant connexion JDBC ; la ressaisie exacte et le redéploiement restent à confirmer dans VALIDATION.
 
 | Variable | Valeur |
 |---|---|

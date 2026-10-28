@@ -1,5 +1,11 @@
 # Compatibilité des publications front et backend
 
+## Application au lot courant — 28 octobre 2026
+
+La candidate locale postérieure à fd500eb ne change ni backend/migrations, ni clients HTTP, ni stockage de session. Son dossier spécifique est [RELEASE_CANDIDATE_2026-10-28](RELEASE_CANDIDATE_2026-10-28.md). La préparation ne requiert pas de nouveau reset, de nouvelle migration ni de restauration SQL pour un repli front. Le commit candidat, la CI et le déploiement de repli restent à confirmer ; ce constat de source ne vaut pas test entre deux déploiements distants.
+
+Les sections suivantes décrivent les mécanismes généraux et les transitions historiques. Les questions de versions, permissions et production présentées comme inconnues dans leur état initial sont actualisées dans [VALIDATION](VALIDATION.md) et [ROADMAP](ROADMAP.md) : fd500eb, droits restreints et cron ont des preuves fournies, sans nouvelle attestation indépendante du distant le 28 octobre. Ne pas refaire la transition V7/V8 déjà effectuée pour publier ce lot front.
+
 Extension du 25 octobre : `turns[].originalFeedback` est nullable/optionnel et ne change aucune commande, phase, migration ou donnée persistée. Le nouveau front lit encore les réponses sans ce champ ; l'ancien front ignore les propriétés additionnelles. Publier le backend avant le front permet l'historique avant/après dès la nouvelle interface. Cette compatibilité locale ne prouve pas les versions réellement publiées.
 
 Procédure préparée le 23 octobre 2026. Les deux projets Vercel suivent `main` d'après le concepteur ; aucun réglage distant ni déploiement n'a été vérifié ici. Un push peut déclencher les deux projets, sans garantir leur ordre ou leur simultanéité. Une ancienne page peut rester ouverte après une publication du front.

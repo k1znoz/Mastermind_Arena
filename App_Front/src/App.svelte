@@ -13,6 +13,7 @@
 	import { apiErrorText } from './lib/utils/apiErrorText.js'
 	import { sanitizeDebug } from './lib/utils/diagnostics.js'
 	import { createPhaseFocus, browserFocusSurface } from './lib/state/phaseFocus.js'
+    import { createSubmissionFocus, browserSubmissionSurface } from './lib/state/submissionFocus.js'
 	import TopBar from './lib/components/TopBar.svelte'
 	import DuelNav from './lib/components/DuelNav.svelte'
 	import PrivateRecoveryPanel from './lib/components/PrivateRecoveryPanel.svelte'
@@ -39,7 +40,11 @@
 	let view = 'welcome'
 	let rooms = []
 	let roomBusy = false
-	let lobbyError = ''
+    let roomOperation = /** @type {{type: string, roomId?: string} | null} */ (null)
+    let roomsRefreshing = false
+    let listError = ''
+    let admissionError = ''
+    let waitingError = ''
 	let roomToken = ''
 	let roomName = ''
 	let roomInfo = null
@@ -70,6 +75,7 @@
 	let toast = /** @type {ToastState} */ (null)
 	let waitingRefreshing = false
 	let toastTimer = /** @type {ReturnType<typeof setTimeout> | null} */ (null)
+    let toastReturnFocus = /** @type {HTMLElement | null} */ (null)
 
 	let debugLastRequest = /** @type {unknown} */ (null)
 	let debugLastResponse = /** @type {unknown} */ (null)
@@ -96,7 +102,7 @@
         try { localStorage.setItem('arenaTheme', theme) } catch { /* Theme still works without persistence. */ }
     }
 
-    function recoverRoom(event) { return roomConnection.recover(event.detail.code) }
+    function recoverRoom(event) { return admit(() => roomConnection.recover(event.detail.code)) }
 
     function clearLobbyDraft() {
         lobbyDraftName = ''
@@ -130,8 +136,10 @@
 		void focusAfterNavigation('lobby-title')
 	}
 
-	function enterRoom(admission) {
+	async function enterRoom(admission) {
 		clearLobbyDraft()
+        waitingError = ''
+        admissionError = ''
 		roomConnection.invalidate()
 		gameConnection.invalidate()
 		submitStatus = 'idle'
@@ -153,14 +161,23 @@
 		if (!sessionRepository?.save({ matchId: currentMatchId, actorId: currentActorId, roomName, roomToken, playerName })) openToast('error', 'Stockage indisponible : conservez votre code de reprise.')
 		view = admission.room.joined ? 'game' : 'waiting'
 		activeTab = 'partie'
-		if (view === 'game') refreshMatchState()
+		if (view === 'game') await refreshMatchState()
 	}
 
     function createRoom(event) {
-        return roomConnection.create(event.detail.name, playerName, event.detail.accessCode)
+        return admit(() => roomConnection.create(event.detail.name, playerName, event.detail.accessCode))
     }
     function joinRoom(event) {
-        return roomConnection.join(event.detail.roomId, playerName, event.detail.accessCode)
+        return admit(() => roomConnection.join(event.detail.roomId, playerName, event.detail.accessCode))
+    }
+
+    async function admit(request) {
+        if (roomBusy) return null
+        const completeFocus = submissionFocus.begin()
+        const admission = await request()
+        await completeFocus(admission ? view === 'waiting' ? '#waiting-title' : '[data-phase-heading]' : '',
+            admission ? submissionContext() : undefined)
+        return admission
     }
 
 	function resumeRoom() {
@@ -237,15 +254,25 @@
 
 	/** @param {'success' | 'error'} kind @param {string} text */
 	function openToast(kind, text) {
-		toast = { kind, text }
+        if (kind === 'success' && toast?.kind === 'error') return
 		if (toastTimer) {
 			clearTimeout(toastTimer)
 		}
-		toastTimer = setTimeout(() => {
+        toastTimer = null
+        toastReturnFocus = kind === 'error' && typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null
+        toast = { kind, text }
+		if (kind === 'success') toastTimer = setTimeout(() => {
 			toast = null
 			toastTimer = null
 		}, 2400)
 	}
+
+    function dismissToast() {
+        const closingFocused = typeof document !== 'undefined' && document.activeElement?.closest('.toast')
+        toast = null
+        if (closingFocused && toastReturnFocus?.isConnected) toastReturnFocus.focus()
+        toastReturnFocus = null
+    }
 
 	/** @param {unknown} request @param {unknown} response */
 	function logDebug(request, response) {
@@ -261,6 +288,8 @@
     })
 
     const getGameContext = () => ({ matchId: currentMatchId, actorId: currentActorId, roomToken })
+    const submissionContext = () => JSON.stringify({ view, activeTab, ...getGameContext() })
+    const submissionFocus = createSubmissionFocus({ getContext: submissionContext, afterRender: tick, getSurface: browserSubmissionSurface })
     const sessionRepository = typeof window === 'undefined' ? null : createBrowserSessionRepository()
     const roomConnection = createRoomConnection({
         getScope: () => JSON.stringify({ view, ...getGameContext() }),
@@ -280,13 +309,16 @@
                 playerName = admission.actorId === 'p1' ? admission.room.hostPseudo : admission.room.guestPseudo
                 recoveryInput = ''
             }
-            enterRoom(admission)
+            return enterRoom(admission)
         },
-        onBusy: busy => { roomBusy = busy },
+        onBusy: (busy, operation) => { roomBusy = busy; roomOperation = busy ? operation ?? null : null },
+        onListBusy: busy => { roomsRefreshing = busy },
         onStatusBusy: busy => { waitingRefreshing = busy },
-        onError: (message, recovery) => {
-            if (recovery) recoveryError = message
-            else lobbyError = message
+        onError: (message, source) => {
+            if (source === 'recover') recoveryError = message
+            else if (source === 'list') listError = message
+            else if (source === 'status') waitingError = message
+            else admissionError = message
         }
     })
     function returnToWelcome() {
@@ -327,7 +359,16 @@
         }
     })
     function refreshMatchState() { return gameConnection.refresh() }
-    function submitPayload(actionPayload) { return gameConnection.submit(actionPayload) }
+    async function submitPayload(actionPayload, onConfirmed = () => {}) {
+        if (submitStatus === 'loading') return false
+        const completeFocus = submissionFocus.begin()
+        const accepted = await gameConnection.submit(actionPayload)
+        if (accepted) onConfirmed()
+        const action = actionPayload.actionType
+        const selector = action === 'REQUEST_REMATCH' && matchState?.state === 'FINISHED' ? '.rematch-panel h3' : '[data-phase-heading]'
+        await completeFocus(accepted && action !== 'CONTEST_FEEDBACK' ? selector : '')
+        return accepted
+    }
 
 	/** @param {string} actionType @param {unknown} [payload] @param {unknown} [feedback] */
 	function buildActionPayload(actionType, payload, feedback) {
@@ -405,7 +446,7 @@
     }
 
     function correctFeedback(event) {
-        submitPayload(buildActionPayload('CORRECT_FEEDBACK', { feedbackVersion: event.detail.version }, event.detail.feedback))
+        submitPayload(buildActionPayload('CORRECT_FEEDBACK', { feedbackVersion: event.detail.version }, event.detail.feedback), event.detail.onConfirmed)
     }
 
     function contestFeedback(event) {
@@ -477,6 +518,7 @@
         return () => polling.stop()
 	})
 	onDestroy(() => {
+        submissionFocus.cancel()
         phaseFocus.dispose()
         roomConnection.invalidate()
 		gameConnection.invalidate()
@@ -491,17 +533,18 @@
 	<TopBar arrival={view !== 'game'} duel={view === 'game'} {debugEnabled} {theme} on:theme={toggleTheme} homeAvailable={view === 'game' || view === 'waiting'} on:home={returnToLobby} on:opendebug={() => showDebugDrawer = true} />
 
 	<main class="screen">
+        {#if toast?.kind === 'error'}<ToastMessage {toast} inline on:close={dismissToast} />{/if}
 		{#if view === 'welcome'}
 			<WelcomeScreen bind:playerName canResume={hasSavedRoom} on:openrecovery={openRecovery} on:continue={continueWelcome} on:resume={resumeRoom} />
 		{/if}
 		{#if view === 'lobby'}
-			<LobbyScreen {playerName} bind:newName={lobbyDraftName} bind:newCode={lobbyDraftCode} on:openrecovery={openRecovery} {rooms} busy={roomBusy} error={lobbyError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={returnToWelcome} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
+			<LobbyScreen {playerName} bind:newName={lobbyDraftName} bind:newCode={lobbyDraftCode} on:openrecovery={openRecovery} {rooms} busy={roomBusy} operation={roomOperation} refreshing={roomsRefreshing} {listError} error={admissionError} canResume={hasSavedRoom} ownRoomId={currentActorId === "p1" && roomToken ? currentMatchId : ""} on:back={returnToWelcome} on:refresh={refreshRooms} on:createroom={createRoom} on:joinroom={joinRoom} on:resume={resumeRoom} />
 		{/if}
 		{#if view === 'recovery'}
 			<RecoveryScreen bind:value={recoveryInput} busy={roomBusy} error={recoveryError} on:recover={recoverRoom} on:back={closeRecovery} />
 		{/if}
 		{#if view === 'waiting'}
-			<WaitingScreen {roomName} hostPseudo={roomInfo?.hostPseudo || playerName} locked={roomInfo?.locked ?? false} error={lobbyError} refreshing={waitingRefreshing} on:refresh={refreshRoomStatus} on:lobby={returnToLobby} on:forget={forgetRoom} />
+			<WaitingScreen {roomName} hostPseudo={roomInfo?.hostPseudo || playerName} locked={roomInfo?.locked ?? false} error={waitingError} refreshing={waitingRefreshing} on:refresh={refreshRoomStatus} on:lobby={returnToLobby} on:forget={forgetRoom} />
 		{/if}
         {#if view === 'game'}
         <section class="match-overview">
@@ -557,7 +600,7 @@
 		on:close={() => showDebugDrawer = false}
 	/>
 
-	<ToastMessage {toast} />
+    {#if toast?.kind === 'success'}<ToastMessage {toast} />{/if}
 </div>
 
 <style>

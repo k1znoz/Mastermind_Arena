@@ -1,5 +1,11 @@
 # Revue des erreurs et messages — 24 octobre 2026
 
+## Complément du 27 octobre — partie indisponible
+
+Texte approuvé puis intégré pour ROOM_NOT_FOUND et MATCH_NOT_FOUND : « Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu. » Cette règle générale ne prouve pas que la partie demandée a expiré ; aucune trace supplémentaire de purge n'est conservée. Les autres refus, notamment ROOM_RESUME_INVALID, gardent leur distinction.
+
+Test des deux codes dans les contextes salon/synchronisation/soumission, y compris préfixes HTTP/ENGINE : texte exact, code/statut non mutés. Suite front à 83 tests, lint/check/build réussis. Contrôle Chrome en clair dans un cadre de 390 pixels, réponse ROOM_NOT_FOUND/404 synthétique : texte lisible, alerte sans débordement interne (clientWidth=scrollWidth=291). [Capture locale](screenshots/ux-message-20261027/partie-introuvable-mobile.png). Ce contrôle vérifie le rendu du traducteur, pas une suppression Supabase ni toutes les surfaces.
+
 ## Périmètre et constat
 
 Revue des routes exécutées, de SubmitActionOrchestrator, des règles de plateau, de JdbcRoomDirectory, du mapper HTTP et de apiErrorText. Quinze refus métier identifiés disposent désormais des formulations approuvées ci-dessous ; les messages existants d'accès, réseau, timeout, contrat, conflit et saisie sont préservés.
@@ -53,7 +59,7 @@ Les quinze refus métier gardent leurs codes/statuts et messages. Les incidents 
 | Incident du jeu | 500 / SERVER_ERROR | Problème serveur, actualisation proposée |
 | Incident du lobby/reprise | 500 / ROOM_SERVER_ERROR | Ouverture impossible ; diagnostic technique non affiché |
 
-Cette table décrit le comportement existant ; aucun nouveau message de protocole n'est ajouté. Une réponse réseau perdue n'est pas un refus métier, et un statut inconnu ne doit pas provoquer un retry automatique.
+Cette table décrit les codes existants ; le complément du 27 octobre précise la présentation d'une partie absente sans changer son contrat HTTP. Une réponse réseau perdue n'est pas un refus métier, et un statut inconnu ne doit pas provoquer un retry automatique.
 
 ## Preuves et vérifications restantes
 

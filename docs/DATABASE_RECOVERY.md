@@ -1,5 +1,9 @@
 # Sauvegarde et restauration — preuve locale
 
+## Choix de livraison — 28 octobre 2026
+
+Le concepteur accepte la perte des futures parties et scores en cas d'incident. Aucune sauvegarde récupérable ni délai de restauration ne sont promis pour cette livraison. Il n'est donc pas nécessaire d'ajouter une sauvegarde planifiée ou une procédure de restauration de production pour clôturer ce choix d'exploitation. Les éventuelles fonctions de sauvegarde du fournisseur ne sont ni attestées ni modifiées par cette décision. La preuve isolée ci-dessous reste utile pour le dossier CDA ; elle ne constitue pas une garantie d'exploitation. Ni ce choix ni la purge régulière n'autorisent un nouveau reset de production.
+
 Scénario validé le 23 octobre 2026. Il complète [la transition initiale](DATABASE_REBUILD.md) et [la compatibilité de publication](DEPLOYMENT_COMPATIBILITY.md). Il ne configure ni sauvegarde planifiée ni restauration Supabase.
 
 ## Exécuter la preuve

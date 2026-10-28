@@ -16,7 +16,7 @@
     isSecretSubmitting, isGuessSubmitting, isBackendReady, canSubmitSecret, canSubmitGuess,
     ownGuessSubmitted, ownFeedbackSubmitted, busy, turns, round, phaseKey, feedbackKey, preparation, finished, ownGuesses,
     opponentGuesses, given, received, canRespond, mySolved, theirSolved, result, currentOpponentGuess,
-    myRematchAsked, theirRematchAsked, notices, researchSummaries } = view)
+    myRematchAsked, theirRematchAsked, notices, researchSummaries, submissionMessage, pendingActionType } = view)
   const dispatch = createEventDispatcher()
   let selectedBoard = 'own'
   let lastPhase = ''
@@ -51,6 +51,7 @@
 
 
   function adjust(field, amount, edit = false) {
+    if (busy) return
     if (edit) {
       if (field === 'black') editBlack = Math.max(0, Math.min(4 - editWhite, editBlack + amount))
       else editWhite = Math.max(0, Math.min(4 - editBlack, editWhite + amount))
@@ -70,6 +71,13 @@
     editing = null
   }
   function focusCorrection(node) { node.focus() }
+  function sendCorrection() {
+    if (busy || !isBackendReady || !editingFeedback) return
+    const version = editing
+    const key = feedbackKey
+    dispatch('correctfeedback', { version, feedback: { bienPlaces: editBlack, malPlaces: editWhite },
+      onConfirmed: () => { if (editing === version && feedbackKey === key) editing = null } })
+  }
   function showAbandonDialog(node) {
     node.showModal()
     return { destroy() { node.close() } }
@@ -77,8 +85,9 @@
 </script>
 
 <section class="partie-screen" class:preparation class:secretActionActive={preparation && !hasSecretSet} class:guessActionActive={isMyTurn} class:feedbackActionActive={canRespond}>
+  <p class="sr-only" role="status">{submissionMessage}</p>
   {#if result && !editingFeedback}
-    <section class="duel-result phase-panel" role="status"><h2>{result}</h2><p>{finished ? 'La manche est terminée.' : mySolved ? 'Votre adversaire continue sa recherche. Donnez-lui les indices à chaque essai.' : 'Continuez à chercher pour le plaisir, ou abandonnez pour découvrir le code. Le point du duel est déjà attribué.'}</p></section>
+    <section class="duel-result phase-panel" role="status"><h2 data-phase-heading={finished ? '' : undefined} tabindex="-1">{result}</h2><p>{finished ? 'La manche est terminée.' : mySolved ? 'Votre adversaire continue sa recherche. Donnez-lui les indices à chaque essai.' : 'Continuez à chercher pour le plaisir, ou abandonnez pour découvrir le code. Le point du duel est déjà attribué.'}</p></section>
     <div class="research-summaries">
       {#each researchSummaries as research (research.actorId)}
         <section class="research-card"><header><Icon src={userCircle} size={36} /><h3>{research.name}</h3>{#if research.winner}<span class="winner-badge">Vainqueur</span>{/if}</header>
@@ -95,21 +104,21 @@
       <h2 id="correction-title" tabindex="-1" use:focusCorrection>Corriger les indices du tour {editingFeedback.turnNumber}</h2>
       {#if turns.some(entry => entry.actionType === 'CONTEST_FEEDBACK' && entry.feedbackVersion === editingFeedback.version && entry.actorId !== actorId)}<p>{opponentName} demande une vérification.</p>{/if}
       <div class="correction-summary"><div><small>Essai de {opponentName}</small><CodePegs colors={asSymbols(editingGuess?.guess)} label="Essai concerné par la correction" /></div><div><small>Vos indices actuels</small><p>{editingFeedback.feedback.filter(peg => peg === 'BLACK').length} noirs · {editingFeedback.feedback.filter(peg => peg === 'WHITE').length} blancs</p></div></div>
-      <form class="correction-form" on:submit|preventDefault={() => { dispatch('correctfeedback',{version:editingFeedback.version,feedback:{bienPlaces:editBlack,malPlaces:editWhite}}); closeCorrection() }}>
+      <form class="correction-form" on:submit|preventDefault={sendCorrection} aria-busy={busy}>
         <h3>Corriger avec vos indices</h3>
         <div class="feedback-counters">
-          <div class="feedback-control"><span class="index-dot black"></span><span>Noirs</span><button type="button" aria-label="Retirer un indice noir de correction" disabled={editBlack === 0 || busy} on:click={() => adjust('black',-1,true)}>−</button><strong aria-live="polite">{editBlack}</strong><button type="button" aria-label="Ajouter un indice noir de correction" disabled={editBlack + editWhite === 4 || busy} on:click={() => adjust('black',1,true)}>+</button></div>
-          <div class="feedback-control"><span class="index-dot white"></span><span>Blancs</span><button type="button" aria-label="Retirer un indice blanc de correction" disabled={editWhite === 0 || busy} on:click={() => adjust('white',-1,true)}>−</button><strong aria-live="polite">{editWhite}</strong><button type="button" aria-label="Ajouter un indice blanc de correction" disabled={editBlack + editWhite === 4 || busy} on:click={() => adjust('white',1,true)}>+</button></div>
+          <div class="feedback-control"><span class="index-dot black"></span><span>Noirs</span><button type="button" aria-label="Retirer un indice noir de correction" aria-disabled={editBlack === 0 || busy} on:click={() => adjust('black',-1,true)}>−</button><strong aria-live="polite">{editBlack}</strong><button type="button" aria-label="Ajouter un indice noir de correction" aria-disabled={editBlack + editWhite === 4 || busy} on:click={() => adjust('black',1,true)}>+</button></div>
+          <div class="feedback-control"><span class="index-dot white"></span><span>Blancs</span><button type="button" aria-label="Retirer un indice blanc de correction" aria-disabled={editWhite === 0 || busy} on:click={() => adjust('white',-1,true)}>−</button><strong aria-live="polite">{editWhite}</strong><button type="button" aria-label="Ajouter un indice blanc de correction" aria-disabled={editBlack + editWhite === 4 || busy} on:click={() => adjust('white',1,true)}>+</button></div>
         </div>
         <p class="correction-total">Total : {editBlack + editWhite} / 4. La somme doit être inférieure ou égale à 4.</p>
         <p class="correction-notice">Votre adversaire sera averti. Le résultat et le score seront recalculés.</p>
-        <div class="action-buttons"><button type="button" on:click={closeCorrection}>Annuler</button><button class="primary-action" type="submit" disabled={busy || !isBackendReady}>Enregistrer la correction</button></div>
+        <div class="action-buttons"><button type="button" disabled={busy} on:click={closeCorrection}>Annuler</button><button class="primary-action" type="submit" disabled={!isBackendReady} aria-disabled={busy}>{busy && pendingActionType === 'CORRECT_FEEDBACK' ? 'Enregistrement de la correction…' : 'Enregistrer la correction'}</button></div>
       </form>
     </section>
   {/if}
   {#if preparation}
     <section class="action-card secret-panel code-editor" class:secret-ready={hasSecretSet}>
-      <h2>{hasSecretSet ? 'Votre code est prêt' : 'Choisissez votre code secret'}</h2>
+      <h2 data-phase-heading tabindex="-1">{hasSecretSet ? 'Votre code est prêt' : 'Choisissez votre code secret'}</h2>
       {#if hasSecretSet}<div class="secret-confirmed"><Icon src={circleCheck} size={56} /></div><p class="secret-status" role="status">{hasOpponentReady ? 'Les deux codes sont prêts.' : `En attente du code de ${opponentName}.`}</p>
       {:else}<p>4 couleurs. Répétitions autorisées.</p>{/if}
       <div class="slot-picker">
@@ -120,38 +129,38 @@
       {#if !hasSecretSet}
         <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={!isBackendReady || busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedSetupSlot + 1} du code secret`} on:click={() => dispatch('choosesetupsymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
         <p class="secret-privacy">Votre adversaire ne verra pas votre code.</p>
-        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.some(Boolean)} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret || busy} on:click={() => dispatch('submitsecret')}>{isSecretSubmitting ? 'Envoi…' : 'Confirmer mon code'}</button></div>
+        <div class="action-buttons"><button type="button" disabled={busy || !setupSequence.some(Boolean)} on:click={() => dispatch('clearsetup')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitSecret && !isSecretSubmitting} aria-disabled={busy} on:click={() => { if (!busy) dispatch('submitsecret') }}>{isSecretSubmitting ? 'Envoi du code…' : 'Confirmer mon code'}</button></div>
       {:else}<p class="secret-privacy">Votre code reste privé.</p>{/if}
     </section>
   {:else}
     {#if !editingFeedback}
     {#if isMyTurn}
       <section class="action-card own-board code-editor">
-        <h2>Composez votre essai</h2><p>4 couleurs. Répétitions autorisées.</p>
+        <h2 data-phase-heading tabindex="-1">Composez votre essai</h2><p>4 couleurs. Répétitions autorisées.</p>
         <div class="slot-picker">{#each Array(4) as _, index}<button type="button" class:selected={selectedGuessSlot === index} disabled={busy} aria-pressed={selectedGuessSlot === index} aria-label={`Case ${index + 1}, ${getSymbolVisual(draftGuess[index]).token}`} on:click={() => dispatch('selectguessslot',{index})}><span class="color-dot {getSymbolVisual(draftGuess[index]).toneClass}"></span><small>{index + 1}</small></button>{/each}</div>
         <div class="palette-grid">{#each symbolPalette as symbol}<button type="button" disabled={busy} aria-label={`Placer ${getSymbolVisual(symbol).token} dans la case ${selectedGuessSlot + 1} de l’essai`} on:click={() => dispatch('chooseguesssymbol',{symbol})}><span class="color-dot {getSymbolVisual(symbol).toneClass}"></span>{getSymbolVisual(symbol).token}</button>{/each}</div>
-        <div class="action-buttons"><button type="button" disabled={busy || !guessSequence.some(Boolean)} on:click={() => dispatch('clearguess')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitGuess || busy} on:click={() => dispatch('submitguess')}>{isGuessSubmitting ? 'Envoi…' : 'Envoyer l’essai'}</button></div>
+        <div class="action-buttons"><button type="button" disabled={busy || !guessSequence.some(Boolean)} on:click={() => dispatch('clearguess')}>Effacer</button><button class="primary-action" type="button" disabled={!canSubmitGuess && !isGuessSubmitting} aria-disabled={busy} on:click={() => { if (!busy) dispatch('submitguess') }}>{isGuessSubmitting ? 'Envoi de l’essai…' : 'Envoyer l’essai'}</button></div>
       </section>
     {:else if canRespond}
       <section class="action-card response-panel phase-panel">
-        <h2>Donnez les indices</h2>
+        <h2 data-phase-heading tabindex="-1">Donnez les indices</h2>
         <p>Comparez l’essai de {opponentName} à votre code.</p>
         <div class="comparison"><div><small>Essai de {opponentName}</small><CodePegs colors={asSymbols(currentOpponentGuess?.guess)} label="Essai adverse" /></div><div><small>Votre code secret</small><CodePegs colors={setupSlots} label="Votre code secret" /></div></div>
         <div class="feedback-counters">
-        <div class="feedback-control"><span class="index-dot black"></span><span>Bien placés</span><button type="button" aria-label="Retirer un indice noir" disabled={busy || black === 0} on:click={() => adjust('black',-1)}>−</button><strong>{black}</strong><button type="button" aria-label="Ajouter un indice noir" disabled={busy || black + white === 4} on:click={() => adjust('black',1)}>+</button></div>
-        <div class="feedback-control"><span class="index-dot white"></span><span>Mal placés</span><button type="button" aria-label="Retirer un indice blanc" disabled={busy || white === 0} on:click={() => adjust('white',-1)}>−</button><strong>{white}</strong><button type="button" aria-label="Ajouter un indice blanc" disabled={busy || black + white === 4} on:click={() => adjust('white',1)}>+</button></div>
+        <div class="feedback-control"><span class="index-dot black"></span><span>Bien placés</span><button type="button" aria-label="Retirer un indice noir" aria-disabled={busy || black === 0} on:click={() => adjust('black',-1)}>−</button><strong>{black}</strong><button type="button" aria-label="Ajouter un indice noir" aria-disabled={busy || black + white === 4} on:click={() => adjust('black',1)}>+</button></div>
+        <div class="feedback-control"><span class="index-dot white"></span><span>Mal placés</span><button type="button" aria-label="Retirer un indice blanc" aria-disabled={busy || white === 0} on:click={() => adjust('white',-1)}>−</button><strong>{white}</strong><button type="button" aria-label="Ajouter un indice blanc" aria-disabled={busy || black + white === 4} on:click={() => adjust('white',1)}>+</button></div>
         </div>
         <p class="hint">Noir : bonne couleur, bonne place. Blanc : bonne couleur, autre place. Indices entièrement manuels.</p>
-        <button class="primary-action full" type="button" disabled={busy} on:click={() => dispatch('submitfeedback',{bienPlaces:black,malPlaces:white})}>{busy ? 'Envoi…' : 'Valider les indices'}</button>
+        <button class="primary-action full" type="button" aria-disabled={busy} on:click={() => { if (!busy) dispatch('submitfeedback',{bienPlaces:black,malPlaces:white}) }}>{busy ? 'Envoi des indices…' : 'Valider les indices'}</button>
       </section>
     {:else if !finished}
       {#if isBackendReady && matchState?.state === 'WAITING_GUESS' && ownGuessSubmitted && currentOwnGuess}
         <section class="phase-panel sent-panel" aria-label="Essai envoyé">
-          <h2>Votre essai est envoyé</h2><p role="status">En attente de l’essai de {opponentName}.</p>
+          <h2 data-phase-heading tabindex="-1">Votre essai est envoyé</h2><p role="status">En attente de l’essai de {opponentName}.</p>
           <div class="sent-guess"><small>Votre essai · tour {round + 1}</small><CodePegs colors={asSymbols(currentOwnGuess.guess)} label="Votre essai envoyé" /><p>Visible uniquement par vous pour le moment.</p></div>
         </section>
       {:else}
-        <div class="waiting-note" role="status">{!isBackendReady ? 'Connexion interrompue. Votre plateau est conservé.' : mySolved && !theirSolved ? `Vous avez trouvé. Attendez le prochain essai de ${opponentName}.` : ownFeedbackSubmitted ? `Vos indices sont envoyés. En attente des indices de ${opponentName}.` : matchState?.state === 'WAITING_FEEDBACK' ? `En attente des indices de ${opponentName}.` : 'Votre action est envoyée. En attente de votre adversaire.'}{#if opponentStepDone}<span> Son action est prête.</span>{/if}</div>
+        <div class="waiting-note" role="status"><h2 data-phase-heading tabindex="-1">{!isBackendReady ? 'Connexion interrompue. Votre plateau est conservé.' : mySolved && !theirSolved ? `Vous avez trouvé. Attendez le prochain essai de ${opponentName}.` : ownFeedbackSubmitted ? `Vos indices sont envoyés. En attente des indices de ${opponentName}.` : matchState?.state === 'WAITING_FEEDBACK' ? `En attente des indices de ${opponentName}.` : 'Votre action est envoyée. En attente de votre adversaire.'}{#if opponentStepDone}<span> Son action est prête.</span>{/if}</h2></div>
       {/if}
     {/if}
 
@@ -181,7 +190,7 @@
   {/if}
 
   {#if visibleNotices.length}<aside class="notifications" aria-label="Vérifications et corrections">{#each visibleNotices as notice (notice.version)}<div class="game-notice"><p role="status">{notice.actorId === actorId ? 'Vous avez' : `${opponentName} a`} {notice.actionType === 'CORRECT_FEEDBACK' ? 'corrigé des indices. Le résultat a été actualisé.' : 'demandé une vérification des indices.'}</p><button type="button" aria-label={`Fermer la notification du tour ${referencedTurnNumber(notice,turns)}, événement ${notice.version}`} on:click={() => dismissNotice(notice.version)}><Icon src={close} size={18} /></button></div>{/each}</aside>{/if}
-  {#if finished}<section class="rematch-panel"><div><h3>{myRematchAsked ? 'Vous proposez une revanche.' : theirRematchAsked ? `${opponentName} propose une revanche.` : 'Une nouvelle manche ?'}</h3><p>Les scores seront conservés.</p></div><button class="primary-action" type="button" disabled={busy || myRematchAsked || !isBackendReady} on:click={() => dispatch('requestrematch')}>{myRematchAsked ? 'Revanche proposée · en attente' : theirRematchAsked ? 'Accepter la revanche' : 'Proposer une revanche'}</button></section>
+  {#if finished}<section class="rematch-panel"><div><h3 tabindex="-1">{myRematchAsked ? 'Vous proposez une revanche.' : theirRematchAsked ? `${opponentName} propose une revanche.` : 'Une nouvelle manche ?'}</h3><p>Les scores seront conservés.</p></div><button class="primary-action" type="button" disabled={!isBackendReady} aria-disabled={busy || myRematchAsked} on:click={() => { if (!busy && !myRematchAsked) dispatch('requestrematch') }}>{busy && pendingActionType === 'REQUEST_REMATCH' ? 'Envoi de la demande de revanche…' : myRematchAsked ? 'Revanche proposée · en attente' : theirRematchAsked ? 'Accepter la revanche' : 'Proposer une revanche'}</button></section>
     {@const lastGiven = given.find(entry => entry.turnNumber === round)}
     {#if lastGiven}<button class="end-correction" type="button" disabled={busy || !isBackendReady} on:click={(event) => editFeedback(lastGiven,event)}>Corriger les derniers indices</button>{/if}
   {:else if !preparation}<button class="subtle abandon" type="button" disabled={!isBackendReady || busy} on:click={() => confirmAbandon = true}>Abandonner la manche</button>{/if}
@@ -196,7 +205,7 @@
   h2 { margin:0 0 8px; font:600 19px Inter,sans-serif; line-height:1.3; text-transform:none; }
   p { margin:0 0 14px; font-size:14px; color:var(--muted); line-height:1.6; }
   button { min-height:46px; padding:10px 14px; font:500 14px Inter,sans-serif; border:1px solid var(--line); border-radius:10px; color:var(--text); background:var(--panel-strong); cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
+  button:disabled,button[aria-disabled="true"] { opacity:.5; cursor:default; }
   .slot-picker { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0; }
   .slot-picker button { display:grid; justify-items:center; gap:8px; padding:12px 4px 8px; }
   .slot-picker small { color:var(--muted); font-size:11px; }
@@ -262,7 +271,8 @@
   .game-notice button { flex:none; min-width:44px; padding:8px; background:transparent; border:0; }
   .private-code,.notifications { border-top:1px solid var(--line); padding:4px 8px; }
   .private-code :global(.code-pegs) { margin:6px 0 16px; }
-  .waiting-note { padding:16px; color:var(--muted); border:1px dashed var(--line); border-radius:12px; font-size:14px; line-height:1.6; }
+  .waiting-note { padding:16px; margin:0; color:var(--muted); border:1px dashed var(--line); border-radius:12px; font-size:14px; font-weight:400; line-height:1.6; }
+  .waiting-note h2 { margin:0; font:inherit; }
   .duel-result p { margin:8px 0 0; }
   .empty-board { margin:0; }
   .abandon { justify-self:start; }

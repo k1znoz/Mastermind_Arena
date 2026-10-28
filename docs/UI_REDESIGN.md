@@ -30,6 +30,10 @@ L'intégration vise l'application Svelte/Java existante, ses vrais clients HTTP 
 
 ## Décisions confirmées pendant l'intégration
 
+- **Retour des actions, 27 octobre :** erreurs séparées par opération ; bouton d'envoi conservé au clavier, titres de phase après confirmation si le joueur n'a pas déplacé le focus ; annonces de chaque envoi ; correction gardée pendant l'enregistrement et au refus tant qu'elle reste modifiable. Erreurs persistantes dans le flux (placement approuvé après contrôle mobile), succès flottants 2,4 secondes. Implémentation et contre-vérifications locales dans [UX_FIXES](UX_FIXES_2026-10-27.md), sans publication ni conformité globale revendiquée.
+
+- **États du salon, 27 octobre :** création, jointure ciblée et actualisation distinctes, avec annonce accessible ; accord du concepteur. Contrôles front et contrôle Chrome local du composant acquis après ouverture de Chrome ; lecture d'écran non vérifiée. Adaptation approuvée entre 851 et 1 100 pixels : bouton Rejoindre sur une ligne sous identité et badge. Compression du nom corrigée et seuils vérifiés. Détail dans VALIDATION.
+
 - **Thème clair :** adapter la même structure avec la palette claire existante, selon la réponse du concepteur.
 - **Victoire et poursuite :** le concepteur précise que la planche qu'il désigne comme 11 représente sa victoire pendant que l'adversaire cherche encore. Cette intention prévaut sur l'interprétation initiale du catalogue. Distinguer résultat attribué et fin des recherches à partir de l'état serveur ; aucune nouvelle révélation de secrets n'est autorisée.
 - **Pictogrammes :** Tabler local sous licence MIT, accepté après explication de la licence. Vingt SVG v3.35.0, licence conservée avec les fichiers et copiée dans les fichiers publics pour distribution. Aucun paquet npm ni chargement externe supplémentaire.

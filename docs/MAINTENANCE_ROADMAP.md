@@ -1,5 +1,31 @@
 # Bilan de maintenance et de sécurisation — Mastermind Arena
 
+## Priorités réconciliées — 28 octobre 2026
+
+Décisions d'exploitation désormais reçues : portfolio public, perte des futures parties/scores acceptée en cas d'incident. Le choix de sauvegarde est clôturé sans ajout d'infrastructure ni promesse de restauration. Proposition [WAF Vercel](VERCEL_RATE_LIMIT_SETUP.md) préparée pour les admissions, en attente d'accord sur le dispositif/seuil ; aucune activation distante. Les questions mentionnées dans le relevé préparatoire suivant ont donc reçu leur réponse.
+
+[ROADMAP](ROADMAP.md) est désormais organisée en acquis, nécessaires L1–L6 et compléments reportables. Les doublons B1/B2/D1 sont regroupés : rôle, RLS/droits, nettoyage et cron restent acquis selon les preuves fournies. Aucun nouvel audit UX général n'est lancé ; les limites audio/accessibilité restent explicites.
+
+Le lot suivant concerne la publication du front : HEAD fd500eb, aucun diff backend/migrations/clients HTTP/stockage de session. [Dossier de candidate](RELEASE_CANDIDATE_2026-10-28.md) et manifeste de 81 fichiers préparés ; aucune migration ou remise à zéro nécessaire pour ce lot. Commit candidat/CI/repli distant restent à établir. Deux questions d'exploitation (diffusion et sauvegarde/perte acceptable) ont été posées ; aucune réponse présumée. Aucun commit, push ou déploiement.
+
+## Actualisation distante — 27 octobre 2026
+
+Correctif local A4-02 approuvé : focus conservé aux bornes des compteurs d'indices/correction, bornes et blocage pendant l'envoi contre-vérifiés. 83 tests front et lint/check/build réussis ; rendu clair/sombre à 200 %. Test audio ouvert faute de lecteur d'écran prêt ; aucune installation ni publication. [Preuves A4](UX_A4_2026-10-27.md).
+
+Correctif local A4-01 approuvé : titre de reprise rendu visible sous le bandeau fixe après son focus, contre-vérifié à 200 % en clair/sombre et sur surface desktop de 900 px. 83 tests front et lint/check/build réussis ; aucune publication. [Preuves](UX_A4_2026-10-27.md).
+
+Complément local A4 : noms maximaux et zoom réel à 200 % contrôlés sur résultat et reprise privée ; [mesures et captures](UX_A4_2026-10-27.md). Aucun débordement horizontal constaté dans le périmètre décrit. Les autres surfaces, commandes clavier et lecteur d'écran restent ouverts ; A4 n'est pas clôturé.
+
+Complément local A3 : message prudent de partie introuvable approuvé et intégré, 83 tests front et lint/check/build réussis, rendu mobile clair contrôlé. A2 et A3 sont clôturés dans leur périmètre local ; A4/A5 restent ouverts. Aucune publication de ces changements.
+
+Complément local après audit UX : quatre défauts corrigés et contre-vérifiés, 82 tests front et lint/check/build réussis ; [preuves](UX_FIXES_2026-10-27.md). Ces changements front ne sont pas publiés. Les résultats distants ci-dessous restent ceux des versions identifiées avant ce lot.
+
+Complément : session JDBC arena_runtime observée dans le résultat fourni, deux projets Vercel Ready sur main/fd500eb, contrôle de désactivation/réactivation du cron confirmé. D1–D3 clôturés dans ROADMAP avec les limites des essais déclarés ; CI distante et autres lots restent ouverts.
+
+Nettoyage public désormais confirmé : résultat SQL sans les cinq anciennes tables, puis fonctionnement du jeu confirmé par le concepteur. Ce point est clôturé ; les mentions de préparation ci-dessous sont historiques.
+
+Droits du rôle dédié et RLS contrôlés dans les résultats fournis, reprise Firefox vers téléphone déclarée réussie, premier cron quotidien succeeded à 03 h UTC. Ces constats actualisent les limites du bilan initial ci-dessous. Nettoyage public en préparation ; révisions, sauvegardes, protections contre les abus et contrôle de désactivation du cron restent ouverts. Voir [ROADMAP](ROADMAP.md) et [VALIDATION](VALIDATION.md).
+
 Réconcilié le **25 octobre 2026**, cible de démonstration le **23 novembre 2026**. Ce document décrit ce qui est livré techniquement et ce qui reste non prouvé. La liste unique des actions restantes et leurs critères est dans [ROADMAP](ROADMAP.md), lots A à E. Les anciens lots 0 à 5 ne constituent plus un second planning à cocher.
 
 Cadre : [AGENTS](../AGENTS.md), [CODE_QUALITY](CODE_QUALITY.md), [decision.md](../decision.md), [GAME_RULES](GAME_RULES.md). Sources de preuve : [VALIDATION](VALIDATION.md), [ARCHITECTURE_V2](ARCHITECTURE_V2.md) et documents spécialisés ci-dessous.
@@ -15,7 +41,7 @@ Cadre : [AGENTS](../AGENTS.md), [CODE_QUALITY](CODE_QUALITY.md), [decision.md](.
 | 4 — Données et exploitation | Reconstruction, rôles distincts, formats versionnés, reçus compacts, purge SQL/Java V8, mesure de partie longue et dump/restauration isolés | Reset Supabase, sauvegardes de production, droits effectifs, protections contre les abus et cron actif : B/D |
 | 5 — Démonstration et refonte | Principaux écrans intégrés et parcours réel à deux onglets après refonte ; compléments UX contrôlés | Validation par le concepteur, téléphone physique, autres appareils, revue complète et version publiée : A/D/E |
 
-**Dernières commandes consignées :** 71 tests front, lint, Svelte Check avec 0 erreur/avertissement et build réussis ; 57 tests backend dont 25 PostgreSQL/HTTP, aucun ignoré, qualité Maven réussie. La suite backend du 25 octobre n'a pas été répétée pour les seuls compléments frontend suivants. Les commandes détaillées et leurs limites sont dans VALIDATION ; aucun nouveau passage n'est revendiqué par cette réconciliation documentaire.
+**Dernières commandes consignées :** 83 tests front, lint, Svelte Check avec 0 erreur/avertissement et build réussis ; 57 tests backend dont 25 PostgreSQL/HTTP, aucun ignoré, qualité Maven réussie. La suite backend du 25 octobre n'a pas été répétée pour les seuls compléments frontend suivants. Les commandes détaillées et leurs limites sont dans VALIDATION ; aucun nouveau passage n'est revendiqué par cette réconciliation documentaire.
 
 ## Comportements et protections livrés
 

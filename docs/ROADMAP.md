@@ -1,90 +1,84 @@
-# Roadmap de finalisation — démonstration du 23 novembre 2026
+# Roadmap de livraison — présentation du 23 novembre 2026
 
-État réconcilié le **25 octobre 2026** à partir de [VALIDATION](VALIDATION.md), [UI_REDESIGN](UI_REDESIGN.md) et des décisions du concepteur. Ce fichier est la liste de référence des travaux restants. [MAINTENANCE_ROADMAP](MAINTENANCE_ROADMAP.md) décrit le bilan technique et les limites ; les preuves datées restent dans VALIDATION.
+Réconciliée le **28 octobre 2026**. Cette liste remplace l'ancien enchaînement A → B → C → D. Les preuves détaillées restent dans [VALIDATION](VALIDATION.md) ; le bilan technique reste dans [MAINTENANCE_ROADMAP](MAINTENANCE_ROADMAP.md). Les identifiants A–E ne servent plus qu'à retrouver les anciennes références.
 
-Une case cochée indique une preuve obtenue dans le périmètre nommé. Une préparation locale ne vaut ni validation distante ni publication. Le 25 octobre, le concepteur confirme création/jointure, tour manuel, reprise privée et logs sans nouvelles erreurs sur la version déployée. Les révisions effectives et la configuration distante restent à relever ; ces essais ne clôturent pas le contrôle de publication.
+## 1. Acquis — ne pas recommencer
 
-## Ce qui est déjà acquis
+| Travail | État et preuve | Limite |
+| --- | --- | --- |
+| Jeu et backend | Règles simultanées, six couleurs, indices manuels, correction du résultat, poursuite, abandon, revanche et reprise privée livrés | Aucun nouveau mécanisme de jeu requis |
+| Front et refonte | Écrans intégrés, clair/sombre, découpage et échanges contrôlés | Recette finale du concepteur à recueillir |
+| Chargements, erreurs et focus — A2/A3 | Terminés localement ; 83 tests front, lint/check/build réussis le 27 octobre | Correctifs non publiés |
+| Contrôles A4 exécutés | Clavier, contrastes mesurés, petits écrans, noms maximaux et zoom réel dans les cas du [relevé A4](UX_A4_2026-10-27.md) ; A4-01/A4-02 corrigés et contre-vérifiés | Pas de conformité globale ni de test audio revendiqué |
+| PostgreSQL et exploitation — D1/D3, partie de B1/B2 | arena_v1, rôle restreint arena_runtime, RLS/droits, nettoyage initial public et purge quotidienne 03 h UTC contrôlés selon les résultats fournis | Ne pas refaire le reset ; futures parties à préserver |
+| Version publiée — D2 | Deux projets Ready sur main/fd500eb d'après les captures fournies ; partie et reprise mobile déclarées réussies | Ne couvre pas la candidate locale suivante |
+| Backend et restauration | 57 tests backend dont 25 PostgreSQL/HTTP, qualité Maven ; reconstruction/restauration isolées documentées | Tests backend du 25 octobre ; sauvegarde de production non décidée |
 
-| Périmètre | Preuve disponible | Limite |
-|---|---|---|
-| Jeu autonome et règles actuelles | Phases simultanées, six couleurs, indices manuels, correction du résultat, poursuite, abandon, revanche et reprise privée implémentés et testés | Aucun changement de règle à prévoir pour finir |
-| Front découpé et échanges contrôlés | Session, polling, admission, soumission, brouillons et vues séparés ; **71 tests front**, lint/check/build réussis | Accessibilité complète non attestée |
-| Backend et PostgreSQL | **57 tests backend dont 25 PostgreSQL/HTTP**, aucun ignoré ; qualité Maven réussie | Dernière suite backend du 25 octobre ; non répétée pour les seuls compléments UI suivants |
-| Parcours réel après refonte | Deux onglets contre Java/JDBC/PostgreSQL isolé : correction rouvrant la recherche, poursuite, fin et revanche ; reprise, égalité et abandon également contrôlés | Deux onglets sur un poste, pas deux appareils physiques |
-| Refonte principale | Entrée/salon/attente/reprise, duel, correction, abandon, résultats, historique avant/après et panneau privé intégrés ; clair/sombre | Rendu des cas et régions décrits dans design-qa, pas approbation globale des 17 planches |
-| Compléments UX | Attente lente/en erreur, historique lent/en erreur avec retry, destinations de focus approuvées, historique de **400 actions**, noms longs de l'attente/historique et huit largeurs contrôlés | Scénarios complémentaires sur API synthétique ; pas panne réseau physique |
-| Exploitation préparée | Reconstruction, rôles SQL, reprise après redémarrage, dump/restauration, purge V8 et reçus compacts éprouvés sur bases isolées | Supabase et déploiements actuels non vérifiés ; cron inactif |
+**Périmètre constaté le 28 octobre :** HEAD est fd500eb, identique à la référence publiée déclarée. Les changements applicatifs locaux concernent le front ; backend, migrations, clients HTTP front et stockage de session sont inchangés dans le périmètre inspecté. Pas de nouveau reset ni de migration pour ce lot. [Préparation de la candidate](RELEASE_CANDIDATE_2026-10-28.md).
 
-Les règles sont dans [GAME_RULES](GAME_RULES.md), les choix dans [decision.md](../decision.md). Aucun compte, plateforme générique, WebSocket, calcul automatique des indices ou limite de tours n'est nécessaire à cette livraison.
+## 2. Nécessaire pour terminer la livraison
 
-## A — Revue de la candidate locale et finitions ciblées
+### L1 — Candidate front et préparation de publication (ancien C1/C2/C3)
 
-**Prochain jalon recommandé :** te faire essayer la version locale actuelle, consigner les défauts concrets et corriger ceux qui gênent la démonstration. Ne pas recommencer une refonte générale.
+- [x] Délimiter le lot depuis fd500eb : front et documentation ; backend/migrations/protocole/stockage navigateur inchangés.
+- [x] Préparer le dossier de publication : fichiers nouveaux indispensables, preuves réutilisées, CI attendue, procédure et repli adaptés à ce lot sans migration.
+- [ ] Identifier une révision candidate incluant les fichiers nouveaux, selon autorisation de commit ; vérifier la CI distante sur cette révision.
+- [ ] Confirmer le déploiement front de repli et son accessibilité dans Vercel avant publication ; vérifier le repli selon le dossier de candidate.
 
-- [ ] **A1 — Revue avec le concepteur.** Parcourir accueil, création/jointure, duel simultané, correction, poursuite, abandon, revanche et reprise. Dresser une liste de défauts avec écran, action, résultat attendu et gravité ; corriger ou reporter explicitement chaque point.
-- [ ] **A2 — Chargements et focus encore ouverts.** Vérifier lecture lente de la liste du salon, admissions lentes et résultat des soumissions de secret/essai/indices/correction/revanche. Contrôler le focus après succès, refus et disparition du déclencheur. Réutiliser les contrôles déjà acquis de l'attente et de l'historique.
-- [ ] **A3 — Messages à décider.** Valider puis traiter le message de partie indisponible et la durée/persistance des notifications de soumission actuellement affichées 2,4 secondes. Les notifications de correction/vérification sont déjà persistantes ; leur comportement n'est pas à redécider. Sans trace de suppression, ne pas affirmer qu'une partie introuvable a expiré.
-- [ ] **A4 — Accessibilité et petits écrans.** Terminer la revue clavier des commandes restantes, mesurer le contraste en clair/sombre, vérifier zoom et lisibilité des résultats/panneau privé avec noms longs. Documenter les défauts et leur résolution. Les huit largeurs et l'historique long déjà contrôlés ne sont pas à reprendre intégralement sans régression.
-- [ ] **A5 — Appareils et réseau réels.** Vérifier sur téléphone et ordinateur, deux identités sur deux appareils, coupure puis retour réseau et reprise privée sur l'autre appareil. Confirmer absence de perte de place, d'action doublée et de révélation indue.
+**Sortie :** candidate identifiée, contrôles rattachés, CI connue et repli front praticable. La préparation locale n'autorise aucun push sur main. Pas de répétition de bascule SQL pour ce lot front.
 
-**Sortie :** défauts bloquants de la revue corrigés, choix A3 tranchés, contrôles restants documentés. Ne pas déclarer une conformité WCAG complète sur la seule base de contrôles DOM ou de captures.
+### L2 — Exploitation restante (restes de B1/B2/B3)
 
-## B — Préparation de production et informations publiques
+- [x] Diffusion fixée le 28 octobre : portfolio public, lien librement diffusé.
+- [x] Inventorier les protections présentes : [relevé ciblé](ABUSE_PROTECTION.md). Autorisation, taille et champs bornés présents ; aucune limitation de fréquence identifiée dans les handlers d'admission inspectés. Pare-feu distant non vérifié.
+- [x] Première protection approuvée le 28 octobre : [règle WAF Vercel](VERCEL_RATE_LIMIT_SETUP.md), budget commun de 20 POST d'admission/60 s/IP, compteurs régionaux, sans migration. Lectures et actions du duel hors règle ; limites de réseau partagé acceptées.
+- [x] Paramètres de la règle vérifiés sur capture du concepteur : POST ET préfixe /local/rooms, 20/60 s/IP, fenêtre fixe et 429. Création puis jointure normales confirmées par le concepteur le 28 octobre ; pas de blocage habituel déclaré.
+- [ ] Compléter la preuve de protection : état publié/actif, offre/règles existantes, refus au dépassement puis retour après fenêtre et comportement cross-origin. Le réglage est effectué par le concepteur ; aucune rafale de production autorisée. Pas de nouvelle décision de seuil à redemander.
+- [x] Perte des futures parties/scores en cas d'incident acceptée le 28 octobre, décision consignée dans decision.md et DATABASE_RECOVERY. Pas de sauvegarde récupérable à mettre en place comme exigence de livraison ; aucune promesse de restauration. Purge après sept jours d'inactivité inchangée.
+- [ ] Vérifier les réglages distants encore non consignés pour la candidate : variables publiques/serveur, CORS nécessaire et déclenchement/promotion des deux projets Vercel.
 
-Les lectures de configuration distante peuvent être engagées en parallèle de A dès que les accès sont disponibles. Toute exposition confirmée est prioritaire sur une finition visuelle.
+**Sortie :** choix d'exploitation explicites et protections correspondantes vérifiées. Droits SQL et cron acquis ne sont pas réouverts sans changement ou incident.
 
-- [ ] **B1 — Inventaire distant et confinement.** Identifier les versions front/back en ligne, les réglages de publication des deux projets Vercel, le statut de la Data API et les propriétaires/droits SQL Supabase. Consigner les constats sans secrets ; distinguer état observé et modifications proposées.
-- [ ] **B2 — Configuration cible et abus.** Vérifier ou préparer les rôles de migration/exécution, CORS, secrets serveur et variables publiques. Définir puis tester les protections nécessaires contre créations/jointures abusives et essais de codes ; ne pas présenter une limite mémoire par instance comme une protection globale. Faire approuver les choix non encore fixés.
-- [ ] **B3 — Sauvegardes et reprise.** Décider fréquence, conservation, perte de données et délai de reprise acceptables ; vérifier ce que fournit Supabase et préparer les accès nécessaires. La restauration locale a déjà sa preuve ; il reste la configuration et la procédure adaptées à la production.
-- [ ] **B4 — Mentions légales et confidentialité.** Réunir les informations confirmées sur l'éditeur, les hébergeurs, les contacts et les traitements effectifs, puis compléter les pages et liens. Vérifier les exigences applicables lors de ce travail ; ne pas inventer d'identité, d'adresse ou de politique de sauvegarde.
+### L3 — Informations publiques (ancien B4)
 
-**Sortie :** configuration cible et points de sécurité connus, décisions d'exploitation fixées, informations publiques complètes. Appliquer les changements Supabase uniquement avec l'autorisation correspondante.
+- [ ] Réunir les informations d'éditeur/contact/hébergeurs et les traitements effectifs ; vérifier les exigences applicables à la diffusion retenue.
+- [ ] Compléter pages et liens avec les informations confirmées ; ne pas inventer identité, adresse, sauvegarde ou conformité.
 
-## C — Version candidate identifiée et bascule préparée
+**Sortie :** informations adaptées au site et à son éditeur. Les décisions personnelles sont demandées avant rédaction définitive.
 
-- [ ] **C1 — Version et CI.** Relire le diff, séparer le travail en commits cohérents selon autorisation, inclure les fichiers nécessaires et identifier une révision candidate. Vérifier les contrôles locaux pertinents puis la CI sur cette révision. Un push sur main peut publier les deux projets : ne pas l'utiliser comme simple sauvegarde.
-- [ ] **C2 — Compatibilité et retour arrière.** Vérifier les anciennes pages, la nouvelle paire front/back, V1–V8 et les formats persistants. Tester les binaires réellement retenus pour le retour arrière ou documenter une correction en avant. Ne pas supposer qu'un ancien backend lit les reçus compacts.
-- [ ] **C3 — Répétition de bascule.** Exécuter sur environnement isolé la reconstruction initiale et l'ordre de publication retenu ; préparer la gestion des admissions pendant une éventuelle interruption, les contrôles après migration et les critères d'arrêt. Le mécanisme de maintenance reste à choisir si la compatibilité impose une interruption.
+### L4 — Recette finale bornée avec le concepteur (ancien A1/A5)
 
-**Sortie :** révision candidate identifiée, CI vérifiée, procédure applicable et répétée avec solution de repli. Référence : [DEPLOYMENT_COMPATIBILITY](DEPLOYMENT_COMPATIBILITY.md). Pas de nouvelle migration ou abstraction sans besoin constaté.
+- [ ] Essayer une fois la candidate sur un parcours complet : création/jointure, essais/indices, correction, résultat/poursuite, revanche et reprise. Consigner les seuls défauts constatés ; corriger ou reporter explicitement.
+- [ ] Exécuter une coupure puis un retour réseau physiques : place retrouvée, pas d'action doublée ni de révélation indue. Réutiliser la preuve Firefox → téléphone pour la reprise normale.
 
-## D — Publication et vérification en ligne
+**Sortie :** aucun défaut bloquant connu pour la démonstration ; scénario réseau renseigné. Pas de nouvelle matrice générale après chaque correction.
 
-À exécuter après validation de la candidate et autorisation de publication. L'accord sur les règles ou sur les travaux locaux ne vaut pas publication.
+### L5 — Publier les correctifs (nouvelle publication après D2)
 
-**Avancement déclaré le 25 octobre :** fonctionnement rétabli après la préparation Supabase proposée ; création/jointure via second client, tour complet avec indices manuels, reprise privée et absence de nouvelles erreurs Vercel confirmés par le concepteur. Ces scénarios ne sont plus à refaire comme tâches entièrement non vérifiées ; les révisions, droits et scénarios supplémentaires ci-dessous restent ouverts. Preuve et limites dans VALIDATION.
+- [ ] Obtenir l'autorisation de publication de la candidate identifiée ; vérifier L1–L4 et les décisions de report éventuelles.
+- [ ] Publier sans opération SQL pour ce lot ; contrôler la paire réellement en ligne et la reprise d'une place existante.
+- [ ] Consigner révisions/déploiements et recette. En cas d'échec, appliquer le repli front prévu ; ne pas restaurer la base pour un défaut front.
 
-**Complément déclaré le 26 octobre :** arena_v1 confirmé côté backend, RLS activée sur les cinq tables ; correction du résultat, poursuite, revanche avec scores conservés et confidentialité confirmées par le concepteur. Les scénarios fonctionnels de D2 sont acquis dans ce périmètre déclaré ; révisions exactes à relever après les autres étapes, selon sa demande. Audit des droits/Data API, nettoyage de l'ancien public et cron restent ouverts. Horaire de purge fixé à 03 h UTC ; pas encore activé.
+**Sortie :** correctifs locaux réellement en ligne, référence de version et résultat de recette.
 
-**Rapport SQL reçu le 26 octobre :** RLS des cinq tables, absence de droits PUBLIC/anon/authenticated et procédure de purge non exécutable par les rôles API vérifiés dans le résultat fourni. Connexion JDBC observée sous postgres, rôle privilégié : séparation du rôle de jeu encore à réaliser. Data API et schémas exposés toujours à relever ; pg_cron non installé, fuseau GMT ; anciennes tables public toujours présentes. D1 reste partiel, D3 ouvert.
+### L6 — Preuves CDA et démonstration (ancien E1–E3)
 
-**Décision Data API du 26 octobre :** concepteur confirmant Enable Data API remis sur OFF ; logs PostgREST connus conservés, contournement décliné. La séparation du rôle JDBC est la prochaine étape proposée ; le cron et le nettoyage restent ouverts. Ce réglage déclaré ne vaut pas audit indépendant de tous les accès du projet.
+- [ ] Relier [CDA_COVERAGE](CDA_COVERAGE.md) aux preuves existantes ; nommer les compétences à démontrer ailleurs.
+- [ ] Préparer les pièces SQL/JDBC, architecture, sécurité, tests, incident résolu et déploiement. Distinguer conception personnelle et écriture largement assistée par Copilot.
+- [ ] Préparer un scénario court, ses captures sur version publiée, un secours local et une répétition avant le 23 novembre.
 
-**Rôle de jeu approuvé le 26 octobre :** arena_runtime, préparation SQL et droits/politiques testés sur PostgreSQL isolé ; modèle privé d'activation et procédure [RUNTIME_ROLE_SETUP](RUNTIME_ROLE_SETUP.md) prêts. Création et bascule Supabase/Vercel restent à effectuer ; D1 non clôturé. Cron et anciennes tables inchangés.
+**Sortie :** démonstration répétée et dossier explicable, preuves rattachées à une version.
 
-**Progression du rôle le 26 octobre :** résultat de création fourni avec tous les indicateurs désactivés, puis LOGIN activé et variables Vercel déclarées à jour par le concepteur. Restent le redéploiement et la vérification du backend avec cette identité ; D1 non clôturé avant cette preuve. Aucun mot de passe reçu par l'agent.
+## 3. Compléments reportables — aucun lancement automatique
 
-- [ ] **D1 — Reset initial et configuration.** Effectuer la remise à zéro des anciennes données de test au moment convenu, installer le schéma et les rôles vérifiés ; contrôler accès serveur et refus des accès non autorisés. Aucune reprise des anciens historiques n'est requise. Cette exception ne concerne pas les futures parties.
-- [ ] **D2 — Déployer et contrôler les deux projets.** Publier dans l'ordre préparé ; relever les révisions effectives. Jouer sur les URL de production avec deux places et vérifier confidentialité, correction, poursuite, revanche et reprise ; vérifier aussi l'absence de diagnostic ou secret exposé.
-- [ ] **D3 — Activer Supabase Cron.** Programmer la procédure commune une fois par jour, contrôler une exécution et sa désactivation possible. Suppression après sept jours depuis la dernière action acceptée, parties non terminées incluses ; aucun renouvellement par consultation/reconnexion/replay. Ne pas promettre une suppression à l'heure exacte du septième jour.
+- Test audio au lecteur d'écran : non réalisé ; aucun prêt côté concepteur. Aucune installation autorisée. Ce manque reste visible et interdit de revendiquer une validation complète de l'accessibilité ; il n'empêche pas les autres lots d'avancer.
+- Extension des matrices clavier/zoom/contraste : uniquement sur défaut concret, changement concerné ou demande explicite. Les cas non testés ne deviennent pas des cas réussis.
+- Finitions visuelles sans défaut bloquant, plateforme multijeux, comptes et autres extensions : hors livraison actuelle.
 
-**Sortie :** version publiée identifiée, manche et reprise en ligne vérifiées, droits et cron contrôlés. Une compilation ou un PASS local ne coche aucune de ces tâches.
+Tout défaut empêchant de jouer, exposant un secret ou perdant une place remonte dans les nécessaires. Cette séparation n'est ni une dispense juridique ni une certification d'accessibilité.
 
-## E — Preuves CDA et préparation de la présentation
+## Ordre et point d'arrêt
 
-Travail de sélection, d'explication et de mise en forme des preuves existantes, pas reconstruction arbitraire de fonctionnalités.
+**En cours : L2, choix et préparation de la limitation des abus pour le portfolio public.** Diffusion et perte acceptable sont fixées. Le dossier local L1 est préparé ; commit/CI/repli distant restent ouverts. L3 et L6 peuvent avancer indépendamment lorsque leurs informations sont disponibles. L4 est une seule recette bornée ; L5 intervient après ses prérequis et autorisation.
 
-- [ ] **E1 — Couverture du référentiel.** Réconcilier [CDA_COVERAGE](CDA_COVERAGE.md) avec les exigences fournies ; distinguer preuve acquise, pièce à produire et compétence à démontrer ailleurs. Décrire honnêtement conception personnelle et écriture du code largement assistée.
-- [ ] **E2 — Dossier de preuves.** Rassembler modèle relationnel/SQL/JDBC, choix d'architecture, jeu d'essai attendu/obtenu, sécurité et résolution d'un défaut, déploiement/repli ; lier chaque affirmation à un fichier ou une exécution. Les tests existent déjà ; leur présentation CDA reste à finaliser.
-- [ ] **E3 — Captures et démonstration.** Capturer la version effectivement publiée, préparer un scénario court et un secours local reproductible, répéter et vérifier Vercel/Supabase avant le 23 novembre.
-
-**Sortie :** démonstration répétée, dossier explicable et preuves rattachées à une version. JSON dans PostgreSQL ne constitue pas à lui seul une réalisation NoSQL.
-
-## Ordre de travail et entretien du suivi
-
-Ordre recommandé : **A → C → D**, avec **B en parallèle de A et achevé avant D**, et **E préparé en parallèle puis finalisé sur la version publiée**. Les constats de sécurité B1 peuvent avancer immédiatement ; un risque confirmé passe avant A.
-
-Prochaine action concrète : préparer la revue A1 et une liste bornée des vérifications A2/A4, puis te laisser essayer la candidate. Les choix de messages, de protections, de sauvegardes ou de publication non réglés seront soumis au concepteur avant le travail dépendant.
-
-Ne pas ajouter une nouvelle tâche générale « vérifier toute l'UX » après chaque correctif. Nommer le scénario manquant, réutiliser les preuves encore pertinentes et clôturer le point lorsque son critère est atteint. Actualiser ce fichier après chaque lot ; conserver commandes, résultats et incidents dans VALIDATION. Les dates des anciens lots étaient indicatives et ne sont plus utilisées comme statut d'avancement.
+À la fin de chaque lot : livrable, preuve, limite et prochaine action. Actualiser cette liste sans y recopier le journal chronologique. Quand le lot est terminé ou attend une décision externe, passer au travail indépendant autorisé au lieu de relancer une revue UX générale.

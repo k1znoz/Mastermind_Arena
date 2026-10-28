@@ -8,15 +8,16 @@ function deferred() {
   return { promise, resolve, reject }
 }
 function harness(client) {
-  const events = { rooms: [], statuses: [], admissions: [], busy: [], statusBusy: [], errors: [] }
+  const events = { rooms: [], statuses: [], admissions: [], busy: [], operations: [], listBusy: [], statusBusy: [], errors: [] }
   let scope = 'lobby:first-seat'
   const connection = createRoomConnection({
     getScope: () => scope, getContext: () => ({ matchId: 'board', roomToken: 'test-seat' }),
     createClient: () => client, onRooms: value => events.rooms.push(value),
     onStatus: value => events.statuses.push(value),
     onAdmission: (value, recovered) => events.admissions.push({ value, recovered }),
-    onBusy: value => events.busy.push(value), onStatusBusy: value => events.statusBusy.push(value),
-    onError: (message, recovery) => events.errors.push({ message, recovery })
+    onBusy: (value, operation) => { events.busy.push(value); events.operations.push(value ? operation : null) },
+    onListBusy: value => events.listBusy.push(value), onStatusBusy: value => events.statusBusy.push(value),
+    onError: (message, source) => events.errors.push({ message, source })
   })
   return { connection, events, scope: value => { scope = value } }
 }
@@ -175,4 +176,57 @@ test('an old waiting finally cannot clear a new waiting loading indicator', asyn
   await current
   assert.deepEqual(h.events.statusBusy, [true, false, true, false])
   assert.deepEqual(h.events.statuses, [{ joined: true }])
+})
+
+test('admission labels keep the original operation when another admission shares its flight', async () => {
+  const pending = deferred()
+  const h = harness({ join: () => pending.promise, create: () => { throw new Error('unexpected create') } })
+  const joined = h.connection.join('selected-room', 'Alice', '')
+  assert.equal(h.connection.create('Other', 'Alice', ''), joined)
+  assert.deepEqual(h.events.operations, [{ type: 'join', roomId: 'selected-room' }])
+  pending.reject(new Error('ROOM_FULL'))
+  await joined
+  assert.deepEqual(h.events.operations, [{ type: 'join', roomId: 'selected-room' }, null])
+  assert.equal(h.events.busy.at(-1), false)
+})
+
+test('a stale list completion cannot clear a newer loading state and errors allow retry', async () => {
+  const old = deferred(), next = deferred()
+  let calls = 0
+  const h = harness({ list: () => ++calls === 1 ? old.promise : calls === 2 ? next.promise : Promise.resolve([]) })
+  const first = h.connection.refreshRooms()
+  assert.equal(h.connection.refreshRooms(), first)
+  assert.deepEqual(h.events.listBusy, [true])
+  h.connection.invalidate()
+  const second = h.connection.refreshRooms()
+  old.resolve([{ roomId: 'stale' }])
+  await first
+  assert.deepEqual(h.events.listBusy, [true, false, true])
+  assert.deepEqual(h.events.rooms, [])
+  next.reject(new Error('HTTP:NETWORK_ERROR'))
+  await second
+  assert.equal(h.events.listBusy.at(-1), false)
+  await h.connection.refreshRooms()
+  assert.deepEqual(h.events.rooms, [[]])
+  assert.deepEqual(h.events.listBusy, [true, false, true, false, true, false])
+})
+
+test('a list refresh cannot clear or relabel an admission failure', async () => {
+  const h = harness({ create: async () => { throw new Error('ROOM_SERVER_ERROR') }, list: async () => [] })
+  await h.connection.create('Duel', 'Alice', '')
+  assert.deepEqual(h.events.errors.at(-1), { message: 'La création n’a pas pu être confirmée. Réessayez.', source: 'create' })
+  await h.connection.refreshRooms()
+  assert.deepEqual(h.events.errors.at(-1), { message: '', source: 'list' })
+  assert.equal(h.events.errors.filter(e => e.source === 'create' && e.message).length, 1)
+})
+
+test('uncertain admission failures are contextual and known refusals stay precise', () => {
+  for (const [operation, phrase] of [['create', 'La création'], ['join', 'La connexion à la partie'], ['recover', 'La reprise']]) {
+    assert.ok(roomErrorText(new TypeError('private diagnostic'), operation).startsWith(phrase))
+    assert.ok(roomErrorText(new Error('REQUEST_TIMEOUT'), operation).startsWith(phrase))
+    assert.equal(roomErrorText(new Error('REQUEST_ABORTED'), operation), '')
+    assert.equal(roomErrorText(new Error('ROOM_CODE_INVALID'), operation), 'Code d’accès incorrect.')
+    assert.ok(!roomErrorText(new Error('private diagnostic'), operation).includes('diagnostic'))
+  }
+  assert.match(roomErrorText(new Error('unknown'), 'list'), /La liste des parties/)
 })

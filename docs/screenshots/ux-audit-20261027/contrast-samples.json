@@ -1,0 +1,490 @@
+{
+  "light": [
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(0, 0, 0)",
+      "ratio": 19.41,
+      "size": "13.3333px",
+      "text": "MASTERMIND ARENA"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(23, 35, 56)",
+      "ratio": 15.74,
+      "size": "12px",
+      "text": "Sombre"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 5.79,
+      "size": "13px",
+      "text": "Manche 1 · Tour 2"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 5.79,
+      "size": "14px",
+      "text": "Reprise privée"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(23, 35, 56)",
+      "ratio": 14.55,
+      "size": "25px",
+      "text": "Vous avez remporté le duel"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 5.79,
+      "size": "14px",
+      "text": "Votre adversaire continue sa recherche. Donnez-lui les indices à chaqu"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(23, 35, 56)",
+      "ratio": 15.74,
+      "size": "17px",
+      "text": "Alice audit"
+    },
+    {
+      "bg": [
+        0,
+        108,
+        118
+      ],
+      "color": "rgb(255, 255, 255)",
+      "ratio": 6.16,
+      "size": "12px",
+      "text": "Vainqueur"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 6.27,
+      "size": "14px",
+      "text": "A trouvé au tour 1."
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 6.27,
+      "size": "12px",
+      "text": "Essai trouvé"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(23, 35, 56)",
+      "ratio": 15.74,
+      "size": "17px",
+      "text": "Bob audit"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 6.27,
+      "size": "14px",
+      "text": "Recherche en cours."
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(0, 108, 118)",
+      "ratio": 5.7,
+      "size": "14px",
+      "text": "Mes essais 1"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 5.79,
+      "size": "11.6667px",
+      "text": "1"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(23, 35, 56)",
+      "ratio": 14.55,
+      "size": "14px",
+      "text": "Ses essais 1"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 5.79,
+      "size": "11.6667px",
+      "text": "1"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 6.27,
+      "size": "14px",
+      "text": "Un doute ? Demandez à votre adversaire de vérifier ses indices."
+    },
+    {
+      "bg": [
+        237,
+        241,
+        247
+      ],
+      "color": "rgb(23, 35, 56)",
+      "ratio": 13.89,
+      "size": "14px",
+      "text": "Demander une vérification"
+    },
+    {
+      "bg": [
+        255,
+        255,
+        255
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 6.27,
+      "size": "13px",
+      "text": "Vous avez corrigé des indices. Le résultat a été actualisé."
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(174, 37, 37)",
+      "ratio": 6.28,
+      "size": "13px",
+      "text": "Abandonner la manche"
+    },
+    {
+      "bg": [
+        229,
+        237,
+        242
+      ],
+      "color": "rgb(0, 108, 118)",
+      "ratio": 5.21,
+      "size": "14px",
+      "text": "Plateau"
+    },
+    {
+      "bg": [
+        244,
+        246,
+        250
+      ],
+      "color": "rgb(82, 97, 122)",
+      "ratio": 5.79,
+      "size": "14px",
+      "text": "Historique"
+    }
+  ],
+  "dark": [
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(255, 255, 255)",
+      "ratio": 17.91,
+      "size": "13.3333px",
+      "text": "MASTERMIND ARENA"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(240, 243, 247)",
+      "ratio": 14.7,
+      "size": "12px",
+      "text": "Clair"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 10.12,
+      "size": "13px",
+      "text": "Manche 1 · Tour 2"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 10.12,
+      "size": "14px",
+      "text": "Reprise privée"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(238, 242, 250)",
+      "ratio": 15.96,
+      "size": "25px",
+      "text": "Vous avez remporté le duel"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 10.12,
+      "size": "14px",
+      "text": "Votre adversaire continue sa recherche. Donnez-lui les indices à chaqu"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(238, 242, 250)",
+      "ratio": 14.58,
+      "size": "17px",
+      "text": "Alice audit"
+    },
+    {
+      "bg": [
+        99,
+        208,
+        212
+      ],
+      "color": "rgb(16, 38, 45)",
+      "ratio": 8.6,
+      "size": "12px",
+      "text": "Vainqueur"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 9.25,
+      "size": "14px",
+      "text": "A trouvé au tour 1."
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 9.25,
+      "size": "12px",
+      "text": "Essai trouvé"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(238, 242, 250)",
+      "ratio": 14.58,
+      "size": "17px",
+      "text": "Bob audit"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 9.25,
+      "size": "14px",
+      "text": "Recherche en cours."
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(99, 208, 212)",
+      "ratio": 9.81,
+      "size": "14px",
+      "text": "Mes essais 1"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 10.12,
+      "size": "11.6667px",
+      "text": "1"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(240, 243, 247)",
+      "ratio": 16.09,
+      "size": "14px",
+      "text": "Ses essais 1"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 10.12,
+      "size": "11.6667px",
+      "text": "1"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 9.25,
+      "size": "14px",
+      "text": "Un doute ? Demandez à votre adversaire de vérifier ses indices."
+    },
+    {
+      "bg": [
+        32,
+        44,
+        54
+      ],
+      "color": "rgb(240, 243, 247)",
+      "ratio": 12.79,
+      "size": "14px",
+      "text": "Demander une vérification"
+    },
+    {
+      "bg": [
+        22,
+        33,
+        41
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 9.25,
+      "size": "13px",
+      "text": "Vous avez corrigé des indices. Le résultat a été actualisé."
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(255, 181, 179)",
+      "ratio": 10.67,
+      "size": "13px",
+      "text": "Abandonner la manche"
+    },
+    {
+      "bg": [
+        23,
+        38,
+        44
+      ],
+      "color": "rgb(131, 223, 223)",
+      "ratio": 10.04,
+      "size": "14px",
+      "text": "Plateau"
+    },
+    {
+      "bg": [
+        16,
+        24,
+        31
+      ],
+      "color": "rgb(185, 196, 208)",
+      "ratio": 10.12,
+      "size": "14px",
+      "text": "Historique"
+    }
+  ]
+}

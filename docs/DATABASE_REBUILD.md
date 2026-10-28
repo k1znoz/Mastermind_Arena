@@ -1,5 +1,15 @@
 # Base propre et protection des données
 
+## État courant — 27 octobre 2026
+
+**Nettoyage terminé selon les résultats fournis :** seules les cinq tables arena_v1 restent dans le contrôle, aucune des cinq anciennes tables public. Le concepteur confirme ensuite le fonctionnement du jeu. Les instructions de préparation ci-dessous sont historiques ; ne pas relancer le script de suppression. Preuve dans [VALIDATION](VALIDATION.md).
+
+Rapport reçu : seules dépendances internes attendues, aucune dépendance externe signalée. La procédure candidate arena_v1 utilise le nouveau schéma dans V8. [remove-legacy-public.sql](../scripts/remove-legacy-public.sql) est prêt : suppression définitive des cinq anciennes tables dans une transaction avec RESTRICT et garde arena_v1 V1–V8. Test isolé réussi, y compris refus et rollback en présence d'une vue externe. Exécuter le fichier entier sous postgres dans SQL Editor, puis fournir les cinq lignes arena_v1 retournées et vérifier la liste des salons dans l'application. Ne pas ajouter CASCADE en cas de refus ; transmettre l'erreur. Exécution distante encore à confirmer.
+
+Installation arena_v1 et jeu après bascule des variables confirmés par le concepteur ; droits et premier cron réussi dans [VALIDATION](VALIDATION.md). Les étapes ci-dessous décrivent la préparation initiale.
+
+Nettoyage autorisé : uniquement public.rooms, public.match_state, public.idempotency, public.workflow_event et public.schema_version, après revue des dépendances. Exécuter [audit-legacy-public.sql](../scripts/audit-legacy-public.sql) sous postgres dans SQL Editor et fournir le résultat. Le rapport inclut dépendances catalogue, séquences possédées et routines candidates ; il ne détecte pas entièrement les références dynamiques ou les clients externes. Ne pas utiliser DROP SCHEMA public ni CASCADE pour contourner une dépendance. Aucun effacement distant effectué ; arena_v1, auth et storage restent hors du nettoyage.
+
 Décision du concepteur, 14 octobre 2026 : les anciennes parties peuvent être abandonnées ; aucune reprise de leur historique n'est exigée. Cette autorisation concerne la transition initiale, pas les parties futures.
 
 ## Installation locale livrée

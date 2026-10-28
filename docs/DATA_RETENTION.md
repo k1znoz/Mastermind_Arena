@@ -1,5 +1,13 @@
 # Conservation — décision du 23 octobre 2026
 
+Complément du 28 octobre : perte des futures parties et scores en cas d'incident acceptée par le concepteur ; pas de sauvegarde récupérable requise pour cette livraison, aucune restauration promise. Cela ne change ni le seuil de sept jours, ni le cron, ni les garanties de confidentialité/concurrence. Voir [DATABASE_RECOVERY](DATABASE_RECOVERY.md).
+
+## État courant — 27 octobre 2026
+
+Le concepteur confirme ensuite le contrôle de désactivation/réactivation demandé. Ce contrôle clôt le critère de pilotage du job ; aucune suppression réelle d'une partie expirée n'a été mesurée dans les résultats fournis.
+
+Job Supabase Cron 1 actif, nom exact mastermind-arena-purgE, postgres, 0 3 * * *, CALL arena_v1.purge_expired_matches();. Premier passage automatique à 03 h UTC le 27 octobre : succeeded. « 1 row » ne donne pas le nombre supprimé. Désactivation et suppression effective d'une partie expirée non observées. Ce statut remplace les mentions de planification non activée dans la préparation antérieure ci-dessous. Preuves dans [VALIDATION](VALIDATION.md).
+
 Le concepteur demande de supprimer toutes les parties après **sept jours depuis leur dernière action acceptée**, y compris les parties non terminées. Une partie régulièrement jouée reste donc conservée. Sans action acceptée, la création sert de point de départ. Une simple lecture, un polling ou une reconnexion ne prolonge pas le délai.
 
 **Commande administrative implémentée et testée localement ; aucune purge ni planification activée en production.** La suppression rend les codes de reprise inutilisables et supprime l'état, l'admission, les événements et les entrées idempotentes de la partie. Une opération idempotente d'une partie conservée reste disponible pour rejouer une réponse perdue.
