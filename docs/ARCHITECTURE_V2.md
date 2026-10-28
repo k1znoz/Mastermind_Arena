@@ -14,7 +14,7 @@ Correction et abandon : PartieScreen garde les compteurs locaux et les mêmes é
 
 Présentation du duel au 24 octobre : PartieScreen partage les styles `code-editor` entre secret et essai, sans déplacer les brouillons ni les intentions. L'attente d'essai affiche uniquement l'essai propre reçu du snapshot autorisé ; l'attente d'indices utilise les indicateurs existants. La comparaison et le reçu d'essai ajustent la taille des jetons de CodePegs par variables CSS ; les valeurs par défaut restent celles des petits jetons historiques. Les compteurs d'indices conservent leur logique manuelle et leur plafond commun ; les nombres sur les lignes d'essais comptent seulement les indices déclarés reçus.
 
-- **Front** : Svelte 5, Vite, JavaScript ; une application monopage. Ce n'est pas SvelteKit.
+- **Front** : Svelte 5, Vite, JavaScript ; une application de jeu monopage et deux documents d’information autonomes. Ce n'est pas SvelteKit.
 - **API** : serveur HTTP du JDK sous Java 21, JSON avec Jackson. Ce n'est pas Spring Boot.
 - **Application** : adaptation des commandes HTTP et traduction des rejets.
 - **Métier** : `SubmitActionOrchestrator`, `MastermindBoardRules`, `MatchRuntimeState` et journal d'actions avec numéro de tour explicite.
@@ -101,3 +101,7 @@ La clé `VITE_API_KEY` est distribuée au navigateur et ne constitue pas un secr
 Deux projets Vercel distincts sont reliés à `main`. Le front appelle l'URL du backend. La base PostgreSQL est hébergée sur Supabase. Les origines CORS du backend doivent correspondre à l'origine du front. Une pause de Supabase rend les opérations de partie indisponibles ; ce cas doit Être vérifié avant la démonstration du 23 novembre 2026.
 
 Les fichiers Railway et les anciennes implémentations fichier/préférences restent des traces de l'évolution du dépôt ; ils ne décrivent pas le déploiement actuel. Le produit livré est un jeu indépendant.
+
+## Entrées d’information — 28 octobre 2026
+
+`mentions-legales.html` et `confidentialite.html` montent `PublicInformation` par `information.js`, sans importer App, session ou clients HTTP. Ils réutilisent TopBar, thèmes et CSS/polices locales. Vite construit les trois entrées via `build.rolldownOptions.input`, sans route backend ni dépendance supplémentaire. Les liens du jeu ouvrent un nouvel onglet avec indication accessible ; le jeu et ses brouillons restent montés. [Preuves locales et limites du contenu](INFORMATION_PAGES.md).

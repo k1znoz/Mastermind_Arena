@@ -9,6 +9,7 @@ export function apiErrorText(error, context) {
   }
   const code = error instanceof Error ? error.message.replace(/^(ENGINE|RULESET|HTTP):/, '') : ''
   const messages = {
+    ROOM_RATE_LIMITED: 'Trop de tentatives rapprochées. Patientez un moment avant de réessayer.',
     ROOM_CODE_INVALID: 'Code d’accès incorrect.',
     ROOM_FULL: 'Cette partie a déjà deux joueurs.',
     ROOM_NOT_FOUND: 'Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu.',

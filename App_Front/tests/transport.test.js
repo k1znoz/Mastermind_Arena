@@ -5,6 +5,24 @@ import { createSubmitActionClient } from '../src/lib/api/submitActionClient.js'
 import { createMatchStateClient } from '../src/lib/api/matchStateClient.js'
 import { createRoomClient } from '../src/lib/api/roomClient.js'
 
+test('room admissions recognize HTTP 429 without depending on a firewall response body', async t => {
+  let body = ''
+  let calls = 0
+  t.mock.method(globalThis, 'fetch', async () => { calls++; return new Response(body, { status: 429 }) })
+  const client = createRoomClient({ baseUrl: 'http://test', apiKeyValue: 'test-only-strong-api-key' })
+  const operations = [() => client.create('Duel', 'Alice', ''),
+    () => client.join('board', 'Bob', ''), () => client.resume('board.p1.test-token')]
+  for (const raw of ['', '<html>Private upstream information</html>', '{"code":"ROOM_CODE_INVALID"}']) {
+    body = raw
+    for (const operation of operations) {
+      const before = calls
+      await assert.rejects(operation(), error =>
+        error.message === 'ROOM_RATE_LIMITED' && !('body' in error) && !('responseBodyState' in error))
+      assert.equal(calls, before + 1, 'a refused admission must not retry automatically')
+    }
+  }
+})
+
 test('successful empty and unreadable bodies remain replayable but are distinct from valid JSON', async t => {
   let text = ''
   t.mock.method(globalThis, 'fetch', async () => new Response(text))

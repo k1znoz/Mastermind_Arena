@@ -1,5 +1,13 @@
 # Décisions actuelles à Mastermind Arena
 
+## Admissions HTTP 429 — 28 octobre 2026
+
+Le concepteur approuve, pour une réponse 429 lisible : « Trop de tentatives rapprochées. Patientez un moment avant de réessayer. », conservation des saisies et absence de retry automatique. Si CORS ou une panne réseau empêche de lire la réponse, conserver le message prudent existant sans déduire un quota. Aucun délai chiffré ou changement des règles du pare-feu n'est ajouté par cette décision.
+
+## Informations publiques et polices — 28 octobre 2026
+
+Cadre confirmé par le concepteur : projet personnel édité depuis la France, sans entreprise ni monétisation du jeu. Nom d'éditeur public explicitement fourni : Aloïs Sautet. Il demande de préparer les textes et de compléter le contact plus tard ; aucune adresse e-mail inventée ni page complète prétendue publiée. Les mêmes familles de polices doivent être hébergées dans le projet avec leurs licences, pour supprimer les appels de chargement Google sans refonte du design.
+
 ## Diffusion et perte de données — 28 octobre 2026
 
 Première protection contre les abus approuvée ensuite : règle WAF Vercel pour les POST d'admission (création, jointure et reprise), budget partagé de 20 requêtes par fenêtre fixe de 60 secondes et par IP ; compteurs régionaux et partage du budget entre joueurs d'un même réseau explicités. Lectures et actions du duel hors de cette règle. Vérifier l'offre et les conditions d'activation avant toute modification distante ; aucun coût ou changement d'abonnement accepté par cette décision. Activation et preuve encore ouvertes dans ROADMAP.
@@ -86,3 +94,9 @@ Décision du 24 octobre : reporter l'information des joueurs sur la conservation
 - Les joueurs connaissent le Mastermind ; l'accueil explique la variante simultanée et les indices manuels.
 
 Les règles détaillées sont dans [GAME_RULES](docs/GAME_RULES.md). L'architecture réellement utilisée est dans [ARCHITECTURE_V2](docs/ARCHITECTURE_V2.md).
+
+## Pages d’information — décision du 28 octobre 2026
+
+Deux pages locales Mentions légales et Confidentialité, accessibles au pied des écrans, sont approuvées. Les liens ouvrent un nouvel onglet avec indication accessible pour conserver le duel et ses brouillons. Publier seulement les faits confirmés : éditeur Aloïs Sautet, cadre personnel France, polices locales et traitements relevés. Contact reporté par le concepteur ; aucune adresse inventée. Implémentation locale documentée dans docs/INFORMATION_PAGES.md ; finalisation juridique et publication restent distinctes.
+
+Complément du même jour : le concepteur demande la recherche et la rédaction des informations légales, conserve les deux pages actuelles sans troisième page CGU, puis choisit de garder son nom et de finaliser les coordonnées avant publication après explication de la LCEN. Les informations personnelles non fournies restent absentes. Voir docs/LEGAL_REVIEW_2026-10-28.md ; cette décision ne clôture pas la conformité ni n’autorise une publication.

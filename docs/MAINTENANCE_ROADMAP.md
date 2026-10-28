@@ -2,11 +2,13 @@
 
 ## Priorités réconciliées — 28 octobre 2026
 
-Décisions d'exploitation désormais reçues : portfolio public, perte des futures parties/scores acceptée en cas d'incident. Le choix de sauvegarde est clôturé sans ajout d'infrastructure ni promesse de restauration. Proposition [WAF Vercel](VERCEL_RATE_LIMIT_SETUP.md) préparée pour les admissions, en attente d'accord sur le dispositif/seuil ; aucune activation distante. Les questions mentionnées dans le relevé préparatoire suivant ont donc reçu leur réponse.
+La [ROADMAP](ROADMAP.md) est la liste actuelle ; les relevés suivants conservent leur contexte historique.
 
-[ROADMAP](ROADMAP.md) est désormais organisée en acquis, nécessaires L1–L6 et compléments reportables. Les doublons B1/B2/D1 sont regroupés : rôle, RLS/droits, nettoyage et cron restent acquis selon les preuves fournies. Aucun nouvel audit UX général n'est lancé ; les limites audio/accessibilité restent explicites.
-
-Le lot suivant concerne la publication du front : HEAD fd500eb, aucun diff backend/migrations/clients HTTP/stockage de session. [Dossier de candidate](RELEASE_CANDIDATE_2026-10-28.md) et manifeste de 81 fichiers préparés ; aucune migration ou remise à zéro nécessaire pour ce lot. Commit candidat/CI/repli distant restent à établir. Deux questions d'exploitation (diffusion et sauvegarde/perte acceptable) ont été posées ; aucune réponse présumée. Aucun commit, push ou déploiement.
+- L1 : CI de 01735e5 acquise ; candidate locale de 107 fichiers incluant polices, 429 et pages d’information. Révision complète, nouvelle CI et repli restent à établir.
+- L2 : rôle SQL, RLS, nettoyage et cron acquis selon les preuves fournies. Règle Vercel approuvée et paramètres contrôlés sur capture ; parcours normal confirmé. Preuve distante du dépassement/récupération et de l’état actif encore ouverte. Perte des parties acceptée, aucune restauration promise.
+- L3 : polices locales et deux pages autonomes implémentées, pied de page ouvrant un nouvel onglet. [85 tests et contrôles locaux](INFORMATION_PAGES.md). Contact et mentions juridiques restantes à compléter ; non publié.
+- L4 : recette publique et coupure/reconnexion déclarées réussies par le concepteur. Éditeur indisponible pendant la coupure ; aucun envoi hors ligne ni réponse perdue après commit déduit. Aucun nouvel audit général.
+- L5/L6 : publication après prérequis et autorisation, puis preuves CDA et répétition. Aucun push ni changement SQL dans le lot courant.
 
 ## Actualisation distante — 27 octobre 2026
 

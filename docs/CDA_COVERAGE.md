@@ -16,7 +16,7 @@ Le titre permet de présenter plusieurs projets. Ne pas confondre dossier profes
 | Accès aux données SQL et NoSQL | JDBC PostgreSQL et requêtes paramétrées | SQL présent. NoSQL non démontré : JSON/texte stocké dans PostgreSQL ne suffit pas. Compléter par un autre projet si nécessaire. |
 | Préparer et exécuter les plans de tests | Tests JUnit, lint, Svelte Check, qualité Maven | Jeu d'essai entrées/attendu/obtenu, test de sécurité, tests PostgreSQL et parcours à deux clients. |
 | Préparer et documenter le déploiement | Configurations, runbook, front/backend Vercel, Supabase | Vérifier la procédure réelle et documenter retour arrière, pause DB et versions compatibles. |
-| Contribuer à la production DevOps | Déploiements depuis main déclarés par l'auteur ; workflow CI ajouté | Prouver une exécution CI et un déploiement réel ; l'ajout du YAML n'est pas la preuve d'une exécution. |
+| Contribuer à la production DevOps | [Quality #4 vérifiée sur GitHub](CI_EVIDENCE_2026-10-28.md), commit 01735e5 : jobs front/backend, 83 + 57 tests dont 25 PostgreSQL, aucun ignoré ; deux statuts Vercel success | Preuve CI acquise pour cette révision ; les polices locales suivantes n'y sont pas incluses. Alias de production, recette et repli restent distincts des statuts de déploiement. |
 
 ## Contribution personnelle et assistance
 

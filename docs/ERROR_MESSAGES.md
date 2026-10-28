@@ -1,5 +1,13 @@
 # Revue des erreurs et messages — 24 octobre 2026
 
+## Complément du 28 octobre — admissions limitées par HTTP 429
+
+Comportement approuvé puis implémenté : sur une réponse 429 lisible, roomClient lève ROOM_RATE_LIMITED avant de consulter le code du corps. Texte : « Trop de tentatives rapprochées. Patientez un moment avant de réessayer. » Fonctionne pour création, jointure et reprise, même si le pare-feu renvoie du HTML, un corps vide ou un JSON contenant un autre code. Aucun corps serveur affiché, délai chiffré inventé ou retry automatique.
+
+Les refus reviennent dans le circuit d'erreur d'admission existant, sans nouvelle place ni réinitialisation du formulaire par ce correctif. Les composants et App gardent leurs brouillons existants. Une erreur réseau/TypeError, notamment si CORS empêche de lire la réponse, conserve sa formulation prudente : aucun diagnostic de quota déduit de cet échec.
+
+Preuve : tests de transport pour les trois admissions et trois corps de réponse ; intégration du vrai client avec roomConnection pour message, source d'erreur, fin d'attente, absence d'admission et une seule requête. Échecs reproduits avant correctif, suite finale 85 tests réussis, 0 ignoré ; lint/check/build réussis, check 0 erreur/avertissement, 176 modules, index-eBB4oJeu.js et index-BRWWkcpR.css. Pas de nouveau contrôle visuel navigateur ni de test de dépassement du quota Vercel : ces preuves restent distinctes. Aucun changement Java/SQL ou du contrat serveur.
+
 ## Complément du 27 octobre — partie indisponible
 
 Texte approuvé puis intégré pour ROOM_NOT_FOUND et MATCH_NOT_FOUND : « Cette partie est introuvable ou n’est plus disponible. Les parties sont supprimées après 7 jours sans action de jeu. » Cette règle générale ne prouve pas que la partie demandée a expiré ; aucune trace supplémentaire de purge n'est conservée. Les autres refus, notamment ROOM_RESUME_INVALID, gardent leur distinction.

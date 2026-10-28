@@ -586,6 +586,12 @@
 				onRefresh={refreshMatchState}
 			/>
 		{/if}
+        <footer class="site-information">
+            <nav aria-label="Informations du site">
+                <a href="/mentions-legales.html" target="_blank" rel="noopener">Mentions légales<span class="sr-only"> (nouvel onglet)</span></a>
+                <a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité<span class="sr-only"> (nouvel onglet)</span></a>
+            </nav>
+        </footer>
 	</main>
 
 	{#if view === "game"}<DuelNav {activeTab} on:change={onNavChange} on:home={returnToLobby} />{/if}
@@ -604,6 +610,10 @@
 </div>
 
 <style>
+  .site-information { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+  .site-information nav { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 24px; }
+  .site-information a { display:inline-flex; align-items:center; min-height:44px; color:var(--muted); font-size:13px; text-underline-offset:4px; }
+  .site-information a:focus-visible { outline:3px solid var(--primary); outline-offset:3px; border-radius:3px; }
   .app-root { min-height:100dvh; position:relative; padding-top:70px; padding-bottom:72px; }
   .screen { position:relative; z-index:1; display:grid; gap:14px; width:100%; max-width:1000px; margin:0 auto; padding:20px 16px; }
   .compact-board .screen { grid-template-columns:minmax(0,1fr); }

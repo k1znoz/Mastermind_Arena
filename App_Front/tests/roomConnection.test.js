@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createRoomConnection, roomErrorText } from '../src/lib/state/roomConnection.js'
+import { createRoomClient } from '../src/lib/api/roomClient.js'
 
 function deferred() {
   let resolve, reject
@@ -21,6 +22,25 @@ function harness(client) {
   })
   return { connection, events, scope: value => { scope = value } }
 }
+
+test('rate limited admissions report one explicit refusal without changing identity or retrying', async t => {
+  let calls = 0
+  t.mock.method(globalThis, 'fetch', async () => { calls++; return new Response('', { status: 429 }) })
+  const client = createRoomClient({ baseUrl: 'http://test', apiKeyValue: 'test-only-strong-api-key' })
+  for (const [operation, args] of [['create', ['Duel', 'Alice', 'test-access-code']],
+    ['join', ['board', 'Bob', 'test-access-code']], ['recover', ['board.p1.test-token']]]) {
+    const h = harness(client)
+    const before = calls
+    assert.equal(await h.connection[operation](...args), null)
+    assert.equal(calls, before + 1)
+    assert.deepEqual(h.events.admissions, [])
+    assert.deepEqual(h.events.busy, [true, false])
+    assert.deepEqual(h.events.errors.at(-1), {
+      message: 'Trop de tentatives rapprochées. Patientez un moment avant de réessayer.', source: operation
+    })
+  }
+  assert.equal(roomErrorText(new TypeError('Failed to fetch'), 'create'), 'La création n’a pas pu être confirmée. Réessayez.')
+})
 
 test('double admission clicks share one operation and recovery keeps its identity', async () => {
   const pending = deferred()

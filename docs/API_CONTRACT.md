@@ -100,6 +100,10 @@ Les corps POST doivent être des objets JSON : les racines null/tableau/booléen
 
 Correction vérifiée le 24 octobre : seuls les ActionRejectedException du métier sont traduits en rejets ENGINE. Les pannes techniques en soumission, auparavant absorbées par une capture générique de IllegalStateException, suivent désormais le 500 prévu ci-dessus. Les documents persistants invalides ne sont pas assimilés à une erreur de corps entrant. Tests réels : lecture indisponible, document invalide GET/POST et rollback à chaque stade d'écriture état/événement/reçu ; codes et statuts des quinze refus métier préservés.
 
-Corps entrants limités à 65 536 octets. Le délai du client est de 15 secondes, couvrant réception du corps. Une annulation de contexte est distincte d'un timeout. La limitation des tentatives et de la création de parties reste un chantier ouvert ; CORS et la clé publique ne la remplacent pas.
+Corps entrants limités à 65 536 octets. Le délai du client est de 15 secondes, couvrant réception du corps. Une annulation de contexte est distincte d'un timeout. La règle WAF Vercel choisie pour les admissions est décrite dans VERCEL_RATE_LIMIT_SETUP ; sa preuve de dépassement reste ouverte. CORS et la clé publique ne remplacent pas cette protection.
 
 Les tests front de contrat utilisent des données fictives. Les tests HTTP PostgreSQL vérifient admissions, reprise, accès refusés et erreurs réelles. L'exécution CI distante et les URL publiées doivent encore être contrôlées séparément.
+
+### Refus 429 des admissions
+
+Le client reconnaît un statut HTTP 429 lisible pour création, jointure et reprise, même avec un corps HTML, vide ou JSON sans code métier. Il affiche « Trop de tentatives rapprochées. Patientez un moment avant de réessayer. », conserve les saisies et ne relance pas automatiquement l’admission. Il s’agit d’une traduction du refus de bordure, sans nouveau contrat JSON Java. Si CORS masque la réponse, le message réseau prudent reste utilisé. Aucun quota n’est implémenté dans le handler Java par ce changement.

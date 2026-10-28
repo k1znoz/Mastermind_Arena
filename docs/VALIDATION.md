@@ -1,5 +1,53 @@
 # Plan de validation de la finalisation
 
+## Complément juridique local — 28 octobre 2026
+
+Recherches LCEN/CNIL et documents Vercel/Supabase : [analyse sourcée et limites](LEGAL_REVIEW_2026-10-28.md). Le concepteur conserve deux pages, sans page CGU ni case d’acceptation, et maintient son nom ; coordonnées à finaliser avant publication. Aucun domicile, téléphone personnel ou e-mail inventé.
+
+PublicInformation complète les droits, délai, recours CNIL, caractère nécessaire/facultatif des données, informations techniques et éventualité de traitements hors UE. Le fondement définitif, les durées techniques effectives et le contact ne sont pas déclarés résolus. Aucun changement du jeu, de ses requêtes, du stockage ou du backend.
+
+Contrôles après modification : npm run lint réussi ; npm run check : zéro erreur/avertissement avec configuration Vite chargée ; npm run build réussi, 181 modules et trois entrées HTML. Nouveau bundle d’information : information-C3rCK_-_.js ; bundles du jeu et de TopBar identiques au build précédent. Contrôle SSR réussi avec assertions supplémentaires sur les droits, le mois de réponse, le lien CNIL et les transferts ; aucun contact fictif ni consentement implicite rendu. Les 85 tests fonctionnels acquis précédemment n’ont pas été relancés pour ce changement de texte.
+
+Chrome : page Confidentialité construite servie localement ; paragraphes et lien CNIL présents, largeur utile et scrollWidth égaux à 471 px. [Capture de la fin de la notice](screenshots/information-20261028/confidentialite-droits-479.png). Aucun appel de jeu ni publication. Les coordonnées d’éditeur et prestataires encore ouvertes empêchent de clôturer L3.
+
+Actualisation du 28 octobre : deux pages locales et pied de page intégrés ; [preuves et limites](INFORMATION_PAGES.md). 85 tests front réussis, lint/check sans erreur, build de 181 modules et trois documents HTML. Contrôles Chrome bornés ; aucun déploiement. Contact et mentions restantes ouverts.
+
+## 28 octobre — code front, refus d'admission HTTP 429
+
+Comportement explicitement approuvé : message précis sur 429 lisible, saisies conservées, pas de retry automatique, prudence si CORS masque la réponse. Défaut reproduit sur création avec corps vide/HTML/JSON, puis deux tests ajoutés : transport des trois admissions et intégration client/coordinateur. Avant correctif, refus générique ROOM_HTTP_ERROR et texte incertain ; après correctif, ROOM_RATE_LIMITED sans exposition du corps, erreur attribuée à l'opération, aucune admission et une seule requête. Les composants de formulaire ne sont pas modifiés, les brouillons restent possédés par leurs écrans/App.
+
+85 tests front réussis, 0 ignoré ; lint/check/build réussis, Svelte Check 0 erreur/avertissement, build 176 modules, JS index-eBB4oJeu.js et CSS index-BRWWkcpR.css. [Détails](ERROR_MESSAGES.md). Pas de test de quota réel, de nouveau rendu navigateur ni de déploiement ; la recette publique précédente ne couvre pas ce code local. Aucun changement backend/SQL/protocole serveur. Manifeste candidat actualisé pour les fichiers modifiés ; CI 01735e5 conservée comme preuve distincte.
+
+## 28 octobre — recette publique et réseau confirmés, L4 clôturé dans ce périmètre
+
+Le concepteur précise que les tests FINAL_ACCEPTANCE ont été réalisés sur https://mastermind-arena.vercel.app/ et confirme le scénario de coupure réelle/reconnexion réussi, avec même place et sans doublon ni révélation indue déclarés. Il observe que l'écran d'essai disparaît pendant le problème de connexion : envoi d'essai impossible dans cet état. Aucun envoi hors ligne n'est donc attesté ; ne pas assimiler ce résultat au cas d'une réponse perdue après commit. Les preuves d'idempotence automatisées restent distinctes.
+
+Aucun défaut remonté dans la recette globale. L4 clôturé sur ce périmètre déclaré, sans contrôle indépendant du navigateur ni attribution d'un SHA précis au site servi. Les polices locales et autres changements non publiés ne sont pas couverts ; leur contrôle ciblé reste dans la livraison suivante. Aucun nouveau test à refaire demandé et aucune modification applicative.
+
+## 28 octobre — premier retour sur FINAL_ACCEPTANCE
+
+Le concepteur déclare penser avoir effectué tous les tests du protocole et indique que tout paraît fonctionner. Aucun défaut remonté. Deux précisions demandées : environnement public/local testé, et confirmation de la coupure réelle avec tentative d'envoi hors ligne/reconnexion sans perte de place, doublon ou révélation. Le retour est enregistré comme recette déclarée apparemment réussie ; aucune preuve indépendante ni clôture complète de L4 déduite avant ces précisions. Aucun test à refaire demandé, aucun changement applicatif.
+
+## 28 octobre — CI distante réellement vérifiée, recette finale préparée
+
+Lecture via le connecteur GitHub : main et HEAD local 01735e58ecdb07f75c334d45f0345eb5aa70fa86. Quality #4, run 40670370594 completed/success ; jobs backend 122755304245 et frontend 122755304768 réussis. Journaux consultés et résumés extraits sans copie des métadonnées personnelles : 83 tests front, 0 fail/cancelled/skipped ; Svelte Check 0 erreur/avertissement ; build réussi. Maven 57 tests, 0 échec/erreur/ignoré, BUILD SUCCESS, dont PostgresWorkflowTest 17 et JdbcMatchRetentionTest 8. Artefact java-test-reports présent/non expiré (37 825 octets), archive non téléchargée.
+
+GitHub signale les deux statuts Vercel success/Deployment has completed, déploiements front 8UpcybN7YKX64gHJ3wdu9ij9nbov et backend GDYwhhBcoSYJcCjuLu78rYaiQtc5. Aucun alias canonique ni parcours runtime déduit de ces seuls statuts. Main signalée non protégée ; aucune configuration modifiée. [Preuve liée au commit et à la CI](CI_EVIDENCE_2026-10-28.md).
+
+Les polices locales non commitées restent hors de cette CI, avec leur preuve locale séparée. [FINAL_ACCEPTANCE](FINAL_ACCEPTANCE.md) préparé pour une recette unique, y compris coupure physique du réseau encore non testée. ROADMAP/CDA_COVERAGE actualisés sans relancer les suites locales ni une revue UX. Aucun commit, push, job relancé ou déploiement par l'agent.
+
+## 28 octobre — polices locales et textes publics préparés
+
+Identité publique confirmée : Aloïs Sautet ; projet personnel en France sans entreprise/monétisation. Contact explicitement laissé à compléter plus tard. [PUBLIC_INFORMATION_DRAFT](PUBLIC_INFORMATION_DRAFT.md) préparé sans publication de champs fictifs ; les informations restantes y sont signalées.
+
+Polices locales implémentées après accord : app.css importe fonts.css, 16 WOFF2 de 332 744 octets et 48 faces avec les propriétés d'origine, licences OFL 1.1 par famille conservées. Lint réussi ; check 0 erreur/avertissement ; build réussi, 176 modules, index-BK6yjSka.js et index-BRWWkcpR.css. Les 16 fichiers construits sont servis en HTTP 200 sur loopback avec tailles/empreintes attendues ; zéro URL Google de police dans la CSS construite. [Détail et limite visuelle](LOCAL_FONTS.md). Pas de test navigateur revendiqué ; contrôles de logique non répétés pour ces seuls assets/CSS. Aucun backend/migration touché ni déploiement effectué.
+
+## 28 octobre — préparation L3, informations publiques
+
+Inventaire local des formulaires, session.js, thème, RoomDirectory/Credentials et logs applicatifs ; [PUBLIC_INFORMATION_PREPARATION](PUBLIC_INFORMATION_PREPARATION.md). Distinction entre purge PostgreSQL à sept jours, clés navigateur sans expiration applicative et journaux d'hébergement non couverts par cette purge. Google Fonts externe identifié dans app.css ; aucun SDK analytics/publicité identifié dans le périmètre inspecté, sans déduire les réglages distants ni une conformité globale.
+
+Sources CNIL/Service public et notices fournisseurs consultées. Questions pays/statut d'éditeur, identité/contact public et hébergement des polices posées au concepteur. Pas de réponse présumée, aucune identité déduite des chemins locaux. Pas de page fictive ni modification applicative ; contrôles de liens locaux et diff pertinents, pas de nouvelle suite de tests pour cet inventaire.
+
 ## 28 octobre — règle saisie et parcours normal confirmés par le concepteur
 
 Le concepteur choisit de faire le réglage Vercel lui-même. Capture reçue : arena-admissions, Method Equals POST ET Request Path Starts with /local/rooms, Fixed Window 60 seconds, 20 requests, IP Address et Too Many Requests (429). Paramètres visuels conformes à la règle approuvée. Instructions d'ajout/revue/publication données, sans manipulation distante par l'agent.

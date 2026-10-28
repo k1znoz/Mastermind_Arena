@@ -1,333 +1,440 @@
 {
-    "date":  "2026-10-28",
-    "status":  "local-uncommitted",
-    "baseline":  "fd500ebd5605b11e683c5d4261bc1219ef146c19",
-    "backendAndWorkflowUnchanged":  true,
-    "httpClientsSessionDependenciesUnchanged":  true,
-    "files":  [
-                  {
-                      "path":  "App_Front/eslint.config.js",
-                      "sha256":  "9cb895a9edbbd96c9628796c6e057fe5c761e33b79162ee6a2c0fd2e4e324b76"
-                  },
-                  {
-                      "path":  "App_Front/index.html",
-                      "sha256":  "7323c2deffe29b1fd736d0a36c8c302c1e60531befe5337d217a6341f39b07c4"
-                  },
-                  {
-                      "path":  "App_Front/jsconfig.json",
-                      "sha256":  "e0d1d7633fe81213e8557e80f04541b37cbf685a4c726739f8fee6181dc8b053"
-                  },
-                  {
-                      "path":  "App_Front/package.json",
-                      "sha256":  "3f1ed3902f518d24811f53368378faf68ef141aa31bede3e5e33aff50822016e"
-                  },
-                  {
-                      "path":  "App_Front/package-lock.json",
-                      "sha256":  "29bd7d6d7bc21951031588e171be92accc3df9bccbef7cd8c3af04b4a7294cd9"
-                  },
-                  {
-                      "path":  "App_Front/public/favicon.svg",
-                      "sha256":  "61bc9a161de58248288e6905425d7180f0624c2865007b97d763fdac12043a66"
-                  },
-                  {
-                      "path":  "App_Front/public/icons.svg",
-                      "sha256":  "b45fa506195cfcdef406ba9f0c77b36ddc1a7c224040926ec70abc2fdea7b93a"
-                  },
-                  {
-                      "path":  "App_Front/public/licenses/tabler-icons.txt",
-                      "sha256":  "5a3b65e1ad6a081759fde376fe14e2cd88552a9ebea89a8168f34eab1e96109f"
-                  },
-                  {
-                      "path":  "App_Front/src/app.css",
-                      "sha256":  "e300a2c163a16cab868fcc208bedc4ee3c65ac5298d272c839bf03a7cd87e7b7"
-                  },
-                  {
-                      "path":  "App_Front/src/App.svelte",
-                      "sha256":  "b0e9a1836859b8dcc77496d6dff11aa6483669a6d46f85508710ae6118479f4a"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/api/httpClientUtils.js",
-                      "sha256":  "595ff46d0eaed02450b2994618f4faa7e0d0ca9c1629e5709ca9ba12b04e0fce"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/api/matchStateClient.js",
-                      "sha256":  "5958d0d97c76c01eccd941dc02a93262fdb67aab5fdefa4e137c72dcb6794937"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/api/responseContract.js",
-                      "sha256":  "4cb64c281b976dd443428e833dcf20a0ae2b2cf1a7b240e36256d1f338aa082a"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/api/roomClient.js",
-                      "sha256":  "d5839f6d00e235b031b50a8a217fa7498a22e4b2aba391061cc595cffa51a758"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/api/runtimeConfig.js",
-                      "sha256":  "9aaa9822651c11b8ac0671ebf5243a9f2ffef7210088d60f69eb992f8df18847"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/api/submitActionClient.js",
-                      "sha256":  "8189948f8684b71b0450301ab84644988f7e853b3f56dda2165bb3ce9fd75a1e"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/arrow-left.svg",
-                      "sha256":  "3e3c41851f63f61cdb9719d27eb72927d630f1201f8a6646dae2c9082edbf0a6"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/arrow-right-circle.svg",
-                      "sha256":  "202b75b29659143da5e4f3ca1e32becc6f89f0d1b43af77f60766ec60e740f74"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/chart-bar.svg",
-                      "sha256":  "82bf5a10950444061d530a7e6c5900b4840781e2f8c32dd69e74c4c1ae0b44e2"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/circle-check.svg",
-                      "sha256":  "f0f158c6028e8de9560c183971f31c5c22bc31c073c5c7bc600cb93d1099a541"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/circle-dot.svg",
-                      "sha256":  "c53dcf0ec2f9962de12e296b181d30c9ff5eadd27ff2af838e8994ba65190bdc"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/copy.svg",
-                      "sha256":  "132cf3188f6f7b9c4f44c4fcf937c026dd7eea19cb8e4670c125863b904ec29d"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/eye.svg",
-                      "sha256":  "c1d698e60f82d4c76f6640f866956c51c9249f2ca059b39aca194db936aac8ef"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/eye-off.svg",
-                      "sha256":  "5d772cff420727f494783cdebd08513b379e732652a972ea5e24cb5f819fe510"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/help-circle.svg",
-                      "sha256":  "0625e63715693a65781968446e36965d790bbee800c103d7e6a7ee1a176a7c72"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/LICENSE",
-                      "sha256":  "5a3b65e1ad6a081759fde376fe14e2cd88552a9ebea89a8168f34eab1e96109f"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/list.svg",
-                      "sha256":  "7c29ffc1b7bfd04c0dd0018129a4a53552cf6bc1020879a6bce90b66ff87c658"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/lock.svg",
-                      "sha256":  "6e784f5b3c19a76909c2627fd4192bbf98c3eb3b277d2d685af14570a682fd7e"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/message-circle.svg",
-                      "sha256":  "5d0200d903d3c362209acbd10afa06da46dfa1b8bef75b7a22c1739476ab192a"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/moon.svg",
-                      "sha256":  "a0ae8e9b875db0f914d5d7702afaf87b1ae78fcc09acc1ae4dca63c930e49b43"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/pencil.svg",
-                      "sha256":  "bcf26673fe6c87a985ec327be0f3e834daa45f43767cc5316ddab202dd105736"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/README.md",
-                      "sha256":  "8cec75a43f60a97cf5a961e1959be636ef34d9626d60ee8c0f08eb11f6dad435"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/refresh.svg",
-                      "sha256":  "409389d29efeb6350ddf32d800964b179a2595702060e963ce449188f831a53b"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/square-rotated.svg",
-                      "sha256":  "e7ef6441c5ea0f7a0cef23ab5c2420eb8147c69ac5f67e021ea83bf207c0ae19"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/sun.svg",
-                      "sha256":  "6eaf26aaf098f0acd1e7f5c3ea616f14c55576577e83f5f53a97990f25183272"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/trash.svg",
-                      "sha256":  "7a2589ce64766746193cd49dc87707fe43ba75eaf3af015393e200b8fe8fd608"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/user-circle.svg",
-                      "sha256":  "31fad89d76ce29817fab3644da9a1f612644ecaf67bdb3cd686582a6f5f82d5f"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/assets/tabler/x.svg",
-                      "sha256":  "f443b1f763bd3dc0f867c0a6d721b6e1f5ef79a6886e67d937ec05c60b170e16"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/CodePegs.svelte",
-                      "sha256":  "dc1b57a94a3e1e41288c91fdc0bdb441b011dfb75cd19466fd938787c6d1247a"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/DebugDrawer.svelte",
-                      "sha256":  "89b50bb4e169ce45fa56b185a6eb3c1930e2bbc660bc230d4b024e2127e59db3"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/DuelNav.svelte",
-                      "sha256":  "c6118b8d1e0e384261cb65142d123e44f9c80077b92a3fa9d862577c4139c05d"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/HistoryScreen.svelte",
-                      "sha256":  "4e432dc59673c8909bcfe922ac07e6233b611b96624271a1ef1b7db80174d4b0"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/Icon.svelte",
-                      "sha256":  "bbb34ccaba65c2b93c9ca8a1c499ee3e5f24cca3fdc9bdf3d57675ebaad3715d"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/LobbyScreen.svelte",
-                      "sha256":  "dfacf4edce48684dd073b54e0746f3bfa17c218b3396295d00fde1c12a72ba66"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/OpponentProgress.svelte",
-                      "sha256":  "cdaad160c3265c2c0cfdbb166f083444c388da448025c11b9d25f809f6808246"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/PartieScreen.svelte",
-                      "sha256":  "45ca60942d025ea8c5dfaa5a7e273ac9586e9785ad5b26504e13dfe8573b725f"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/PrivateRecoveryPanel.svelte",
-                      "sha256":  "af4529663dc872cc05c48089aab9d839481847fefb0937725378c8c35bcc8a0e"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/RecoveryScreen.svelte",
-                      "sha256":  "9a82c617940c96154390d746e7ffc61c206787c334bad7801cddacd65d710af9"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/ToastMessage.svelte",
-                      "sha256":  "9037cd1e0e8396cbb7c2770058923cd3d50f54d72c792c00626da854283ac80d"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/TopBar.svelte",
-                      "sha256":  "885172eacbb8d1daeb19e344ea53009ba7302508e3ed64b2b78a2ef0b535a1ff"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/WaitingScreen.svelte",
-                      "sha256":  "8da8d027dc5cf69734b184cee0029408dccd431b4bc9724a254639a3942d70d4"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/components/WelcomeScreen.svelte",
-                      "sha256":  "d8f9b95ea9bd173252fb88c81760c706d0e679b133acda5a69d386bcaf40aaba"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/boardDraft.js",
-                      "sha256":  "0344b18de1d71c823d801bce792b597843a52e3148f1edd4b0daa76703ab89ef"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/gameConnection.js",
-                      "sha256":  "bf29c5098bb0edb4d8095ced7d7f4dfcf82ef432b98bf979ab24b1a053933760"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/gameView.js",
-                      "sha256":  "1f4c4be56f7f43b223c79199bfba0523babaa5c189eeef717cb6fe5f20ad025e"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/phaseFocus.js",
-                      "sha256":  "eba4f3576d7e5271d3cfe39190d3d3801bbf7363ab2b93c83bdd2b6dd5ea3e21"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/polling.js",
-                      "sha256":  "64bbf1350a2a4322836a8ed84e167be25f3cfc1265dcf67596f2e05d544ec28d"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/roomConnection.js",
-                      "sha256":  "94c78c5fb3f7141f25e3e0e906230cb2039f129e17b2a7861080adc1ab146e8f"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/session.js",
-                      "sha256":  "633ddbbdc411ae63918c895f167806894530047571ddff88aecc74b13397165c"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/state/submissionFocus.js",
-                      "sha256":  "671e9ceb13119164ab61332c11d1dddbb797573d1ef0102bf9cf7897fcc3f231"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/utils/apiErrorText.js",
-                      "sha256":  "76482d147a7b6fefab4686cb3363710917429bdfcb355f238879a04dd7ba4836"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/utils/diagnostics.js",
-                      "sha256":  "f6de4419ac53b4ca4c94f04f30c97cd331b34769a7c7274246513feeecbc0008"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/utils/presentation.js",
-                      "sha256":  "d98021e41f523f274f99b2c3f4640cda32381e5fc8e158e4fcc1a4056363f4ca"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/utils/symbolSequence.js",
-                      "sha256":  "24137eadf521d214cde3a4e75f371a458d2f375698f92ff074b5243b3e92d126"
-                  },
-                  {
-                      "path":  "App_Front/src/lib/utils/symbolVisuals.js",
-                      "sha256":  "b51e61c13e4606d91401080184ffdda30b8ce5635d2bb7bccfdbe04cd098bdc6"
-                  },
-                  {
-                      "path":  "App_Front/src/main.js",
-                      "sha256":  "d5d48475db14abbfe896356df04c10f4884a1215804fa7e2ccf3249288e9d1b6"
-                  },
-                  {
-                      "path":  "App_Front/tests/actionContract.test.js",
-                      "sha256":  "e7b2de7b816d9ef92a63b8f6508ca8e5e0b8d6ea53fc0daa9da3558fd5621b25"
-                  },
-                  {
-                      "path":  "App_Front/tests/apiErrorText.test.js",
-                      "sha256":  "c8e0cfe672a8ab9302b8ffaa562873e438c63e04bab45c692c21bbea2f23c7f8"
-                  },
-                  {
-                      "path":  "App_Front/tests/boardView.test.js",
-                      "sha256":  "4fa2c9621084c796f145496f588f1c8ac86ba4c0dda617b947952202eb73a11a"
-                  },
-                  {
-                      "path":  "App_Front/tests/contract.test.js",
-                      "sha256":  "7193ea4c7c239c071891e2bbd39a5bd4b3fda4faf4d33eacd329aa59477a00e6"
-                  },
-                  {
-                      "path":  "App_Front/tests/diagnostics.test.js",
-                      "sha256":  "b693dcb1fc8515304a6bb2c7f853a305f3176db4085bf86f9216a2473736ce54"
-                  },
-                  {
-                      "path":  "App_Front/tests/gameConnection.test.js",
-                      "sha256":  "4c413e7466d2df7bdbffd4307fc99f2d88a27a83a44ab266a4c1141324d605b4"
-                  },
-                  {
-                      "path":  "App_Front/tests/phaseFocus.test.js",
-                      "sha256":  "a9db7a4ebd17ad06472e48dc64bbaf890381285183ff3f879a3a9f907160ad03"
-                  },
-                  {
-                      "path":  "App_Front/tests/polling.test.js",
-                      "sha256":  "996836aaba1bb57eb94244248434e391a3f39d3a6293e0d25d54fdcc31569f16"
-                  },
-                  {
-                      "path":  "App_Front/tests/presentation.test.js",
-                      "sha256":  "a7350a31889564a5c757e7969283985c420c98f4551c82a819a160da164e2ae3"
-                  },
-                  {
-                      "path":  "App_Front/tests/roomConnection.test.js",
-                      "sha256":  "bffc10b5f5b48ffea1a6b34be860c775205bbda2c69d0c6e03650bef60c11e92"
-                  },
-                  {
-                      "path":  "App_Front/tests/roomContract.test.js",
-                      "sha256":  "74bcbe6bd51aadd5943949d0f378e046fe3de634ecc4d1464e6930337919eedb"
-                  },
-                  {
-                      "path":  "App_Front/tests/roomTransport.test.js",
-                      "sha256":  "cf5f633aa2335b6018caecad592e0ea56e13eb12389a83058e0fb4655517eb3f"
-                  },
-                  {
-                      "path":  "App_Front/tests/submissionFocus.test.js",
-                      "sha256":  "5750c2b9928813ef07f34f4a5cc25a2a3518bf30d69497ace9b3531ac8c4f482"
-                  },
-                  {
-                      "path":  "App_Front/tests/transport.test.js",
-                      "sha256":  "e98beafdfc64f89cc39705c31589242a84a63dfe41b813ccf5b6f0ae824e8a14"
-                  },
-                  {
-                      "path":  "App_Front/vite.config.js",
-                      "sha256":  "4407295da313e75735b5d3dca7c52994972b3bb98890772757553df646a43a5c"
-                  }
-              ]
+  "date": "2026-10-28",
+  "status": "local-front-changes-uncommitted",
+  "baseline": "fd500ebd5605b11e683c5d4261bc1219ef146c19",
+  "sourceBase": "01735e58ecdb07f75c334d45f0345eb5aa70fa86",
+  "backendAndWorkflowUnchanged": true,
+  "httpClientsSessionDependenciesUnchanged": false,
+  "files": [
+    {
+      "path": "App_Front/confidentialite.html",
+      "sha256": "8a8812fef817598888b39c9a121d7f152b704fc8d93f6ddec5a815fba214c8d1"
+    },
+    {
+      "path": "App_Front/eslint.config.js",
+      "sha256": "9cb895a9edbbd96c9628796c6e057fe5c761e33b79162ee6a2c0fd2e4e324b76"
+    },
+    {
+      "path": "App_Front/index.html",
+      "sha256": "7323c2deffe29b1fd736d0a36c8c302c1e60531befe5337d217a6341f39b07c4"
+    },
+    {
+      "path": "App_Front/jsconfig.json",
+      "sha256": "e0d1d7633fe81213e8557e80f04541b37cbf685a4c726739f8fee6181dc8b053"
+    },
+    {
+      "path": "App_Front/mentions-legales.html",
+      "sha256": "ac8601ba70d308c46cd51f371bd1c20460932fa1fb858f1fd85b19d57a0056dc"
+    },
+    {
+      "path": "App_Front/package-lock.json",
+      "sha256": "29bd7d6d7bc21951031588e171be92accc3df9bccbef7cd8c3af04b4a7294cd9"
+    },
+    {
+      "path": "App_Front/package.json",
+      "sha256": "3f1ed3902f518d24811f53368378faf68ef141aa31bede3e5e33aff50822016e"
+    },
+    {
+      "path": "App_Front/public/favicon.svg",
+      "sha256": "61bc9a161de58248288e6905425d7180f0624c2865007b97d763fdac12043a66"
+    },
+    {
+      "path": "App_Front/public/fonts/README.md",
+      "sha256": "84a85421d783698b801033edca85d311e6d5fbaff4ab876930fe1b5904243215"
+    },
+    {
+      "path": "App_Front/public/fonts/SOURCES.json",
+      "sha256": "53661bc9cf309caec5ce34a1b973f81f217113bd792c9a4a93ccba11148482f6"
+    },
+    {
+      "path": "App_Front/public/fonts/font-0640890476fc1198.woff2",
+      "sha256": "0640890476fc1198ab4de571fb658de443c4d85b66466ec09534a8737ab1ce9d"
+    },
+    {
+      "path": "App_Front/public/fonts/font-0a557721b1f8b36d.woff2",
+      "sha256": "0a557721b1f8b36d3f3f84442689a71ca4a744300abcb46a1953f51bfc663b66"
+    },
+    {
+      "path": "App_Front/public/fonts/font-1be3448e292fbf05.woff2",
+      "sha256": "1be3448e292fbf05ffe176fe1e43f135013d50b1e7d324ad1a558f623d3bb6f6"
+    },
+    {
+      "path": "App_Front/public/fonts/font-3100e775e8616cd2.woff2",
+      "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
+    },
+    {
+      "path": "App_Front/public/fonts/font-34b9c504cab7a73e.woff2",
+      "sha256": "34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956"
+    },
+    {
+      "path": "App_Front/public/fonts/font-5c66f9e07e90c6d4.woff2",
+      "sha256": "5c66f9e07e90c6d4ac4922cc68d60de26c17b1858e677fb5e603fce3952b3ff2"
+    },
+    {
+      "path": "App_Front/public/fonts/font-62213be8a78b42f1.woff2",
+      "sha256": "62213be8a78b42f1e29d1452d91e2f8b3e745572a9dd98d3941e39fa00b37d76"
+    },
+    {
+      "path": "App_Front/public/fonts/font-6e9e020a25f9b56d.woff2",
+      "sha256": "6e9e020a25f9b56d418f2c085b1d3c09725a4da23fe693a5b463064606732190"
+    },
+    {
+      "path": "App_Front/public/fonts/font-71d5ee93cc1e9f1d.woff2",
+      "sha256": "71d5ee93cc1e9f1d520a3a8b66456de18c7879d8df09d57fcd2eaff75fef0075"
+    },
+    {
+      "path": "App_Front/public/fonts/font-83c005d49d8a6a50.woff2",
+      "sha256": "83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be"
+    },
+    {
+      "path": "App_Front/public/fonts/font-8895e3d49825128b.woff2",
+      "sha256": "8895e3d49825128bfa5238e4c96e9b432d7a3dadbe5c17c6081267398305dc71"
+    },
+    {
+      "path": "App_Front/public/fonts/font-952dddb45d2f96f7.woff2",
+      "sha256": "952dddb45d2f96f71cbf3b7f510b24379afc3c89ea02fcf89d377b45d62c0166"
+    },
+    {
+      "path": "App_Front/public/fonts/font-c89b9cc0bc6262bd.woff2",
+      "sha256": "c89b9cc0bc6262bd4f8d8494b6961601f3aefa829d08c2e3635f4d501d3a47c2"
+    },
+    {
+      "path": "App_Front/public/fonts/font-ca157063339ac4ad.woff2",
+      "sha256": "ca157063339ac4ad418f214f3abfed119b0798ab4d377386ce5c9e5a7a435ebd"
+    },
+    {
+      "path": "App_Front/public/fonts/font-db5ff4db83e58042.woff2",
+      "sha256": "db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52"
+    },
+    {
+      "path": "App_Front/public/fonts/font-e17cfd15fb96909d.woff2",
+      "sha256": "e17cfd15fb96909d64095015f958207063a0c07191da3512df7d560a781aebdf"
+    },
+    {
+      "path": "App_Front/public/fonts/inter-OFL.txt",
+      "sha256": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57"
+    },
+    {
+      "path": "App_Front/public/fonts/jetbrainsmono-OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    {
+      "path": "App_Front/public/fonts/spacegrotesk-OFL.txt",
+      "sha256": "564ce565c371c5e5bbf286006565a7c9aa55a9f56e7ca58d56e05d649dd61a72"
+    },
+    {
+      "path": "App_Front/public/icons.svg",
+      "sha256": "b45fa506195cfcdef406ba9f0c77b36ddc1a7c224040926ec70abc2fdea7b93a"
+    },
+    {
+      "path": "App_Front/public/licenses/tabler-icons.txt",
+      "sha256": "5a3b65e1ad6a081759fde376fe14e2cd88552a9ebea89a8168f34eab1e96109f"
+    },
+    {
+      "path": "App_Front/src/App.svelte",
+      "sha256": "28a9b4145a1500f0995264ddf005b4539e60e25c06a326b1b6fec2954b697795"
+    },
+    {
+      "path": "App_Front/src/app.css",
+      "sha256": "2929b18592d5b5a67caee3baab8d793f636684c6f08aab2d9b0d093e2e6a9a7a"
+    },
+    {
+      "path": "App_Front/src/fonts.css",
+      "sha256": "4cbf5bbb2244ac9d11dbccd8a09826fa82bd57d65150bbddc49b43966b99a2df"
+    },
+    {
+      "path": "App_Front/src/information.js",
+      "sha256": "8e5f9f7b52caf9c69f29cd38fdd81c167b14932fd01ee4db851707e5fbded7a2"
+    },
+    {
+      "path": "App_Front/src/lib/api/httpClientUtils.js",
+      "sha256": "595ff46d0eaed02450b2994618f4faa7e0d0ca9c1629e5709ca9ba12b04e0fce"
+    },
+    {
+      "path": "App_Front/src/lib/api/matchStateClient.js",
+      "sha256": "5958d0d97c76c01eccd941dc02a93262fdb67aab5fdefa4e137c72dcb6794937"
+    },
+    {
+      "path": "App_Front/src/lib/api/responseContract.js",
+      "sha256": "4cb64c281b976dd443428e833dcf20a0ae2b2cf1a7b240e36256d1f338aa082a"
+    },
+    {
+      "path": "App_Front/src/lib/api/roomClient.js",
+      "sha256": "f9f3f7027ef55d264391f30201e53dd3605cff9c24fbc9d4dcd7063e6541e2e3"
+    },
+    {
+      "path": "App_Front/src/lib/api/runtimeConfig.js",
+      "sha256": "9aaa9822651c11b8ac0671ebf5243a9f2ffef7210088d60f69eb992f8df18847"
+    },
+    {
+      "path": "App_Front/src/lib/api/submitActionClient.js",
+      "sha256": "8189948f8684b71b0450301ab84644988f7e853b3f56dda2165bb3ce9fd75a1e"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/LICENSE",
+      "sha256": "5a3b65e1ad6a081759fde376fe14e2cd88552a9ebea89a8168f34eab1e96109f"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/README.md",
+      "sha256": "8cec75a43f60a97cf5a961e1959be636ef34d9626d60ee8c0f08eb11f6dad435"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/arrow-left.svg",
+      "sha256": "3e3c41851f63f61cdb9719d27eb72927d630f1201f8a6646dae2c9082edbf0a6"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/arrow-right-circle.svg",
+      "sha256": "202b75b29659143da5e4f3ca1e32becc6f89f0d1b43af77f60766ec60e740f74"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/chart-bar.svg",
+      "sha256": "82bf5a10950444061d530a7e6c5900b4840781e2f8c32dd69e74c4c1ae0b44e2"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/circle-check.svg",
+      "sha256": "f0f158c6028e8de9560c183971f31c5c22bc31c073c5c7bc600cb93d1099a541"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/circle-dot.svg",
+      "sha256": "c53dcf0ec2f9962de12e296b181d30c9ff5eadd27ff2af838e8994ba65190bdc"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/copy.svg",
+      "sha256": "132cf3188f6f7b9c4f44c4fcf937c026dd7eea19cb8e4670c125863b904ec29d"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/eye-off.svg",
+      "sha256": "5d772cff420727f494783cdebd08513b379e732652a972ea5e24cb5f819fe510"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/eye.svg",
+      "sha256": "c1d698e60f82d4c76f6640f866956c51c9249f2ca059b39aca194db936aac8ef"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/help-circle.svg",
+      "sha256": "0625e63715693a65781968446e36965d790bbee800c103d7e6a7ee1a176a7c72"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/list.svg",
+      "sha256": "7c29ffc1b7bfd04c0dd0018129a4a53552cf6bc1020879a6bce90b66ff87c658"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/lock.svg",
+      "sha256": "6e784f5b3c19a76909c2627fd4192bbf98c3eb3b277d2d685af14570a682fd7e"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/message-circle.svg",
+      "sha256": "5d0200d903d3c362209acbd10afa06da46dfa1b8bef75b7a22c1739476ab192a"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/moon.svg",
+      "sha256": "a0ae8e9b875db0f914d5d7702afaf87b1ae78fcc09acc1ae4dca63c930e49b43"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/pencil.svg",
+      "sha256": "bcf26673fe6c87a985ec327be0f3e834daa45f43767cc5316ddab202dd105736"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/refresh.svg",
+      "sha256": "409389d29efeb6350ddf32d800964b179a2595702060e963ce449188f831a53b"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/square-rotated.svg",
+      "sha256": "e7ef6441c5ea0f7a0cef23ab5c2420eb8147c69ac5f67e021ea83bf207c0ae19"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/sun.svg",
+      "sha256": "6eaf26aaf098f0acd1e7f5c3ea616f14c55576577e83f5f53a97990f25183272"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/trash.svg",
+      "sha256": "7a2589ce64766746193cd49dc87707fe43ba75eaf3af015393e200b8fe8fd608"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/user-circle.svg",
+      "sha256": "31fad89d76ce29817fab3644da9a1f612644ecaf67bdb3cd686582a6f5f82d5f"
+    },
+    {
+      "path": "App_Front/src/lib/assets/tabler/x.svg",
+      "sha256": "f443b1f763bd3dc0f867c0a6d721b6e1f5ef79a6886e67d937ec05c60b170e16"
+    },
+    {
+      "path": "App_Front/src/lib/components/CodePegs.svelte",
+      "sha256": "dc1b57a94a3e1e41288c91fdc0bdb441b011dfb75cd19466fd938787c6d1247a"
+    },
+    {
+      "path": "App_Front/src/lib/components/DebugDrawer.svelte",
+      "sha256": "89b50bb4e169ce45fa56b185a6eb3c1930e2bbc660bc230d4b024e2127e59db3"
+    },
+    {
+      "path": "App_Front/src/lib/components/DuelNav.svelte",
+      "sha256": "c6118b8d1e0e384261cb65142d123e44f9c80077b92a3fa9d862577c4139c05d"
+    },
+    {
+      "path": "App_Front/src/lib/components/HistoryScreen.svelte",
+      "sha256": "4e432dc59673c8909bcfe922ac07e6233b611b96624271a1ef1b7db80174d4b0"
+    },
+    {
+      "path": "App_Front/src/lib/components/Icon.svelte",
+      "sha256": "bbb34ccaba65c2b93c9ca8a1c499ee3e5f24cca3fdc9bdf3d57675ebaad3715d"
+    },
+    {
+      "path": "App_Front/src/lib/components/LobbyScreen.svelte",
+      "sha256": "dfacf4edce48684dd073b54e0746f3bfa17c218b3396295d00fde1c12a72ba66"
+    },
+    {
+      "path": "App_Front/src/lib/components/OpponentProgress.svelte",
+      "sha256": "cdaad160c3265c2c0cfdbb166f083444c388da448025c11b9d25f809f6808246"
+    },
+    {
+      "path": "App_Front/src/lib/components/PartieScreen.svelte",
+      "sha256": "45ca60942d025ea8c5dfaa5a7e273ac9586e9785ad5b26504e13dfe8573b725f"
+    },
+    {
+      "path": "App_Front/src/lib/components/PrivateRecoveryPanel.svelte",
+      "sha256": "af4529663dc872cc05c48089aab9d839481847fefb0937725378c8c35bcc8a0e"
+    },
+    {
+      "path": "App_Front/src/lib/components/PublicInformation.svelte",
+      "sha256": "c10452d17828bbb0bde0b77ce96c2debe0ceaa3d232140c061a4bde4b7aba29e"
+    },
+    {
+      "path": "App_Front/src/lib/components/RecoveryScreen.svelte",
+      "sha256": "9a82c617940c96154390d746e7ffc61c206787c334bad7801cddacd65d710af9"
+    },
+    {
+      "path": "App_Front/src/lib/components/ToastMessage.svelte",
+      "sha256": "9037cd1e0e8396cbb7c2770058923cd3d50f54d72c792c00626da854283ac80d"
+    },
+    {
+      "path": "App_Front/src/lib/components/TopBar.svelte",
+      "sha256": "885172eacbb8d1daeb19e344ea53009ba7302508e3ed64b2b78a2ef0b535a1ff"
+    },
+    {
+      "path": "App_Front/src/lib/components/WaitingScreen.svelte",
+      "sha256": "8da8d027dc5cf69734b184cee0029408dccd431b4bc9724a254639a3942d70d4"
+    },
+    {
+      "path": "App_Front/src/lib/components/WelcomeScreen.svelte",
+      "sha256": "d8f9b95ea9bd173252fb88c81760c706d0e679b133acda5a69d386bcaf40aaba"
+    },
+    {
+      "path": "App_Front/src/lib/state/boardDraft.js",
+      "sha256": "0344b18de1d71c823d801bce792b597843a52e3148f1edd4b0daa76703ab89ef"
+    },
+    {
+      "path": "App_Front/src/lib/state/gameConnection.js",
+      "sha256": "bf29c5098bb0edb4d8095ced7d7f4dfcf82ef432b98bf979ab24b1a053933760"
+    },
+    {
+      "path": "App_Front/src/lib/state/gameView.js",
+      "sha256": "1f4c4be56f7f43b223c79199bfba0523babaa5c189eeef717cb6fe5f20ad025e"
+    },
+    {
+      "path": "App_Front/src/lib/state/phaseFocus.js",
+      "sha256": "eba4f3576d7e5271d3cfe39190d3d3801bbf7363ab2b93c83bdd2b6dd5ea3e21"
+    },
+    {
+      "path": "App_Front/src/lib/state/polling.js",
+      "sha256": "64bbf1350a2a4322836a8ed84e167be25f3cfc1265dcf67596f2e05d544ec28d"
+    },
+    {
+      "path": "App_Front/src/lib/state/roomConnection.js",
+      "sha256": "94c78c5fb3f7141f25e3e0e906230cb2039f129e17b2a7861080adc1ab146e8f"
+    },
+    {
+      "path": "App_Front/src/lib/state/session.js",
+      "sha256": "633ddbbdc411ae63918c895f167806894530047571ddff88aecc74b13397165c"
+    },
+    {
+      "path": "App_Front/src/lib/state/submissionFocus.js",
+      "sha256": "671e9ceb13119164ab61332c11d1dddbb797573d1ef0102bf9cf7897fcc3f231"
+    },
+    {
+      "path": "App_Front/src/lib/utils/apiErrorText.js",
+      "sha256": "e86209423eee4c2183f7dd4645afc445adcf6e5481215a0ca6994cb774399158"
+    },
+    {
+      "path": "App_Front/src/lib/utils/diagnostics.js",
+      "sha256": "f6de4419ac53b4ca4c94f04f30c97cd331b34769a7c7274246513feeecbc0008"
+    },
+    {
+      "path": "App_Front/src/lib/utils/presentation.js",
+      "sha256": "d98021e41f523f274f99b2c3f4640cda32381e5fc8e158e4fcc1a4056363f4ca"
+    },
+    {
+      "path": "App_Front/src/lib/utils/symbolSequence.js",
+      "sha256": "24137eadf521d214cde3a4e75f371a458d2f375698f92ff074b5243b3e92d126"
+    },
+    {
+      "path": "App_Front/src/lib/utils/symbolVisuals.js",
+      "sha256": "b51e61c13e4606d91401080184ffdda30b8ce5635d2bb7bccfdbe04cd098bdc6"
+    },
+    {
+      "path": "App_Front/src/main.js",
+      "sha256": "d5d48475db14abbfe896356df04c10f4884a1215804fa7e2ccf3249288e9d1b6"
+    },
+    {
+      "path": "App_Front/tests/actionContract.test.js",
+      "sha256": "e7b2de7b816d9ef92a63b8f6508ca8e5e0b8d6ea53fc0daa9da3558fd5621b25"
+    },
+    {
+      "path": "App_Front/tests/apiErrorText.test.js",
+      "sha256": "c8e0cfe672a8ab9302b8ffaa562873e438c63e04bab45c692c21bbea2f23c7f8"
+    },
+    {
+      "path": "App_Front/tests/boardView.test.js",
+      "sha256": "4fa2c9621084c796f145496f588f1c8ac86ba4c0dda617b947952202eb73a11a"
+    },
+    {
+      "path": "App_Front/tests/contract.test.js",
+      "sha256": "7193ea4c7c239c071891e2bbd39a5bd4b3fda4faf4d33eacd329aa59477a00e6"
+    },
+    {
+      "path": "App_Front/tests/diagnostics.test.js",
+      "sha256": "b693dcb1fc8515304a6bb2c7f853a305f3176db4085bf86f9216a2473736ce54"
+    },
+    {
+      "path": "App_Front/tests/gameConnection.test.js",
+      "sha256": "4c413e7466d2df7bdbffd4307fc99f2d88a27a83a44ab266a4c1141324d605b4"
+    },
+    {
+      "path": "App_Front/tests/phaseFocus.test.js",
+      "sha256": "a9db7a4ebd17ad06472e48dc64bbaf890381285183ff3f879a3a9f907160ad03"
+    },
+    {
+      "path": "App_Front/tests/polling.test.js",
+      "sha256": "996836aaba1bb57eb94244248434e391a3f39d3a6293e0d25d54fdcc31569f16"
+    },
+    {
+      "path": "App_Front/tests/presentation.test.js",
+      "sha256": "a7350a31889564a5c757e7969283985c420c98f4551c82a819a160da164e2ae3"
+    },
+    {
+      "path": "App_Front/tests/roomConnection.test.js",
+      "sha256": "395fc980fc82e152e2b9548c1bcd290e2faec3393620f2180d6b858491fc52fb"
+    },
+    {
+      "path": "App_Front/tests/roomContract.test.js",
+      "sha256": "74bcbe6bd51aadd5943949d0f378e046fe3de634ecc4d1464e6930337919eedb"
+    },
+    {
+      "path": "App_Front/tests/roomTransport.test.js",
+      "sha256": "cf5f633aa2335b6018caecad592e0ea56e13eb12389a83058e0fb4655517eb3f"
+    },
+    {
+      "path": "App_Front/tests/submissionFocus.test.js",
+      "sha256": "5750c2b9928813ef07f34f4a5cc25a2a3518bf30d69497ace9b3531ac8c4f482"
+    },
+    {
+      "path": "App_Front/tests/transport.test.js",
+      "sha256": "13e50ada299ccafc892ed3d472b23f8a4c9b9b56abe97d36db71add8e8bbc8fb"
+    },
+    {
+      "path": "App_Front/vite.config.js",
+      "sha256": "cda82f4f41f77dd37c8e670fbeff3d0df6450bda771dd5439b0b71b80ac54ebd"
+    }
+  ],
+  "sessionAndDependenciesUnchanged": true,
+  "serverHttpContractUnchanged": true
 }

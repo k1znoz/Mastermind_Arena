@@ -20,6 +20,7 @@ export function createRoomClient(config = {}) {
         ...(options.body ? { 'Content-Type': 'application/json' } : {})
       }
     })
+    if (response.status === 429) throw new Error('ROOM_RATE_LIMITED')
     if (!response.ok) throw new Error(readErrorCode(body, 'ROOM_HTTP_ERROR'))
     return /** @type {any} */ (body)
   }
